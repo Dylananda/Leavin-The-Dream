@@ -27,7 +27,7 @@ interesan si cambian algo en la partida (pistas, tratos, sitios marcados, enemis
      tejados; quizá bajar más la altura de los edificios (`LEVEL_SCALE`)
 2. **Estado del personaje** (barras y efectos de las sustancias) — hecho lo básico (rama `feat/estado-personaje`)
 3. **Personajes nuevos** basados en lo que se documenta del barrio, según hora y zona — hecho lo básico (rama `feat/personajes-nuevos`)
-4. **Prototipo de conversación con IA local** (Ollama, 3–4 personajes)
+4. **Prototipo de conversación con IA local** (Ollama, 3–4 personajes) — hecho el prototipo (rama `feat/conversacion-ia`)
 5. **Compromisos con plazo y memoria poco fiable** → base de las misiones
 6. **Ciudad más grande y metro**
 
@@ -113,13 +113,36 @@ nombre, historia y motivos, no estereotipos por nacionalidad.
 
 ## 4. Conversación con IA local
 
-- Motor: Ollama en el propio PC (GTX 1060 de 6 GB → modelos de 3–8 mil millones de parámetros).
-  Diseñado para poder cambiar a un modelo en la nube si el local se queda corto.
-- Cada personaje tiene una ficha: personalidad, forma de hablar, qué sabe y qué no, qué quiere.
-- Memoria corta de lo hablado con cada uno.
-- La IA puede hacer cosas en el juego: dar una pista, marcar un sitio, ofrecer un trato,
-  enfadarse, llamar a la policía...
-- Entre todos los personajes van tejiendo una historia.
+- [x] Motor: Ollama en el propio PC (GTX 1060 de 6 GB → modelos de 3–8 mil millones de parámetros;
+  por defecto `qwen2.5:7b`, que habla buen castellano y respeta el formato JSON).
+  Se puede cambiar de modelo o pasar a uno en la nube (API compatible con OpenAI) con
+  `user://ia.cfg` (ver `scripts/ai/llm_client.gd`). Las peticiones no bloquean el juego y,
+  si la IA no responde, se avisa en el registro y todo lo demás sigue igual.
+- [x] Prototipo con 4 personajes: **lateros**, **trileros**, **carteristas** y **despedidas**
+  («Hablar» en su menú). Cada tipo tiene su ficha (`scripts/ai/fichas.gd`): quién es, su
+  historia (la de su nombre en `Npc.KINDS`), cómo habla, qué sabe y qué no, qué quiere y qué
+  tratos puede proponer.
+- [x] El modelo recibe lo que el personaje ve de verdad: la hora, la calle, los agentes que hay
+  cerca (y por dónde), el sitio más cercano de cada tipo (bar, comisaría, compraventa, CAS...)
+  y cómo se ve al jugador (colocado, con mono, con mala pinta, buscado), sin cifras.
+- [x] Memoria corta de lo hablado con cada uno (12 frases) y de lo que ha pasado (tratos, pistas,
+  enfados); se acuerda de ti si vuelve a salir alguien con el mismo nombre.
+- [x] La IA hace cosas en el juego con una respuesta en JSON (Ollama la obliga a cumplir un
+  esquema): un **trato** en cada respuesta (vacío si no propone nada; botón para aceptarlo,
+  con dinero, objeto y minutos limitados por la ficha) y acciones: **dar una pista** (se apunta
+  en el registro), **marcar un sitio** de la lista (`world.highlight_poi`), **regalar** (una vez
+  al día), **enfadarse** (no vuelve a hablarte), **llamar a la policía** (sube mucho la
+  búsqueda) y **despedirse**.
+- Lo aprendido con `qwen2.5:7b` (unos 7–15 s por respuesta en la GTX 1060): con el trato como
+  acción opcional lo ofrecía de palabra sin apuntarlo, así que ahora es un campo obligatorio;
+  si las acciones van antes de lo que dice, se las inventa; nombres de acción ambiguos
+  («policia») los usaba para hablar de la policía; «pagas/cobras» los confundía, por eso los
+  campos son `euros_para_el` / `euros_para_ti`. Los ejemplos del prompt ayudan mucho.
+- [ ] Pendiente: más personajes con ficha (camellos, educadoras, chavales: con estos, solo ayudar).
+- [ ] Pendiente: que las pistas sirvan de algo más (p. ej. un log de conversaciones para el punto 5)
+  y que los tratos tengan consecuencias más allá del momento (deudas, encargos con plazo).
+- [ ] Pendiente: que lo que se cuentan entre ellos circule (si te chivas de uno, los demás lo saben).
+- [ ] Entre todos los personajes van tejiendo una historia.
 
 ## 5. Compromisos con plazo y memoria poco fiable
 

@@ -36,6 +36,31 @@ de guiri) en la Rambla; por la tarde y la noche, chavales que esnifan cola por l
 del Raval y Sant Pau; de noche, despedidas de soltero y lateros junto a los bares. Los
 personajes nuevos tienen nombre e historia propia; las fuentes están en `docs/ideas.md`.
 
+### Hablar con ellos (IA local)
+
+A los lateros, trileros, carteristas y despedidas se les puede hablar libremente («Hablar»
+en su menú): escribes lo que dices y contesta un modelo de lenguaje que hace de ese personaje.
+Lo que digan puede cambiar la partida: te dan pistas, te señalan sitios en el mapa, te
+proponen tratos (botón para aceptarlos), te regalan algo, se enfadan o te echan a la policía.
+Se acuerdan de lo hablado.
+
+Necesita [Ollama](https://ollama.com) en marcha con el modelo `qwen2.5:7b`
+(`ollama pull qwen2.5:7b`; unos 4,7 GB, cabe en una GPU de 6 GB). Si la descarga falla porque
+no llega a Cloudflare (en España pasa durante los partidos de fútbol), el mismo modelo se baja
+de Hugging Face: `ollama pull hf.co/bartowski/Qwen2.5-7B-Instruct-GGUF:Q4_K_M` y luego
+`ollama cp hf.co/bartowski/Qwen2.5-7B-Instruct-GGUF:Q4_K_M qwen2.5:7b`. Cada respuesta tarda
+unos 10 s (la primera, más: carga el modelo). Sin Ollama, el juego funciona igual y lo dice
+en el registro. Para usar otro modelo, o uno en la nube con una API
+compatible con OpenAI, crea `%APPDATA%\Godot\app_userdata\Yonkiland\ia.cfg`:
+
+```
+[ia]
+proveedor="ollama"        ; o "openai"
+modelo="llama3.1:8b"
+; url="https://api.openai.com/v1/chat/completions"
+; clave="..."             ; o la variable de entorno YONKILAND_IA_CLAVE
+```
+
 ## Datos reales
 
 | Qué | De dónde | Script |
@@ -63,7 +88,10 @@ python tools/make_textures.py
 - `game/scripts/interactions.gd` — qué se puede hacer con cada bot y en cada lugar
 - `game/scripts/world.gd` — escena de juego, entrada, eventos del barrio y cómo los efectos
   cambian la cámara y el movimiento
-- `game/scripts/ui/hud.gd` — barras, panel de sustancias y efectos, registro, menús
+- `game/scripts/ui/hud.gd` — barras, panel de sustancias y efectos, registro, menús, conversación
+- `game/scripts/ai/` — conversación con IA: cliente HTTP (`llm_client.gd`, Ollama o API tipo
+  OpenAI), fichas de los personajes (`fichas.gd`) y contexto, memoria y acciones de juego
+  (`conversation.gd`)
 - `game/shaders/vignette.gdshader` — filtro de pantalla con los efectos (mono, pastillas, sueño, túnel...)
 - `game/scripts/city/` — mapa 3D: suelo, edificios extruidos (`building_mesher.gd`), monumentos, placas de calle y árboles (`city_props.gd`), carteles
 - `game/shaders/building.gdshader` — fachadas caricaturizadas, ventanas encendidas de noche y rayos X
@@ -73,6 +101,8 @@ python tools/make_textures.py
 - `game/tests/smoke.gd` — ejecuta todas las acciones con los 6 perfiles, cada sustancia y
   los extremos de hambre, sueño y salud mental; termina con `OK` o el número de fallos:
   `godot --headless --path game --script res://tests/smoke.gd`
+- `game/tests/charla.gd` — conversación real con la IA sin abrir el juego (necesita Ollama):
+  `godot --headless --path game --script res://tests/charla.gd -- latero "Hola" "¿Viene la Urbana?"`
 - `game/tests/screenshot.gd` — capturas sin abrir el editor; el sexto argumento consume
   sustancias antes (p. ej. `... -- res://scenes/world.tscn shot.png parado "" 12 caballo,litrona`)
 
