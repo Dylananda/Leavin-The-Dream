@@ -1,0 +1,7 @@
+# Godot
+game/.godot/
+*.import
+# Python
+__pycache__/
+# Vista de control generada por build_map.py
+data/preview_map.png

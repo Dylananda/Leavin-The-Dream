@@ -1,0 +1,24 @@
+{
+  "barrio": "el Raval",
+  "year": 2024,
+  "source": "Open Data BCN - Incidents gestionats per la Guàrdia Urbana (CC BY 4.0)",
+  "total_incidents": 19960,
+  "rank": 1,
+  "barrios": 73,
+  "counts": {
+    "total": 19960,
+    "vulnerables": 4579,
+    "peleas": 892,
+    "molestias": 4112,
+    "venta_ambulante": 656,
+    "locales": 631
+  },
+  "index": {
+    "total": 5.75,
+    "vulnerables": 8.25,
+    "peleas": 37.17,
+    "molestias": 5.48,
+    "venta_ambulante": 164.0,
+    "locales": 7.09
+  }
+}
