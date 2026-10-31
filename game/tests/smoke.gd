@@ -153,6 +153,22 @@ func _test_conversation(gs, world) -> void:
 	_check(r["ended"] and not conv.can_talk(npc), "el enfado no corta la conversación")
 	gs.message.disconnect(on_msg)
 	world.hud.close_chat()
+	# la petición para Claude (sin mandarla) y el aviso inmediato si falta la clave
+	var client = conv.client
+	client.proveedor = "anthropic"
+	var body: Dictionary = client._anthropic_body([
+		{"role": "system", "content": "ficha"}, {"role": "assistant", "content": "{}"},
+		{"role": "user", "content": "hola"}, {"role": "assistant", "content": "{}"}, {"role": "user", "content": "¿y?"},
+	], conv.schema())
+	_check(body["system"] == "ficha" and body["messages"].size() == 3 and body["messages"][0]["role"] == "user",
+		"la petición a Claude no separa el sistema o no empieza por el jugador")
+	_check(body["output_config"]["format"]["schema"]["additionalProperties"] == false, "el esquema no vale para Claude")
+	client.clave = ""
+	var no_key := [""]
+	client.ask([], {}, func(ok, err): no_key[0] = err if not ok else "")
+	await process_frame
+	_check(no_key[0].contains("clave"), "sin clave no avisa")
+	client.proveedor = "ollama"
 	print("  conversación: OK sin IA (%d mensajes en el registro)" % logged.size())
 
 

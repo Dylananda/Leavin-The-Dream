@@ -108,6 +108,7 @@ func schema() -> Dictionary:
 			"dice": {"type": "string"},
 		},
 		"required": ["ofrece", "cuenta", "senala", "reaccion", "dice"],
+		"additionalProperties": false,  # lo exige la API de Anthropic
 	}
 
 

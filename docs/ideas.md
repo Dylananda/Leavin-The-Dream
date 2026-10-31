@@ -142,8 +142,10 @@ nombre, historia y motivos, no estereotipos por nacionalidad.
   - Si los campos son opcionales, ofrece cosas de palabra sin apuntarlas: todos son obligatorios
     (con "" para «nada»). Nombres ambiguos («policia») los usaba para hablar de la policía.
   - Sigue escribiendo regular (repite los datos al pie de la letra, se inventa detalles
-    sueltos) y tarda. Un modelo en la nube (p. ej. Claude por la API, de pago por uso) lo
-    haría mucho mejor y en un par de segundos; el cliente está preparado para cambiarlo.
+    sueltos) y tarda. Un modelo en la nube lo haría mucho mejor: el cliente ya habla con
+    Claude por la API de Anthropic (`proveedor="anthropic"` en `ia.cfg`, con structured
+    outputs para el esquema, esfuerzo bajo y reintento con otro modelo si lo rechazan los
+    filtros). Pendiente: probarlo con una clave y comparar con el local.
 - [ ] Pendiente: más personajes con ficha (camellos, educadoras, chavales: con estos, solo ayudar).
 - [ ] Pendiente: que las pistas sirvan de algo más (p. ej. un log de conversaciones para el punto 5)
   y que los tratos tengan consecuencias más allá del momento (deudas, encargos con plazo).

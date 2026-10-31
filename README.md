@@ -45,22 +45,28 @@ deja (las acciones de su menú, datos ciertos como dónde están los agentes o l
 sitios cercanos), así que lo que te ofrece aparece como botón y hace exactamente lo mismo que
 en el menú. También pueden enfadarse o echarte a la policía, y se acuerdan de lo hablado.
 
-Necesita [Ollama](https://ollama.com) en marcha con el modelo `qwen2.5:7b`
+Por defecto usa [Ollama](https://ollama.com) en el propio PC con el modelo `qwen2.5:7b`
 (`ollama pull qwen2.5:7b`; unos 4,7 GB, cabe en una GPU de 6 GB). Si la descarga falla porque
 no llega a Cloudflare (en España pasa durante los partidos de fútbol), el mismo modelo se baja
 de Hugging Face: `ollama pull hf.co/bartowski/Qwen2.5-7B-Instruct-GGUF:Q4_K_M` y luego
 `ollama cp hf.co/bartowski/Qwen2.5-7B-Instruct-GGUF:Q4_K_M qwen2.5:7b`. Cada respuesta tarda
-unos 15 s (la primera, más: carga el modelo). Sin Ollama, el juego funciona igual y lo dice
-en el registro. Para usar otro modelo, o uno en la nube con una API
-compatible con OpenAI, crea `%APPDATA%\Godot\app_userdata\Yonkiland\ia.cfg`:
+unos 15 s (la primera, más: carga el modelo). Sin IA, el juego funciona igual y lo dice en el
+registro.
+
+Para usar **Claude** (API de Anthropic, de pago por uso; hace falta una clave de
+[platform.claude.com](https://platform.claude.com), no vale la suscripción de claude.ai), crea
+`%APPDATA%\Godot\app_userdata\Yonkiland\ia.cfg`:
 
 ```
 [ia]
-proveedor="ollama"        ; o "openai"
-modelo="llama3.1:8b"
-; url="https://api.openai.com/v1/chat/completions"
-; clave="..."             ; o la variable de entorno YONKILAND_IA_CLAVE
+proveedor="anthropic"
+modelo="claude-opus-5-5"    ; o "claude-haiku-5-5", mucho más barato y rápido
+clave="sk-ant-..."          ; o la variable de entorno ANTHROPIC_API_KEY
 ```
+
+Con `proveedor="ollama"` se puede poner otro `modelo` local; con `proveedor="openai"` (y `url`),
+cualquier API compatible con OpenAI. Para comparar sin tocar el archivo, `tests/charla.gd`
+también lee las variables `YONKILAND_IA_PROVEEDOR` y `YONKILAND_IA_MODELO`.
 
 ## Datos reales
 
