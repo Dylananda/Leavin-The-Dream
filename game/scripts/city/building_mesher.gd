@@ -20,7 +20,15 @@ const FACADE_COLORS := [
 	Color("c4b07a"), Color("b8806a"),
 ]
 
+const S_PARTY_WALL := 4.0  ## estilo de medianera (pared ciega pegada al vecino), ver building.gdshader
+const PARTY_PROBE_M := 1.0  ## a esta distancia por fuera de la pared se mira si hay otro edificio
+const STREET_PROBES_M := [1.0, 2.0, 3.0]  ## si ninguno de estos puntos es calle, la pared da a un patio
+const BUCKET_M := 24.0
+
 var _tools := {}  ## Vector2i trozo -> SurfaceTool
+var _footprints := {}  ## Vector2i cubeta -> Array[PackedVector2Array], para encontrar medianeras
+## (Vector2 en metros) -> bool: si ese punto es calle transitable. Sin él, solo se miran los vecinos.
+var is_street := Callable()
 
 
 static func facade_color(seed: int) -> Color:
@@ -35,18 +43,33 @@ static func display_height(b: Dictionary) -> float:
 	return levels * FLOOR_M + 0.6
 
 
+## Registra todas las huellas antes de construir, para saber qué paredes dan a otro edificio.
+func index_footprints(buildings: Array) -> void:
+	for b in buildings:
+		var pts := _points(b)
+		var mn := pts[0]
+		var mx := pts[0]
+		for p in pts:
+			mn = mn.min(p)
+			mx = mx.max(p)
+		for bx in range(floori(mn.x / BUCKET_M), floori(mx.x / BUCKET_M) + 1):
+			for by in range(floori(mn.y / BUCKET_M), floori(mx.y / BUCKET_M) + 1):
+				var key := Vector2i(bx, by)
+				if not _footprints.has(key):
+					_footprints[key] = []
+				_footprints[key].append(pts)
+
+
 func add_building(b: Dictionary) -> void:
-	var pts := PackedVector2Array()
-	for p in b["p"]:
-		pts.append(Vector2(p[0], p[1]))
+	var pts := _points(b)
 	var h := display_height(b)
 	var levels := maxf(1.0, roundf((h - 0.6) / FLOOR_M))
 	var seed: int = b["seed"]
 	var color := Color(b["c"][0] / 255.0, b["c"][1] / 255.0, b["c"][2] / 255.0) if b.has("c") else facade_color(seed)
 	var style: float = b["s"]
+	var seed_uv := (seed % 997) / 997.0
 	var st := _tool_for(_centroid(pts))
 	st.set_color(color)
-	st.set_uv2(Vector2(style, (seed % 997) / 997.0))
 	var n := pts.size()
 	for i in n:
 		var a := pts[i]
@@ -56,6 +79,9 @@ func add_building(b: Dictionary) -> void:
 			continue
 		var bays := maxf(1.0, roundf(length / BAY_M))
 		var e := (c - a) / length
+		# las paredes pegadas a otro edificio o que dan a un patio son ciegas, no fachadas con ventanas
+		var party := style == 0.0 and _is_blind_wall((a + c) / 2.0, Vector2(e.y, -e.x), pts)
+		st.set_uv2(Vector2(S_PARTY_WALL if party else style, seed_uv))
 		_quad(st,
 			Vector3(a.x, 0, a.y), Vector3(c.x, 0, c.y), Vector3(c.x, h, c.y), Vector3(a.x, h, a.y),
 			Vector2(0, 0), Vector2(bays, 0), Vector2(bays, levels), Vector2(0, levels),
@@ -133,6 +159,31 @@ func _tool_for(pos: Vector2) -> SurfaceTool:
 		st.begin(Mesh.PRIMITIVE_TRIANGLES)
 		_tools[key] = st
 	return _tools[key]
+
+
+static func _points(b: Dictionary) -> PackedVector2Array:
+	var pts := PackedVector2Array()
+	for p in b["p"]:
+		pts.append(Vector2(p[0], p[1]))
+	return pts
+
+
+func _is_blind_wall(mid: Vector2, outward: Vector2, own: PackedVector2Array) -> bool:
+	if _inside_other(mid + outward * PARTY_PROBE_M, own):
+		return true
+	if not is_street.is_valid():
+		return false
+	for d in STREET_PROBES_M:
+		if is_street.call(mid + outward * d):
+			return false
+	return true
+
+
+func _inside_other(probe: Vector2, own: PackedVector2Array) -> bool:
+	for pts in _footprints.get(Vector2i(floori(probe.x / BUCKET_M), floori(probe.y / BUCKET_M)), []):
+		if pts != own and Geometry2D.is_point_in_polygon(probe, pts):
+			return true
+	return false
 
 
 func _centroid(pts: PackedVector2Array) -> Vector2:

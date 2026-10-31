@@ -99,6 +99,8 @@ func _build_buildings() -> void:
 	building_material.shader = load("res://shaders/building.gdshader")
 	building_material.set_shader_parameter("facade", load("res://assets/facade.png"))
 	var mesher := BuildingMesher.new()
+	mesher.index_footprints(_data["buildings"])
+	mesher.is_street = func(p: Vector2) -> bool: return is_walkable(world_to_cell(Vector3(p.x, 0, p.y)))
 	for b in _data["buildings"]:
 		mesher.add_building(b)
 	# relleno: interiores de manzana sin edificio en OSM
