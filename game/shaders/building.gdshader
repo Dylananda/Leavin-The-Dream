@@ -5,7 +5,7 @@
 // Atributos que pone building_mesher.gd:
 //   COLOR   color de la fachada
 //   UV      x: vanos a lo largo de la pared, y: plantas desde el suelo
-//   UV2     x: estilo (0 normal, 1 liso, 2 cristal, 3 celosía), y: semilla del edificio
+//   UV2     x: estilo (0 normal, 1 liso, 2 cristal, 3 celosía, 4 medianera), y: semilla del edificio
 shader_type spatial;
 render_mode diffuse_toon, specular_disabled, cull_back;
 
@@ -77,6 +77,10 @@ void fragment() {
 		col = mix(tint, vec3(0.75, 0.85, 0.95), 0.25 + 0.2 * f.y) * (1.0 - frame * 0.6);
 		col = mix(col, vec3(1.0, 0.85, 0.6), lit * (1.0 - frame));
 		emit = vec3(0.9, 0.75, 0.5) * lit * (1.0 - frame);
+	} else if (style > 3.5) {
+		// medianera: pared ciega pegada al vecino, con manchas de enlucido viejo
+		float patch = hash(floor(UV * vec2(0.7, 1.3)) + seed * 3.7);
+		col = tint * (0.72 + 0.1 * patch);
 	} else {
 		// celosía metálica (Barceló Raval)
 		float d1 = abs(fract((UV.x + UV.y) * 0.5) - 0.5);
