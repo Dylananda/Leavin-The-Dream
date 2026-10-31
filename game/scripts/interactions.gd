@@ -53,6 +53,8 @@ func for_npc(npc: Npc) -> Array:
 			GameState.advance(15)
 			GameState.log_msg("%s: %s" % [npc.display_name, npc.bio()])
 			GameState.change_sanity(1)))
+	if Conversation.can_talk(npc):
+		acts.insert(0, _act("Hablar", func(): world.open_chat(npc)))
 	return acts
 
 

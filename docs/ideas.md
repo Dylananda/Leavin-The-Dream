@@ -15,6 +15,20 @@ antes de tiempo (pendiente de concretar).
 **Pregunta abierta clave:** ¿qué consigues hablando con la gente? Las conversaciones solo
 interesan si cambian algo en la partida (pistas, tratos, sitios marcados, enemistades).
 
+**Hacia dónde va (1 de noviembre de 2026, provisional):** ahora mismo es «un Pacman con más
+miga, y más birra»: supervivencia de recursos (pasta → sustancia → evitar el mono y a la poli).
+La dirección elegida para crecer es la del punto 5: **encargos con plazo que compiten entre
+sí y una memoria poco fiable**, que puede ir creciendo hacia misiones de rol encadenadas.
+- La IA en vivo queda aparcada (ver punto 4): el modelo local da poco y los de la nube cuestan
+  dinero. Los diálogos y encargos se escriben con ayuda de Claude *mientras se hace el juego*
+  y quedan fijos, sin coste ni esperas. Se mantiene la idea de que el juego propone lo que
+  puede pasar y los personajes solo eligen y lo cuentan.
+- **Partidas largas, no cortas:** a un yonki se le puede mantener mucho tiempo, hasta dejar
+  un **legado** a los siguientes (ver «Personajes que viven (y relevo)»).
+- **Finales posibles** a largo plazo: los yonkis montan una **revolución**, o un **partido
+  político**. Otras direcciones que se valoraron: rol de conversación escrita a mano (estilo
+  Disco Elysium), partidas cortas rejugables y retrato documental del barrio.
+
 ## Hoja de ruta propuesta
 
 1. **Mapa fiel** — hecho (rama `fix/mapa-calles-edificios`)
@@ -27,7 +41,7 @@ interesan si cambian algo en la partida (pistas, tratos, sitios marcados, enemis
      tejados; quizá bajar más la altura de los edificios (`LEVEL_SCALE`)
 2. **Estado del personaje** (barras y efectos de las sustancias) — hecho lo básico (rama `feat/estado-personaje`)
 3. **Personajes nuevos** basados en lo que se documenta del barrio, según hora y zona — hecho lo básico (rama `feat/personajes-nuevos`)
-4. **Prototipo de conversación con IA local** (Ollama, 3–4 personajes)
+4. **Prototipo de conversación con IA local** (Ollama, 3–4 personajes) — hecho el prototipo (rama `feat/conversacion-ia`)
 5. **Compromisos con plazo y memoria poco fiable** → base de las misiones
 6. **Ciudad más grande y metro**
 
@@ -74,6 +88,12 @@ interesan si cambian algo en la partida (pistas, tratos, sitios marcados, enemis
 - **Los turistas se van** al cabo de unos días (a Hannah ya le has robado la cartera varias veces).
 - **Reputación por barrio**: la gente te conoce por lo que has hecho con ella y por tu fama
   (o mala fama) en cada zona.
+- **Legado**: lo que hace un yonki (contactos, deudas, fama, escondites, encargos a medias)
+  pasa al siguiente. Con el tiempo, la comunidad yonki puede organizarse: de ahí los finales
+  de la revolución o el partido político.
+- **Contagio**: los yonkis NPC pueden enganchar a otros NPC y convertirlos en yonkis. Cuantos
+  más yonkis hay, menos resaltas: una forma de ganar dignidad (o discreción) es que el barrio
+  se llene de gente como tú.
 
 ## 3. Personajes nuevos (basados en fuentes reales)
 
@@ -113,15 +133,49 @@ nombre, historia y motivos, no estereotipos por nacionalidad.
 
 ## 4. Conversación con IA local
 
-- Motor: Ollama en el propio PC (GTX 1060 de 6 GB → modelos de 3–8 mil millones de parámetros).
-  Diseñado para poder cambiar a un modelo en la nube si el local se queda corto.
-- Cada personaje tiene una ficha: personalidad, forma de hablar, qué sabe y qué no, qué quiere.
-- Memoria corta de lo hablado con cada uno.
-- La IA puede hacer cosas en el juego: dar una pista, marcar un sitio, ofrecer un trato,
-  enfadarse, llamar a la policía...
-- Entre todos los personajes van tejiendo una historia.
+- [x] Motor: Ollama en el propio PC (GTX 1060 de 6 GB → modelos de 3–8 mil millones de parámetros;
+  por defecto `qwen2.5:7b`, que habla buen castellano y respeta el formato JSON).
+  Se puede cambiar de modelo o pasar a uno en la nube (API compatible con OpenAI) con
+  `user://ia.cfg` (ver `scripts/ai/llm_client.gd`). Las peticiones no bloquean el juego y,
+  si la IA no responde, se avisa en el registro y todo lo demás sigue igual.
+- [x] Prototipo con 4 personajes: **lateros**, **trileros**, **carteristas** y **despedidas**
+  («Hablar» en su menú). Cada tipo tiene su ficha (`scripts/ai/fichas.gd`): quién es, su
+  historia (la de su nombre en `Npc.KINDS`), cómo habla, qué no sabe, qué quiere y qué datos
+  de la partida conoce.
+- [x] **El juego propone y la IA habla.** En cada frase el juego calcula lo que puede pasar de
+  verdad, con un id para cada cosa, y el esquema de la respuesta solo admite esos ids:
+  - **ofrecer** una de las acciones de su menú (`interactions.gd`): vender una lata, hacerle
+    de gancho, enseñarte el oficio... Sale un botón y, si lo aceptas, se hace la acción de
+    siempre, con sus precios y consecuencias. Nunca inventa tratos ni cifras.
+  - **contar** un dato cierto: dónde están ahora los agentes (y si no hay ninguno), o qué
+    guiris sin robar hay cerca y por dónde (trileros y carteristas). Se apunta en el registro.
+  - **señalar** el sitio más cercano de cada tipo (bar, comisaría, CAS...): se marca en el mapa.
+  - **reaccionar**: enfadarse (no vuelve a hablarte), llamar a la policía (sube mucho la
+    búsqueda) o despedirse.
+- [x] Memoria corta de lo hablado con cada uno (12 frases) y de lo que ha pasado de verdad (lo
+  que te ofreció, lo que hicisteis, lo que te contó); se le dice que no hay nada más, para que
+  no se invente encargos pasados. Se acuerda de ti si vuelve a salir alguien con su nombre.
+- Lo aprendido con `qwen2.5:7b` en la GTX 1060 (13–18 s por respuesta):
+  - Dejando que la IA inventara los tratos (cifras, objetos, minutos), salían disparates: un
+    trilero vendiendo latas, «vigilar una hora (15 min)», encargos que nunca se hicieron.
+    Con opciones cerradas por el juego, lo que ofrece siempre encaja.
+  - Si los campos son opcionales, ofrece cosas de palabra sin apuntarlas: todos son obligatorios
+    (con "" para «nada»). Nombres ambiguos («policia») los usaba para hablar de la policía.
+  - Sigue escribiendo regular (repite los datos al pie de la letra, se inventa detalles
+    sueltos) y tarda. Un modelo en la nube lo haría mucho mejor: el cliente ya habla con
+    Claude por la API de Anthropic (`proveedor="anthropic"` en `ia.cfg`, con structured
+    outputs para el esquema, esfuerzo bajo y reintento con otro modelo si lo rechazan los
+    filtros). Pendiente: probarlo con una clave y comparar con el local.
+- [ ] Pendiente: más personajes con ficha (camellos, educadoras, chavales: con estos, solo ayudar).
+- [ ] Pendiente: que las pistas sirvan de algo más (p. ej. un log de conversaciones para el punto 5)
+  y que los tratos tengan consecuencias más allá del momento (deudas, encargos con plazo).
+- [ ] Pendiente: que lo que se cuentan entre ellos circule (si te chivas de uno, los demás lo saben).
+- [ ] Entre todos los personajes van tejiendo una historia.
 
-## 5. Compromisos con plazo y memoria poco fiable
+## 5. Compromisos con plazo y memoria poco fiable (siguiente paso)
+
+Primer paso propuesto: una prueba jugable con tres o cuatro encargos de personajes que ya
+existen, con plazos que se pisan, y una libreta que se emborrona según lo que te metes.
 
 - Situaciones que compiten entre sí: llevarle un pedido a un camello a cambio de una parte
   *y a la vez* las fiestas de otro barrio a las que va a ir una yonki que te gusta. Hay que elegir.

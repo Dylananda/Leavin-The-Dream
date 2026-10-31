@@ -51,6 +51,14 @@ var _hover: Label
 var _vignette: ColorRect
 var _street: PanelContainer
 var _street_label: Label
+var _chat: PanelContainer  ## Conversación libre con un bot (IA)
+var _chat_title: Label
+var _chat_log: RichTextLabel
+var _chat_deals: VBoxContainer
+var _chat_input: LineEdit
+var _chat_send: Button
+var _chat_npc: Npc
+var _chat_conv: Conversation
 
 
 func _ready() -> void:
@@ -70,6 +78,7 @@ func _ready() -> void:
 	_build_street()
 	_build_menu()
 	_build_inventory()
+	_build_chat()
 	_hover = Label.new()
 	_hover.add_theme_color_override("font_outline_color", Color.BLACK)
 	_hover.add_theme_constant_override("outline_size", 4)
@@ -368,7 +377,7 @@ func set_hover(text: String, screen_pos: Vector2) -> void:
 
 
 func is_menu_open() -> bool:
-	return _menu.visible or (_game_over != null and _game_over.visible)
+	return _menu.visible or _chat.visible or (_game_over != null and _game_over.visible)
 
 
 ## Muestra un menú con acciones {"label", "do"}; al elegir una se ejecuta y se cierra.
@@ -404,6 +413,146 @@ func close_menu() -> void:
 	if _menu.visible:
 		_menu.visible = false
 		menu_closed.emit()
+	close_chat()
+
+
+# ------------------------------------------------------------- conversación
+
+func _build_chat() -> void:
+	_chat = _panel(Vector2(640, 0))
+	_chat.visible = false
+	add_child(_chat)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 6)
+	_chat.add_child(v)
+	_chat_title = Label.new()
+	_chat_title.add_theme_font_size_override("font_size", 16)
+	v.add_child(_chat_title)
+	_chat_log = RichTextLabel.new()
+	_chat_log.bbcode_enabled = true
+	_chat_log.scroll_following = true
+	_chat_log.selection_enabled = true
+	_chat_log.custom_minimum_size = Vector2(620, 340)
+	_chat_log.add_theme_font_size_override("normal_font_size", 16)
+	v.add_child(_chat_log)
+	_chat_deals = VBoxContainer.new()
+	v.add_child(_chat_deals)
+	var row := HBoxContainer.new()
+	v.add_child(row)
+	_chat_input = LineEdit.new()
+	_chat_input.placeholder_text = "Escribe lo que le dices y pulsa Intro"
+	_chat_input.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_chat_input.max_length = 300
+	_chat_input.text_submitted.connect(func(_t): _chat_say())
+	_chat_input.gui_input.connect(func(e: InputEvent):
+		if e is InputEventKey and e.pressed and e.keycode == KEY_ESCAPE:
+			close_chat())
+	row.add_child(_chat_input)
+	_chat_send = Button.new()
+	_chat_send.text = "Decir"
+	_chat_send.pressed.connect(_chat_say)
+	row.add_child(_chat_send)
+	var bye := Button.new()
+	bye.text = "Irse"
+	bye.pressed.connect(close_chat)
+	row.add_child(bye)
+
+
+## Abre la conversación libre con `npc`; la partida queda en pausa hasta cerrarla.
+func open_chat(npc: Npc, conv: Conversation) -> void:
+	if _chat_conv != conv:
+		if _chat_conv:
+			_chat_conv.replied.disconnect(_on_chat_reply)
+			_chat_conv.failed.disconnect(_on_chat_failed)
+		_chat_conv = conv
+		conv.replied.connect(_on_chat_reply)
+		conv.failed.connect(_on_chat_failed)
+	_chat_npc = npc
+	_chat_title.text = "Hablando con %s" % npc.label()
+	_chat_log.clear()
+	var past := conv.history(npc)
+	if past.is_empty():
+		_chat_line("[color=#808080](%s te mira. Di algo.)[/color]" % npc.display_name)
+	for line in past:
+		_chat_said(line[0] == "tu", line[1])
+	_clear_deals()
+	_chat_set_waiting(conv.busy)
+	_chat.visible = true
+	_chat.reset_size()
+	# arriba, bajo la placa de la calle, para no tapar el registro (ahí salen pistas y tratos)
+	_chat.position = Vector2((get_viewport().get_visible_rect().size.x - _chat.size.x) / 2.0, 80)
+	get_tree().paused = true
+	_chat_input.grab_focus()
+
+
+func close_chat() -> void:
+	if _chat.visible:
+		_chat.visible = false
+		_chat_npc = null
+		menu_closed.emit()
+
+
+func _chat_say() -> void:
+	var text := _chat_input.text.strip_edges()
+	if text == "" or _chat_npc == null or _chat_conv.busy:
+		return
+	_chat_input.clear()
+	_clear_deals()
+	_chat_said(true, text)
+	_chat_conv.say(_chat_npc, text)
+	_chat_set_waiting(_chat_conv.busy)
+
+
+func _chat_line(bbcode: String) -> void:
+	_chat_log.append_text(bbcode + "\n")
+
+
+func _chat_said(mine: bool, text: String) -> void:
+	var who := "Tú" if mine else _chat_npc.display_name
+	var color := "f0d890" if mine else "a8d0ff"
+	_chat_line("[color=#%s][b]%s:[/b][/color] %s" % [color, who, text.replace("[", "[lb]")])
+
+
+func _chat_set_waiting(waiting: bool) -> void:
+	_chat_send.disabled = waiting
+	_chat_input.editable = not waiting
+	_chat_input.placeholder_text = "%s está pensando..." % _chat_npc.display_name if waiting else "Escribe lo que le dices y pulsa Intro"
+	if not waiting:
+		_chat_input.grab_focus()
+
+
+func _clear_deals() -> void:
+	for c in _chat_deals.get_children():
+		c.queue_free()
+
+
+func _on_chat_reply(npc: Npc, text: String, offers: Array, ended: bool) -> void:
+	if npc != _chat_npc or not _chat.visible:
+		return
+	_chat_said(false, text if text != "" else "...")
+	for offer in offers:
+		var b := Button.new()
+		b.text = "Aceptar: " + offer["label"]
+		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		var label: String = offer["label"]
+		b.pressed.connect(func():
+			_clear_deals()
+			_chat_line("[color=#8fd080](%s)[/color]" % label.replace("[", "[lb]"))
+			_chat_conv.accept(npc, offer["id"]))
+		_chat_deals.add_child(b)
+	_chat_set_waiting(false)
+	if ended:
+		_chat_line("[color=#808080](%s da la conversación por terminada.)[/color]" % npc.display_name)
+		_chat_input.editable = false
+		_chat_send.disabled = true
+	_chat.reset_size()
+
+
+func _on_chat_failed(npc: Npc, error: String) -> void:
+	if npc != _chat_npc or not _chat.visible:
+		return
+	_chat_line("[color=#e07060](No te contesta: se queda mirándote. La IA %s.)[/color]" % error)
+	_chat_set_waiting(false)
 
 
 func toggle_inventory() -> void:

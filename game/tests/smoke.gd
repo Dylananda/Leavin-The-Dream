@@ -48,6 +48,8 @@ func _initialize() -> void:
 		for id in gs.inventory.keys():
 			if gs.alive and Defs.usable(id):
 				world.use_item(id)
+		if profile == Defs.PROFILES[0]:
+			await _test_conversation(gs, world)
 		world._rummage()
 		world._sleep_here()
 		if gs.alive:
@@ -90,6 +92,84 @@ func _initialize() -> void:
 
 
 var _failures := 0
+
+
+## Conversación con IA sin depender de Ollama: contra un puerto en el que no escucha nadie
+## (el juego debe seguir y avisar en el registro) y con una respuesta inventada que usa
+## todas las acciones de juego.
+func _test_conversation(gs, world) -> void:
+	gs.alive = true
+	var conv = world.conversation
+	conv.client.url = "http://127.0.0.1:9/api/chat"
+	conv.client.timeout = 5.0
+	var logged := []
+	var on_msg := func(text: String, _c: Color): logged.append(text)
+	gs.message.connect(on_msg)
+	for kind in ["latero", "trilero", "carterista", "fiestero"]:
+		var npc = world.npcs.filter(func(n): return n.kind == kind and not n.has_meta("enemigo"))
+		if npc.is_empty():
+			world._spawn_npc(kind)
+			npc = [world.npcs[-1]]
+		npc = npc[0]
+		_check(world.interactions.for_npc(npc).any(func(a): return a["label"] == "Hablar"), "%s: no se le puede hablar" % kind)
+		_check(conv.system_prompt(npc).contains(npc.display_name), "%s: la ficha no lleva su nombre" % kind)
+		world.open_chat(npc)
+		var failed := [false]
+		var on_fail := func(_n, _e): failed[0] = true
+		conv.failed.connect(on_fail)
+		conv.say(npc, "Hola, ¿qué tal?")
+		var until := Time.get_ticks_msec() + 15000
+		while not failed[0] and Time.get_ticks_msec() < until:
+			await process_frame
+		conv.failed.disconnect(on_fail)
+		_check(failed[0] and not conv.busy, "%s: sin IA, la conversación no termina" % kind)
+	_check(logged.any(func(t): return t.contains("no responde") or t.contains("IA")), "sin IA no se avisa en el registro")
+	# una respuesta que lo usa todo: el juego propone (acciones del menú, datos, sitios) y la IA elige
+	gs.alive = true
+	world._spawn_npc("latero")
+	var npc = world.npcs[-1]
+	npc.set_meta("alijo", true)
+	gs.money = 50
+	conv.system_prompt(npc)  # prepara las opciones de esta frase
+	var options: Dictionary = conv._turn["options"]
+	_check(not options.values().any(func(a): return a["label"].begins_with("Robar")), "le ofrece robarse a sí mismo")
+	var buy := ""
+	for id in options:
+		if options[id]["label"].begins_with("Comprarle una lata"):
+			buy = id
+	_check(buy != "" and not conv._turn["data"].is_empty() and conv._turn["sites"].has("s1"), "no prepara opciones, datos y sitios")
+	_check(conv.schema()["properties"]["ofrece"]["enum"].has(buy), "el esquema no deja elegir las opciones")
+	var r: Dictionary = conv.handle_reply(npc, JSON.stringify({"ofrece": buy, "cuenta": "d1", "senala": "s1", "reaccion": "ninguna", "dice": "Una lata, amigo"}))
+	_check(r["text"] == "Una lata, amigo" and r["offers"].size() == 1 and not r["ended"], "la respuesta de la IA no se interpreta")
+	var cans: int = gs.inventory.get("litrona", 0)
+	_check(conv.accept(npc, buy) and gs.inventory.get("litrona", 0) == cans + 1, "aceptar lo que ofrece no hace la acción")
+	_check(not conv.accept(npc, buy), "se puede aceptar dos veces lo mismo")
+	r = conv.handle_reply(npc, JSON.stringify({"ofrece": "o99", "cuenta": "d99", "senala": "s99", "reaccion": "inventada", "dice": "Hmm"}))
+	_check(r["offers"].is_empty() and not r["ended"], "acepta ids que no son de esta frase")
+	_check(conv.history(npc).size() >= 2, "no se acuerda de lo hablado")
+	r = conv.handle_reply(npc, "esto no es JSON")
+	_check(r["text"] == "esto no es JSON", "una respuesta sin formato no se muestra tal cual")
+	r = conv.handle_reply(npc, JSON.stringify({"ofrece": "", "cuenta": "", "senala": "", "reaccion": "enfadarse", "dice": "¡Fuera!"}))
+	_check(r["ended"] and not conv.can_talk(npc), "el enfado no corta la conversación")
+	gs.message.disconnect(on_msg)
+	world.hud.close_chat()
+	# la petición para Claude (sin mandarla) y el aviso inmediato si falta la clave
+	var client = conv.client
+	client.proveedor = "anthropic"
+	var body: Dictionary = client._anthropic_body([
+		{"role": "system", "content": "ficha"}, {"role": "assistant", "content": "{}"},
+		{"role": "user", "content": "hola"}, {"role": "assistant", "content": "{}"}, {"role": "user", "content": "¿y?"},
+	], conv.schema())
+	_check(body["system"] == "ficha" and body["messages"].size() == 3 and body["messages"][0]["role"] == "user",
+		"la petición a Claude no separa el sistema o no empieza por el jugador")
+	_check(body["output_config"]["format"]["schema"]["additionalProperties"] == false, "el esquema no vale para Claude")
+	client.clave = ""
+	var no_key := [""]
+	client.ask([], {}, func(ok, err): no_key[0] = err if not ok else "")
+	await process_frame
+	_check(no_key[0].contains("clave"), "sin clave no avisa")
+	client.proveedor = "ollama"
+	print("  conversación: OK sin IA (%d mensajes en el registro)" % logged.size())
 
 
 ## Deja el cuerpo en calma para que una prueba no dispare otra consecuencia por el camino.

@@ -39,6 +39,7 @@ var player: Actor
 var camera: Camera3D
 var hud: Hud
 var interactions: Interactions
+var conversation: Conversation  ## Conversación libre con IA (scripts/ai/)
 var npcs: Array[Npc] = []
 var markers: Array[PoiMarker] = []
 
@@ -97,6 +98,8 @@ func _ready() -> void:
 	_update_camera(1.0)
 
 	interactions = Interactions.new(self)
+	conversation = Conversation.new(self)
+	add_child(conversation)
 	_place_markers()
 	for kind in BASE_NPCS:
 		_npc_targets[kind] = _target_count(kind)
@@ -637,6 +640,12 @@ func remove_npc_later(npc: Npc, seconds: float) -> void:
 	get_tree().create_timer(seconds, false).timeout.connect(func():
 		if is_instance_valid(npc):
 			npc.queue_free())
+
+
+## Conversación libre (IA) con un bot que tiene ficha.
+func open_chat(npc: Npc) -> void:
+	npc.stop()
+	hud.open_chat(npc, conversation)
 
 
 func highlight_poi(poi: Dictionary) -> void:
