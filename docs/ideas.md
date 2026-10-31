@@ -15,6 +15,20 @@ antes de tiempo (pendiente de concretar).
 **Pregunta abierta clave:** ¿qué consigues hablando con la gente? Las conversaciones solo
 interesan si cambian algo en la partida (pistas, tratos, sitios marcados, enemistades).
 
+**Hacia dónde va (1 de noviembre de 2026, provisional):** ahora mismo es «un Pacman con más
+miga, y más birra»: supervivencia de recursos (pasta → sustancia → evitar el mono y a la poli).
+La dirección elegida para crecer es la del punto 5: **encargos con plazo que compiten entre
+sí y una memoria poco fiable**, que puede ir creciendo hacia misiones de rol encadenadas.
+- La IA en vivo queda aparcada (ver punto 4): el modelo local da poco y los de la nube cuestan
+  dinero. Los diálogos y encargos se escriben con ayuda de Claude *mientras se hace el juego*
+  y quedan fijos, sin coste ni esperas. Se mantiene la idea de que el juego propone lo que
+  puede pasar y los personajes solo eligen y lo cuentan.
+- **Partidas largas, no cortas:** a un yonki se le puede mantener mucho tiempo, hasta dejar
+  un **legado** a los siguientes (ver «Personajes que viven (y relevo)»).
+- **Finales posibles** a largo plazo: los yonkis montan una **revolución**, o un **partido
+  político**. Otras direcciones que se valoraron: rol de conversación escrita a mano (estilo
+  Disco Elysium), partidas cortas rejugables y retrato documental del barrio.
+
 ## Hoja de ruta propuesta
 
 1. **Mapa fiel** — hecho (rama `fix/mapa-calles-edificios`)
@@ -74,6 +88,12 @@ interesan si cambian algo en la partida (pistas, tratos, sitios marcados, enemis
 - **Los turistas se van** al cabo de unos días (a Hannah ya le has robado la cartera varias veces).
 - **Reputación por barrio**: la gente te conoce por lo que has hecho con ella y por tu fama
   (o mala fama) en cada zona.
+- **Legado**: lo que hace un yonki (contactos, deudas, fama, escondites, encargos a medias)
+  pasa al siguiente. Con el tiempo, la comunidad yonki puede organizarse: de ahí los finales
+  de la revolución o el partido político.
+- **Contagio**: los yonkis NPC pueden enganchar a otros NPC y convertirlos en yonkis. Cuantos
+  más yonkis hay, menos resaltas: una forma de ganar dignidad (o discreción) es que el barrio
+  se llene de gente como tú.
 
 ## 3. Personajes nuevos (basados en fuentes reales)
 
@@ -152,7 +172,10 @@ nombre, historia y motivos, no estereotipos por nacionalidad.
 - [ ] Pendiente: que lo que se cuentan entre ellos circule (si te chivas de uno, los demás lo saben).
 - [ ] Entre todos los personajes van tejiendo una historia.
 
-## 5. Compromisos con plazo y memoria poco fiable
+## 5. Compromisos con plazo y memoria poco fiable (siguiente paso)
+
+Primer paso propuesto: una prueba jugable con tres o cuatro encargos de personajes que ya
+existen, con plazos que se pisan, y una libreta que se emborrona según lo que te metes.
 
 - Situaciones que compiten entre sí: llevarle un pedido a un camello a cambio de una parte
   *y a la vez* las fiestas de otro barrio a las que va a ir una yonki que te gusta. Hay que elegir.
