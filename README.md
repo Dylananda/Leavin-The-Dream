@@ -12,6 +12,23 @@ Abre `game/project.godot` con Godot 4.7 y pulsa F5.
 - I: inventario · R: rebuscar en la basura · Z: dormir donde estés
 - Q/E: girar la cámara · Rueda: zoom
 
+### El estado del personaje
+
+Arriba a la izquierda, las barras del cuerpo (pasa el ratón por encima para ver qué las mueve):
+**Salud**, **Hambre**, **Sueño**, **Mente** (salud mental), **Dignidad** y **Discreción**
+(lo poco que llamas la atención; vacía, la policía va a por ti). La etiqueta se pone roja
+cuando una barra está en zona de peligro. En los extremos pasan cosas: con el hambre al
+máximo te desmayas y despiertas en urgencias, con el sueño al máximo te quedas frito en la
+calle (y te pueden robar), con la mente a 0 te ingresan en el psiquiátrico.
+
+Abajo a la derecha, una fila por cada sustancia que conoces: colocón (arriba), mono (abajo,
+en rojo) y enganche (cifra). Cada perfil empieza conociendo alguna; probar una nueva es un
+hito de la caída. Debajo se listan los efectos que tienes ahora y su causa: el caballo te
+hace lento y balancea la cámara, la farlopa te acelera y la hace temblar, el porro estira
+el tiempo y acerca la cámara, el alcohol te hace andar en eses y responder tarde, las
+pastillas saturan los colores, la base da una euforia corta y un bajón brusco, y el mono
+trae temblores, viñeta roja y tropiezos.
+
 ## Datos reales
 
 | Qué | De dónde | Script |
@@ -34,15 +51,22 @@ python tools/make_textures.py
 ## Estructura
 
 - `game/scripts/defs.gd` — perfiles, sustancias, objetos, hitos y títulos (aquí se equilibra el juego)
-- `game/scripts/game_state.gd` — estadísticas, tiempo y puntuación de caída (autoload)
+- `game/scripts/game_state.gd` — estadísticas, sustancias (colocón, mono, enganche), consecuencias
+  de los extremos, efectos activos (`effects()`), tiempo y puntuación de caída (autoload)
 - `game/scripts/interactions.gd` — qué se puede hacer con cada bot y en cada lugar
-- `game/scripts/world.gd` — escena de juego, entrada, eventos del barrio
+- `game/scripts/world.gd` — escena de juego, entrada, eventos del barrio y cómo los efectos
+  cambian la cámara y el movimiento
+- `game/scripts/ui/hud.gd` — barras, panel de sustancias y efectos, registro, menús
+- `game/shaders/vignette.gdshader` — filtro de pantalla con los efectos (mono, pastillas, sueño, túnel...)
 - `game/scripts/city/` — mapa 3D: suelo, edificios extruidos (`building_mesher.gd`), monumentos, placas de calle y árboles (`city_props.gd`), carteles
 - `game/shaders/building.gdshader` — fachadas caricaturizadas, ventanas encendidas de noche y rayos X
 - Los monumentos con modelo propio se configuran en `LANDMARKS` (`tools/build_map.py`) y `CityProps.building_extra`
 - `game/scripts/actors/` — personajes (jugador y bots comparten `Actor`)
-- `game/tests/smoke.gd` — ejecuta todas las acciones con los 6 perfiles:
+- `game/tests/smoke.gd` — ejecuta todas las acciones con los 6 perfiles, cada sustancia y
+  los extremos de hambre, sueño y salud mental; termina con `OK` o el número de fallos:
   `godot --headless --path game --script res://tests/smoke.gd`
+- `game/tests/screenshot.gd` — capturas sin abrir el editor; el sexto argumento consume
+  sustancias antes (p. ej. `... -- res://scenes/world.tscn shot.png parado "" 12 caballo,litrona`)
 
 Al exportar el juego, añade `*.json` al filtro de recursos que no son de Godot
 para que se incluyan los datos de `game/data/`.

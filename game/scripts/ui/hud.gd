@@ -1,23 +1,39 @@
 class_name Hud
 extends CanvasLayer
-## Interfaz de la partida: barras, reloj, caída, registro de mensajes,
-## menú de acciones, inventario y pantalla final. Se construye por código.
+## Interfaz de la partida: barras, reloj, caída, registro de mensajes, sustancias con su
+## colocón y su mono, efectos activos, menú de acciones, inventario y pantalla final.
+## Se construye por código.
 
 signal menu_closed
 signal restart_requested
 signal use_item_requested(id: String)
 
+## [variable de GameState, etiqueta, color, si es mala cuando sube, explicación]
 const BARS := [
-	["health", "Salud", Color("4fbf5a")],
-	["mono", "Mono", Color("d0443a")],
-	["high", "Colocón", Color("b05ad0")],
-	["dignity", "Dignidad", Color("4a8ad0")],
-	["addiction", "Enganche", Color("d08a3a")],
-	["heat", "Policía", Color("5a6ab0")],
+	["health", "Salud", Color("4fbf5a"), false,
+		"Baja con el mono, el hambre, las peleas y los excesos. A 0 te mueres."],
+	["hunger", "Hambre", Color("d0a040"), true,
+		"Sube con las horas (el porro abre el apetito; la farlopa y la base lo quitan). Baja comiendo. Al 100 te desmayas."],
+	["fatigue", "Sueño", Color("8a7ad8"), true,
+		"Sube despierto (el caballo y el alcohol dan sueño; la farlopa lo esconde y luego pasa factura). Baja durmiendo, mejor en una cama. Al 100 te quedas frito donde estés."],
+	["sanity", "Mente", Color("5ac0c0"), false,
+		"Salud mental. Baja al perder dignidad, con el mono, el hambre, el sueño y los bajones; sube con trato humano y descanso. A 0, ingreso en el psiquiátrico."],
+	["dignity", "Dignidad", Color("4a8ad0"), false,
+		"Cada punto perdido es un punto de caída. Por debajo de 30 llamas más la atención."],
+	["discretion", "Discreción", Color("7a8ab8"), false,
+		"Lo poco que llamas la atención. Baja al robar, pelear o consumir a la vista, y con tu aspecto (colocón, mono, mala pinta). Vacía, la policía va a por ti."],
 ]
+const DANGER := 75.0  ## a partir de aquí (en el lado malo) la etiqueta se pone roja
+const C_DANGER := Color("ff6a5a")
 const MAX_LOG := 9
 
 var _bars := {}
+var _bar_labels := {}
+var _subs_panel: PanelContainer
+var _subs_box: VBoxContainer
+var _sub_rows := {}  ## id -> {"row", "label", "high" (barra), "mono" (barra), "addiction" (cifra)}
+var _fx_label: RichTextLabel
+var _fx_text := ""
 var _name_label: Label
 var _money_label: Label
 var _clock_label: Label
@@ -48,6 +64,7 @@ func _ready() -> void:
 	add_child(_vignette)
 
 	_build_stats()
+	_build_subs()
 	_build_log()
 	_build_help()
 	_build_street()
@@ -90,24 +107,19 @@ func _build_stats() -> void:
 	v.add_child(_clock_label)
 	for b in BARS:
 		var row := HBoxContainer.new()
+		row.tooltip_text = b[4]
 		var l := Label.new()
 		l.text = b[1]
 		l.custom_minimum_size.x = 84
 		l.add_theme_font_size_override("font_size", 15)
+		l.mouse_filter = Control.MOUSE_FILTER_PASS
 		row.add_child(l)
-		var bar := ProgressBar.new()
-		bar.custom_minimum_size = Vector2(160, 12)
-		bar.show_percentage = false
-		bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		var fill := StyleBoxFlat.new()
-		fill.bg_color = b[2]
-		bar.add_theme_stylebox_override("fill", fill)
-		var bg := StyleBoxFlat.new()
-		bg.bg_color = Color(0.2, 0.2, 0.2)
-		bar.add_theme_stylebox_override("background", bg)
+		var bar := _bar(b[2], Vector2(160, 12))
+		bar.mouse_filter = Control.MOUSE_FILTER_PASS
 		row.add_child(bar)
 		v.add_child(row)
 		_bars[b[0]] = bar
+		_bar_labels[b[0]] = l
 	_money_label = Label.new()
 	v.add_child(_money_label)
 	_caida_label = Label.new()
@@ -118,6 +130,84 @@ func _build_stats() -> void:
 	_title_label.add_theme_font_size_override("font_size", 15)
 	_title_label.add_theme_color_override("font_color", Color("b8a0c8"))
 	v.add_child(_title_label)
+
+
+func _bar(color: Color, min_size: Vector2) -> ProgressBar:
+	var bar := ProgressBar.new()
+	bar.custom_minimum_size = min_size
+	bar.show_percentage = false
+	bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var fill := StyleBoxFlat.new()
+	fill.bg_color = color
+	bar.add_theme_stylebox_override("fill", fill)
+	var bg := StyleBoxFlat.new()
+	bg.bg_color = Color(0.2, 0.2, 0.2)
+	bar.add_theme_stylebox_override("background", bg)
+	return bar
+
+
+## Panel de abajo a la derecha: una fila por sustancia conocida (colocón arriba, mono abajo,
+## enganche en cifra) y la lista de efectos activos con su causa.
+func _build_subs() -> void:
+	_subs_panel = _panel(Vector2(330, 0))
+	_subs_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_subs_panel)
+	var v := VBoxContainer.new()
+	_subs_panel.add_child(v)
+	var head := Label.new()
+	head.text = "Sustancias · colocón / mono · enganche"
+	head.add_theme_font_size_override("font_size", 14)
+	head.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
+	v.add_child(head)
+	_subs_box = VBoxContainer.new()
+	_subs_box.add_theme_constant_override("separation", 3)
+	v.add_child(_subs_box)
+	_fx_label = RichTextLabel.new()
+	_fx_label.bbcode_enabled = true
+	_fx_label.fit_content = true
+	_fx_label.scroll_active = false
+	_fx_label.custom_minimum_size = Vector2(314, 0)
+	_fx_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_fx_label.add_theme_font_size_override("normal_font_size", 14)
+	v.add_child(_fx_label)
+
+
+func _add_sub_row(id: String) -> void:
+	var d: Dictionary = Defs.SUBSTANCES[id]
+	var row := HBoxContainer.new()
+	row.tooltip_text = "%s. Arriba, el colocón: %s. Abajo, el mono: sube sin tomarla si estás enganchado (%s)." % [
+		d["name"], d["fx_text"], Defs.MONO_FX_TEXT]
+	var l := Label.new()
+	l.text = d["name"]
+	l.custom_minimum_size.x = 84
+	l.add_theme_font_size_override("font_size", 15)
+	l.add_theme_color_override("font_color", d["color"])
+	l.mouse_filter = Control.MOUSE_FILTER_PASS
+	row.add_child(l)
+	var bars := VBoxContainer.new()
+	bars.add_theme_constant_override("separation", 2)
+	bars.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var high := _bar(d["color"], Vector2(180, 7))
+	var mono := _bar(Color("d0443a"), Vector2(180, 7))
+	for bar in [high, mono]:
+		bar.mouse_filter = Control.MOUSE_FILTER_PASS
+		bars.add_child(bar)
+	row.add_child(bars)
+	var a := Label.new()
+	a.custom_minimum_size.x = 34
+	a.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	a.add_theme_font_size_override("font_size", 13)
+	a.add_theme_color_override("font_color", Color("d08a3a"))
+	a.mouse_filter = Control.MOUSE_FILTER_PASS
+	row.add_child(a)
+	_subs_box.add_child(row)
+	_sub_rows[id] = {"row": row, "high": high, "mono": mono, "addiction": a, "label": l}
+
+
+func _place_subs() -> void:
+	_subs_panel.reset_size()
+	var screen := get_viewport().get_visible_rect().size
+	_subs_panel.position = screen - _subs_panel.size - Vector2(10, 10)
 
 
 func _build_log() -> void:
@@ -201,20 +291,68 @@ func refresh() -> void:
 		return
 	_name_label.text = "%s · %s" % [gs.profile["name"], gs.profile["title"]]
 	_clock_label.text = gs.clock_text() + ("  (noche)" if gs.is_night() else "")
-	for key in _bars:
-		_bars[key].value = gs.get(key)
+	for b in BARS:
+		var value: float = gs.get(b[0])
+		_bars[b[0]].value = value
+		var bad := value if b[3] else 100.0 - value
+		_bar_labels[b[0]].add_theme_color_override("font_color", C_DANGER if bad >= DANGER else Color.WHITE)
+	_refresh_subs()
 	var money_text := "Dinero: %d €   Banco: %d €" % [gs.money, gs.bank]
 	if gs.debt > 0:
 		money_text += "   Debes: %d €" % gs.debt
 	_money_label.text = money_text
 	_caida_label.text = "CAÍDA: %d" % int(gs.caida)
 	_title_label.text = Defs.title_for(gs.caida)
-	var mat := _vignette.material as ShaderMaterial
-	mat.set_shader_parameter("mono", clampf((gs.mono - 50.0) / 50.0, 0.0, 1.0))
-	mat.set_shader_parameter("high", clampf((gs.high - 30.0) / 70.0, 0.0, 1.0))
 	# refresh() se llama cada frame; reconstruir los botones siempre impediría pulsarlos
 	if _inventory.visible and str(gs.inventory) != _inventory_shown:
 		_fill_inventory()
+
+
+func _refresh_subs() -> void:
+	var gs := GameState
+	var added := false
+	for id in Defs.SUBSTANCES:  # en el orden de Defs, no en el de descubrimiento
+		if gs.knows(id) and not _sub_rows.has(id):
+			_add_sub_row(id)
+			added = true
+	if added:
+		for id in Defs.SUBSTANCES:
+			if _sub_rows.has(id):
+				_subs_box.move_child(_sub_rows[id]["row"], -1)
+	for id in _sub_rows:
+		var s: Dictionary = gs.subs.get(id, {})
+		if s.is_empty():  # partida nueva con otro perfil
+			continue
+		var r: Dictionary = _sub_rows[id]
+		r["high"].value = s["high"]
+		r["mono"].value = s["mono"]
+		r["addiction"].text = "%d" % s["addiction"]
+		r["label"].add_theme_color_override("font_color",
+			C_DANGER if s["mono"] >= DANGER else Defs.SUBSTANCES[id]["color"])
+	_subs_panel.visible = not _sub_rows.is_empty()
+	_place_subs()
+
+
+## Efectos en pantalla (shader) y lista de lo que te está pasando y por qué.
+func show_effects(effects: Dictionary) -> void:
+	var fx: Dictionary = effects["fx"]
+	var mat := _vignette.material as ShaderMaterial
+	mat.set_shader_parameter("mono", clampf(fx.get("mono", 0.0), 0.0, 1.0))
+	mat.set_shader_parameter("high", fx.get("high", 0.0))
+	mat.set_shader_parameter("saturate", clampf(fx.get("saturate", 0.0), 0.0, 1.5))
+	mat.set_shader_parameter("drowsy", clampf(fx.get("drowsy", 0.0), 0.0, 1.0))
+	mat.set_shader_parameter("tunnel", clampf(fx.get("tunnel", 0.0), 0.0, 1.0))
+	mat.set_shader_parameter("paranoia", clampf(fx.get("paranoia", 0.0), 0.0, 1.0))
+	mat.set_shader_parameter("double_vision", clampf(fx.get("double", 0.0), 0.0, 1.0))
+	mat.set_shader_parameter("glow", clampf(fx.get("glow", 0.0), 0.0, 1.0))
+	var lines := []
+	for c in effects["causes"]:
+		lines.append("[color=#%s]• %s[/color]" % [c[1].to_html(false), c[0]])
+	var text := "\n".join(lines) if not lines.is_empty() else "[color=#808080]Ahora mismo estás sobrio. Más o menos.[/color]"
+	if text != _fx_text:
+		_fx_text = text
+		_fx_label.text = text
+		_place_subs()
 
 
 func add_message(text: String, color: Color) -> void:
@@ -299,7 +437,7 @@ func _fill_inventory() -> void:
 			verb = "Comer"
 		elif id == "cartera":
 			verb = "Vaciar"
-		if verb != "":
+		if Defs.usable(id):
 			var b := Button.new()
 			b.text = verb
 			var item_id: String = id

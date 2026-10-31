@@ -25,7 +25,7 @@ interesan si cambian algo en la partida (pistas, tratos, sitios marcados, enemis
    - [x] Medianeras y paredes de patio ciegas (sin ventanas sueltas sobre los tejados)
    - [ ] Pendiente de valorar: con el barrio completo, desde la cámara se ven sobre todo
      tejados; quizá bajar más la altura de los edificios (`LEVEL_SCALE`)
-2. **Estado del personaje** (barras y efectos de las sustancias) — siguiente
+2. **Estado del personaje** (barras y efectos de las sustancias) — hecho lo básico (rama `feat/estado-personaje`)
 3. **Personajes nuevos** basados en lo que se documenta del barrio, según hora y zona
 4. **Prototipo de conversación con IA local** (Ollama, 3–4 personajes)
 5. **Compromisos con plazo y memoria poco fiable** → base de las misiones
@@ -33,22 +33,33 @@ interesan si cambian algo en la partida (pistas, tratos, sitios marcados, enemis
 
 ## 2. Estado del personaje
 
-- Barras nuevas:
-  - **Hambre**
-  - **Discreción** (cuánto llamas la atención; quizá unificar con la de Policía actual)
-- **Una barra por sustancia con dos indicadores: consumo (colocón) y mono.**
-  - Aparecen a medida que el personaje conoce cada sustancia; según el perfil, algunas
+- [x] Barras nuevas:
+  - [x] **Hambre**: sube con las horas (el porro la acelera; farlopa y base la frenan). Al 100, desmayo y urgencias.
+  - [x] **Discreción**: unificada con la de Policía (es su inverso). Motivo: las dos medían
+    lo mismo para el jugador ("cuánto me mira la poli") y dos barras casi iguales estorban
+    en el malabarismo. Lo nuevo es que tu aspecto (colocón a la vista, mono, mala pinta,
+    hablar solo) pone un suelo a lo que llamas la atención, por debajo del umbral de
+    persecución: basta un pequeño desliz para que vayan a por ti. Vacía, te ven desde lejos.
+- [x] **Una barra por sustancia con dos indicadores: consumo (colocón) y mono** (más el enganche en cifra).
+  - [x] Aparecen a medida que el personaje conoce cada sustancia; según el perfil, algunas
     vienen ya activas desde el principio (y con mono si procede).
-  - Conocer una sustancia nueva es un hito de la caída.
-- **Cada sustancia afecta a la cámara y al movimiento** de forma distinta, y el mono también:
-  - Caballo: la cámara oscila (ya existe) y vas lento.
-  - Ideas por desarrollar: farlopa → aceleras y la cámara tiembla; porro → todo más lento
-    y con zoom; alcohol → andas haciendo eses y tarda en responder; pastillas → colores
-    saturados; base → euforia corta y bajón brusco.
-  - Mono: temblor de cámara, viñeta, torpeza al andar.
-- **Sueño**: muy afectada por el consumo y, claro, por dormir.
-- **Salud mental**: afectada por las experiencias, la dignidad, el consumo...
-- Las barras deben explicar por qué la cámara y el movimiento cambian.
+  - [x] Conocer una sustancia nueva es un hito de la caída.
+- [x] **Cada sustancia afecta a la cámara y al movimiento** de forma distinta, y el mono también:
+  - [x] Caballo: la cámara oscila y vas lento (y te entra sueño).
+  - [x] Farlopa → aceleras y la cámara tiembla; porro → el tiempo se estira y la cámara se
+    acerca; alcohol → eses (también andando por clic), respuesta con retraso y visión doble;
+    pastillas → colores saturados; base → euforia corta (brillo, velocidad) y bajón brusco.
+  - [x] Mono: temblor de cámara, viñeta roja, tropiezos.
+- [x] **Sueño**: muy afectado por el consumo (caballo y alcohol dan sueño; con farlopa o base
+  no pegas ojo) y por dónde duermes (albergue > cajero > banco > suelo). Al 100 te quedas frito en la calle.
+- [x] **Salud mental**: baja al perder dignidad, con mono, hambre, sueño y bajones; sube con
+  trato humano y descanso. Por debajo de 30 oyes voces; por debajo de 15 estallas (gritos,
+  peleas); a 0, ingreso de dos días en el psiquiátrico (al tercero, o al segundo de Mari Loli, no sales).
+  Las pastillas de Mari Loli son su medicación: le suben la salud mental.
+- [x] Las barras explican por qué la cámara y el movimiento cambian: lista de efectos activos
+  con su causa en el panel de sustancias, etiquetas en rojo en zona de peligro y explicación al pasar el ratón.
+- [ ] Pendiente: probar y ajustar el equilibrio jugando de verdad; que los extremos lleven a
+  situaciones más elaboradas (lesiones que duran, detenciones largas, peleas con bots reales).
 - **El núcleo del juego podría ser este malabarismo**: buscarse la vida para mantener un
   equilibrio casi imposible entre las barras. Los desequilibrios fuertes llevan a situaciones
   cada vez más difíciles: detenciones largas, ingresos en el psiquiátrico, lesiones por peleas...

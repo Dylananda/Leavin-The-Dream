@@ -5,13 +5,23 @@ class_name Defs
 ## Minutos de juego que pasan por cada segundo real.
 const GAME_MINUTES_PER_SECOND := 2.0
 
+## Ritmo del cuerpo, en puntos por minuto de juego (un día son 1440 minutos).
+const HUNGER_RATE := 0.05  ## el hambre llega a 100 en un día y medio sin comer
+const FATIGUE_RATE := 0.065  ## el sueño, en algo menos de un día despierto
+const SLEEP_RECOVERY := 0.25  ## sueño que se recupera durmiendo con calidad 1
+const HEAT_DECAY := 0.08  ## lo rápido que la policía se olvida de ti
+## Tope de lo que llamas la atención solo por tu aspecto: se queda por debajo
+## del umbral de persecución (40) para que sea la gota que colma el vaso.
+const MAX_EXPOSURE := 35.0
+
 const PROFILES := [
 	{
 		"id": "sin_papeles",
 		"name": "Youssef",
 		"title": "Sin papeles",
 		"desc": "Llegó en patera con un sueño. El sueño se quedó en Tarifa. Sin paro, sin pensión, sin nada que perder... salvo el país.",
-		"money": 15, "health": 85, "dignity": 70, "addiction": 10,
+		"money": 15, "health": 85, "dignity": 70, "sanity": 60,
+		"knows": {"porro": 10},
 		"income": {},
 		"perk": "Sabe ganarse la vida en la calle: los manteros le dan curro. Pero tres detenciones y lo deportan.",
 		"items": {"movil_roto": 1},
@@ -22,7 +32,8 @@ const PROFILES := [
 		"name": "Paco",
 		"title": "Parado de larga duración",
 		"desc": "52 años, 30 cotizando en una fábrica que ahora es un hotel boutique. Le queda el paro y la litrona de las once.",
-		"money": 60, "health": 65, "dignity": 60, "addiction": 25,
+		"money": 60, "health": 65, "dignity": 60, "sanity": 55,
+		"knows": {"litrona": 25, "porro": 5},
 		"income": {"amount": 150, "every_days": 3, "label": "el paro"},
 		"perk": "Cobra el paro cada 3 días en el cajero.",
 		"items": {"litrona": 1},
@@ -33,7 +44,8 @@ const PROFILES := [
 		"name": "Don Ramón",
 		"title": "Jubilado",
 		"desc": "Viudo, 71 años. Descubrió las tragaperras, después los carajillos, después lo demás. Los nietos ya no llaman.",
-		"money": 120, "health": 45, "dignity": 85, "addiction": 15,
+		"money": 120, "health": 45, "dignity": 85, "sanity": 50,
+		"knows": {"litrona": 15},
 		"income": {"amount": 220, "every_days": 4, "label": "la pensión"},
 		"perk": "La policía no sospecha de un abuelo. Da mucha pena pidiendo.",
 		"items": {"bocadillo": 1},
@@ -44,7 +56,8 @@ const PROFILES := [
 		"name": "Jordi",
 		"title": "Divorciado",
 		"desc": "Ella se quedó la casa, el perro y los amigos. Él se quedó un estudio en la calle del Carme y mucho tiempo libre.",
-		"money": 350, "health": 80, "dignity": 95, "addiction": 5,
+		"money": 350, "health": 80, "dignity": 95, "sanity": 55,
+		"knows": {"litrona": 5},
 		"income": {"amount": -80, "every_days": 4, "label": "la pensión alimenticia"},
 		"perk": "Empieza con ahorros y un anillo de boda que vender. Cada 4 días le cobran la pensión alimenticia.",
 		"items": {"anillo": 1, "movil": 1},
@@ -55,7 +68,8 @@ const PROFILES := [
 		"name": "Mari Loli",
 		"title": "Recién salida del psiquiátrico",
 		"desc": "Le dieron el alta, una receta y un 'cuídate, Loli'. Las voces dicen que el Raval es un buen sitio para empezar.",
-		"money": 30, "health": 70, "dignity": 50, "addiction": 20,
+		"money": 30, "health": 70, "dignity": 50, "sanity": 35,
+		"knows": {"pastillas": 20, "porro": 5},
 		"income": {},
 		"perk": "Recoge pastillas gratis en la farmacia cada 2 días. Oye voces.",
 		"items": {"pastillas": 2},
@@ -66,7 +80,8 @@ const PROFILES := [
 		"name": "Borja",
 		"title": "Niño bien de Pedralbes",
 		"desc": "Bajó al Raval 'a conocer la Barcelona auténtica'. Papá le pasa una paga. Tiene muchísima dignidad que perder.",
-		"money": 600, "health": 95, "dignity": 100, "addiction": 0,
+		"money": 600, "health": 95, "dignity": 100, "sanity": 85,
+		"knows": {"farlopa": 3, "litrona": 0},
 		"income": {"amount": 200, "every_days": 3, "label": "la paga de papá"},
 		"perk": "Papá le ingresa dinero... hasta que su dignidad baje de 40 y alguien se lo cuente.",
 		"items": {"movil": 1},
@@ -75,15 +90,59 @@ const PROFILES := [
 ]
 
 ## Efectos en el juego (no son datos reales):
-## high = colocón, addiction = enganche, health/dignity = cambios, od = riesgo de sobredosis.
+## high = colocón, addiction = enganche, health/dignity/sanity = cambios al tomarla,
+## od = riesgo de sobredosis, decay = colocón que se pierde por minuto,
+## hunger_rate/fatigue_rate = cómo cambian el hambre y el sueño mientras dura,
+## visible = cuánto se te nota (resta discreción), crash = bajón al acabarse,
+## relieves = sustancia cuyo mono calma (y "mono" lo que le quita).
+## fx = efectos en cámara y movimiento con el colocón al máximo; fx_text los explica en el HUD:
+##   speed (+ rápido / − lento), sway (la cámara oscila), shake (tiembla), zoom (+ cerca / − lejos),
+##   drift (eses al andar), lag (respondes tarde), double (visión doble), saturate (colores chillones),
+##   slowmo (el tiempo se estira), glow (todo brilla), drowsy (párpados), tunnel (bordes oscuros),
+##   clumsy (tropiezos), paranoia (aberración cromática).
 const SUBSTANCES := {
-	"litrona": {"name": "Litrona", "price": 2, "high": 15, "addiction": 1, "health": -1, "dignity": -1, "od": 0.0},
-	"porro": {"name": "Porro", "price": 4, "high": 15, "addiction": 1, "health": -1, "dignity": 0, "od": 0.0},
-	"pastillas": {"name": "Pastillas", "price": 3, "high": 22, "addiction": 3, "health": -3, "dignity": -1, "od": 0.2},
-	"farlopa": {"name": "Farlopa", "price": 30, "high": 35, "addiction": 4, "health": -4, "dignity": -2, "od": 0.3},
-	"base": {"name": "Base", "price": 10, "high": 40, "addiction": 9, "health": -6, "dignity": -6, "od": 0.5},
-	"caballo": {"name": "Caballo", "price": 15, "high": 55, "addiction": 8, "health": -8, "dignity": -5, "od": 1.0},
-	"metadona": {"name": "Metadona", "price": 0, "high": 8, "addiction": -2, "health": 0, "dignity": 0, "od": 0.0, "mono": -60},
+	"litrona": {"name": "Litrona", "price": 2, "high": 25, "addiction": 1.5, "health": -1, "dignity": -1, "sanity": 2, "od": 0.0,
+		"decay": 0.1, "fatigue_rate": 1.5, "visible": 0.3, "color": Color("d8b040"),
+		"fx": {"drift": 1.0, "lag": 0.8, "double": 0.7, "sway": 0.25}, "fx_text": "andas haciendo eses y reaccionas tarde"},
+	"porro": {"name": "Porro", "price": 4, "high": 25, "addiction": 1, "health": -1, "dignity": 0, "sanity": 2, "od": 0.0,
+		"decay": 0.12, "hunger_rate": 2.0, "fatigue_rate": 1.4, "visible": 0.2, "color": Color("6ab04a"),
+		"fx": {"zoom": 0.35, "slowmo": 1.0, "speed": -0.1}, "fx_text": "todo va más lento y lo ves de cerca"},
+	"pastillas": {"name": "Pastillas", "price": 3, "high": 25, "addiction": 3, "health": -3, "dignity": -1, "sanity": 3, "od": 0.2,
+		"decay": 0.1, "fatigue_rate": 1.3, "visible": 0.1, "color": Color("e06ab0"),
+		"fx": {"saturate": 1.0, "speed": -0.15}, "fx_text": "colores chillones y piernas de goma"},
+	"farlopa": {"name": "Farlopa", "price": 30, "high": 35, "addiction": 4, "health": -4, "dignity": -2, "sanity": 4, "od": 0.3,
+		"decay": 0.2, "hunger_rate": 0.2, "fatigue_rate": 0.2, "visible": 0.3, "color": Color("e8e8f0"),
+		"crash": {"minutes": 30, "sanity": -4, "mono": 8, "fatigue": 10},
+		"fx": {"speed": 0.4, "shake": 0.5}, "fx_text": "vas a toda leche y la vista te tiembla"},
+	"base": {"name": "Base", "price": 10, "high": 40, "addiction": 9, "health": -6, "dignity": -6, "sanity": 6, "od": 0.5,
+		"decay": 0.5, "hunger_rate": 0.2, "fatigue_rate": 0.3, "visible": 0.5, "color": Color("f0a040"),
+		"crash": {"minutes": 60, "sanity": -10, "mono": 20, "fatigue": 15},
+		"fx": {"speed": 0.3, "glow": 1.0, "zoom": -0.15}, "fx_text": "euforia: todo brilla (dura muy poco)"},
+	"caballo": {"name": "Caballo", "price": 15, "high": 55, "addiction": 8, "health": -8, "dignity": -5, "sanity": 3, "od": 1.0,
+		"decay": 0.1, "hunger_rate": 0.6, "fatigue_rate": 2.5, "visible": 0.3, "color": Color("c89a6a"),
+		"fx": {"speed": -0.45, "sway": 1.0, "drowsy": 0.35}, "fx_text": "vas lento y todo oscila"},
+	"metadona": {"name": "Metadona", "price": 0, "high": 8, "addiction": 1, "health": 0, "dignity": 0, "sanity": 2, "od": 0.0,
+		"decay": 0.02, "visible": 0.0, "color": Color("60a0c0"),
+		"relieves": "caballo", "mono": -60, "relief_addiction": 2,
+		"fx": {"speed": -0.1}, "fx_text": "te calma el mono del caballo"},
+}
+## Salud mental de Mari Loli al tomarse sus pastillas: para ella son medicación.
+const MEDS_SANITY := 10
+
+## Efectos del mono (de cualquier sustancia) y del bajón de las que tienen `crash`.
+const MONO_FX := {"shake": 0.35, "clumsy": 1.0, "speed": -0.2}
+const MONO_FX_TEXT := "temblores, viñeta roja y torpeza"
+const CRASH_FX := {"speed": -0.35, "tunnel": 1.0}
+const CRASH_FX_TEXT := "todo pesa y se oscurece"
+
+## Efectos del cuerpo cuando una barra pasa de `from` hacia `to` (intensidad 0..1).
+const BODY_FX := {
+	"fatigue": {"from": 60.0, "to": 100.0, "name": "Sueño", "text": "se te cierran los ojos y vas torpe",
+		"fx": {"drowsy": 1.0, "speed": -0.25}},
+	"hunger": {"from": 70.0, "to": 100.0, "name": "Hambre", "text": "flojera y visión de túnel",
+		"fx": {"speed": -0.2, "tunnel": 0.6}},
+	"sanity": {"from": 30.0, "to": 0.0, "name": "Salud mental", "text": "la realidad se descuadra y oyes cosas",
+		"fx": {"paranoia": 1.0}},
 }
 
 ## Lo que vende cada camello (el resto se consigue por otras vías).
@@ -96,9 +155,10 @@ const ITEMS := {
 	"anillo": {"name": "Anillo de boda", "sell": 60},
 	"cobre": {"name": "Cable de cobre", "sell": 8},
 	"gafas": {"name": "Gafas de sol de mantero", "sell": 1},
-	"bocadillo": {"name": "Bocadillo", "sell": 0, "food": 12},
-	"durum": {"name": "Dürüm", "sell": 0, "food": 18},
-	"sobras": {"name": "Sobras", "sell": 0, "food": 6},
+	## food = hambre que quita (y un poco de salud)
+	"bocadillo": {"name": "Bocadillo", "sell": 0, "food": 35},
+	"durum": {"name": "Dürüm", "sell": 0, "food": 50},
+	"sobras": {"name": "Sobras", "sell": 0, "food": 20},
 }
 
 ## Títulos finales según la caída acumulada.
@@ -124,10 +184,19 @@ const MILESTONES := {
 	"chivato": ["Chivarse a la policía", 15],
 	"papa_corta": ["Papá te corta el grifo", 25],
 	"pelea_perdida": ["Perder una pelea con otro yonki", 10],
-	"primer_caballo": ["Probar el caballo", 10],
-	"primera_base": ["Probar la base", 10],
 	"fondo": ["Tocar fondo (dignidad 0)", 50],
 	"deuda": ["Deber dinero a un camello", 10],
+	"desmayo": ["Desmayarte de hambre", 10],
+	"frito": ["Quedarte frito en plena calle", 10],
+	"psiquiatrico": ["Ingreso en el psiquiátrico", 30],
+	# conocer una sustancia nueva (las que ya conoce el perfil no cuentan)
+	"probar_litrona": ["Empezar a beber en la calle", 3],
+	"probar_porro": ["Probar los porros", 3],
+	"probar_pastillas": ["Probar las pastillas", 5],
+	"probar_farlopa": ["Probar la farlopa", 8],
+	"probar_base": ["Probar la base", 10],
+	"probar_caballo": ["Probar el caballo", 10],
+	"probar_metadona": ["Entrar en el programa de metadona", 5],
 }
 
 
@@ -144,6 +213,11 @@ static func item_name(id: String) -> String:
 	if ITEMS.has(id):
 		return ITEMS[id]["name"]
 	return id
+
+
+## Si un objeto del inventario se puede usar (meterse, comer, vaciar).
+static func usable(id: String) -> bool:
+	return SUBSTANCES.has(id) or ITEMS.get(id, {}).has("food") or id == "cartera"
 
 
 static func title_for(caida: float) -> String:

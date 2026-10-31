@@ -19,6 +19,7 @@ var look := {
 var accessory := ""  ## "", "gorra_poli", "mochila", "capucha", "chaleco"
 var slow_factor := 1.0
 var run_factor := 1.0  ## > 1 al correr (Shift)
+var wobble := 0.0  ## 0..1: eses al seguir un camino (alcohol)
 ## Movimiento directo (WASD) en el plano, de longitud 0..1. Mientras no es cero manda sobre `path`.
 var input_dir := Vector3.ZERO
 
@@ -101,8 +102,11 @@ func _process(delta: float) -> void:
 		if path.is_empty():
 			arrived.emit()
 	else:
-		position += to.normalized() * step
-		_face(to, delta)
+		var dir := to.normalized()
+		if wobble > 0.0:
+			dir = dir.rotated(Vector3.UP, sin(_walk_phase * 0.35) * 0.6 * wobble)
+		position += dir * step
+		_face(dir, delta)
 	_animate(delta, true)
 
 
