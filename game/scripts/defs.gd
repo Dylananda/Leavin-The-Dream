@@ -189,6 +189,9 @@ const MILESTONES := {
 	"desmayo": ["Desmayarte de hambre", 10],
 	"frito": ["Quedarte frito en plena calle", 10],
 	"psiquiatrico": ["Ingreso en el psiquiátrico", 30],
+	"trile": ["Picar en el trile", 5],
+	"aprendiz": ["Aprender el oficio de carterista", 10],
+	"despedida": ["Colarte en una despedida de soltero", 5],
 	# conocer una sustancia nueva (las que ya conoce el perfil no cuentan)
 	"probar_litrona": ["Empezar a beber en la calle", 3],
 	"probar_porro": ["Probar los porros", 3],

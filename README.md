@@ -29,6 +29,13 @@ el tiempo y acerca la cámara, el alcohol te hace andar en eses y responder tard
 pastillas saturan los colores, la base da una euforia corta y un bajón brusco, y el mono
 trae temblores, viñeta roja y tropiezos.
 
+### Quién anda por la calle
+
+Cada tipo de bot sale a sus horas y en su zona: de día, trileros y carteristas (vestidos
+de guiri) en la Rambla; por la tarde y la noche, chavales que esnifan cola por la Rambla
+del Raval y Sant Pau; de noche, despedidas de soltero y lateros junto a los bares. Los
+personajes nuevos tienen nombre e historia propia; las fuentes están en `docs/ideas.md`.
+
 ## Datos reales
 
 | Qué | De dónde | Script |
@@ -61,7 +68,8 @@ python tools/make_textures.py
 - `game/scripts/city/` — mapa 3D: suelo, edificios extruidos (`building_mesher.gd`), monumentos, placas de calle y árboles (`city_props.gd`), carteles
 - `game/shaders/building.gdshader` — fachadas caricaturizadas, ventanas encendidas de noche y rayos X
 - Los monumentos con modelo propio se configuran en `LANDMARKS` (`tools/build_map.py`) y `CityProps.building_extra`
-- `game/scripts/actors/` — personajes (jugador y bots comparten `Actor`)
+- `game/scripts/actors/` — personajes (jugador y bots comparten `Actor`); en `Npc.KINDS`,
+  cada tipo de bot con su horario, zona, disfraz e historias
 - `game/tests/smoke.gd` — ejecuta todas las acciones con los 6 perfiles, cada sustancia y
   los extremos de hambre, sueño y salud mental; termina con `OK` o el número de fallos:
   `godot --headless --path game --script res://tests/smoke.gd`

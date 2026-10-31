@@ -26,7 +26,7 @@ interesan si cambian algo en la partida (pistas, tratos, sitios marcados, enemis
    - [ ] Pendiente de valorar: con el barrio completo, desde la cámara se ven sobre todo
      tejados; quizá bajar más la altura de los edificios (`LEVEL_SCALE`)
 2. **Estado del personaje** (barras y efectos de las sustancias) — hecho lo básico (rama `feat/estado-personaje`)
-3. **Personajes nuevos** basados en lo que se documenta del barrio, según hora y zona
+3. **Personajes nuevos** basados en lo que se documenta del barrio, según hora y zona — hecho lo básico (rama `feat/personajes-nuevos`)
 4. **Prototipo de conversación con IA local** (Ollama, 3–4 personajes)
 5. **Compromisos con plazo y memoria poco fiable** → base de las misiones
 6. **Ciudad más grande y metro**
@@ -80,11 +80,36 @@ interesan si cambian algo en la partida (pistas, tratos, sitios marcados, enemis
 Investigar en prensa y estudios sobre el barrio y anotar las fuentes. Personajes con
 nombre, historia y motivos, no estereotipos por nacionalidad.
 
-- Gente de fiesta por la noche (despedidas, guiris, after hours)
-- Lateros que venden cerveza por la calle y esconden el alijo en alcantarillas o portales
-- Carteristas y trileros en la Rambla
-- Chavales que esnifan cola por las calles del Raval
-- (más por investigar)
+- [x] **Horarios y zonas**: cada tipo de bot tiene sus horas (`hours` en `Npc.KINDS`) y su
+  zona (`zone`: la Rambla, la Rambla del Raval y Sant Pau, o junto a los bares). Fuera de
+  su horario se van cuando no los ves. Los vecinos salen de 7 a 23 y las educadoras de calle de 9 a 21.
+- [x] Cada personaje nuevo tiene nombre e historia («Escuchar su historia»).
+- [x] **Despedidas de soltero** (22–5 h, junto a los bares): piden poco y dan mucho, te puedes unir
+  a la juerga, venderles gafas de mantero o robarles el móvil (si te pillan, paliza de grupo).
+  Las rutas de borrachera están prohibidas en Ciutat Vella desde 2012, pero siguen viniendo.
+  Fuentes: [Ara](https://es.ara.cat/sociedad/barcelona/noche-rutas-borrachera-prohibidas-barcelona-vegas-bro_130_5466856.html),
+  [The Local](https://www.thelocal.es/20250307/barcelona-keeps-banning-pub-crawls-but-is-it-really-working),
+  [betevé](https://beteve.cat/politica/barcelona-endurira-lluita-contra-ruta-turisme-borratxera/).
+- [x] **Lateros** (20–5 h, junto a los bares): latas a 1 €; puedes ayudarles a esconder el
+  alijo en una alcantarilla (y luego robárselo, con lo que te ganas un enemigo) o avisarles
+  de que viene la Urbana. Fuentes: [eldiario.es](https://www.eldiario.es/catalunya/xavier-trias-reconoce-obsesion-lateros_1_5782404.html)
+  (más de 700.000 latas requisadas), [Libertad Digital](https://www.libertaddigital.com/opinion/2009-12-18/david-jimenez-torres-lateros-5121488/) (las alcantarillas).
+- [x] **Trileros** (10–20 h, en la Rambla): apostar es perder (casi siempre); se gana algo
+  haciendo de gancho o de vigía. Fuentes: [betevé](https://beteve.cat/societat/mes-pressio-de-la-guardia-urbana-contra-els-trilers-a-la-rambla/),
+  [betevé, plan inspector](https://beteve.cat/societat/el-pla-inspector-de-la-rambla-nescombra-els-trilers-i-multa-mig-miler-de-motoristes/).
+- [x] **Carteristas** (9–21 h, en la Rambla): parecen turistas hasta que hablas con ellos
+  (`disguise`). Vacían por su cuenta los bolsillos de los guiris cercanos (luego a ti ya no te
+  queda nada que robarles); puedes hacerles de pantalla, pagarles para que te enseñen
+  (robas mejor a los turistas) o venderles carteras. Fuentes: [3Cat](https://www.3cat.cat/3catinfo/100-carteristes-actuen-cada-dia-al-metro-i-alguns-els-han-enxampat-fins-a-1000-cops/noticia/2935115/),
+  [NacióDigital](https://naciodigital.cat/societat/identificada-394-vegades-detinguda-27-i-denunciada-45-.html).
+- [x] **Chavales que esnifan cola** (15–3 h, Rambla del Raval y Sant Pau): menores; solo se les
+  puede ayudar (darles comida o un euro, llevarles con una educadora de calle cercana) o
+  preguntarles por la Urbana, nunca aprovecharse de ellos. Fuentes: [3Cat](https://www.3cat.cat/3catinfo/preocupacio-per-menors-que-esnifen-cola-des-de-fa-mesos-al-centre-de-barcelona/noticia/2726885/),
+  [eldiario.es](https://www.eldiario.es/catalunya/barcelona/jovenes-migrados-inhalan-plataforma-vecinal_1_3482411.html),
+  [betevé](https://beteve.cat/societat/ciutat-vella-nens-cola-dgaia-pla-pilot/).
+- [ ] Pendiente: las fuentes son en buena parte de hace años; comprobar cómo está hoy cada fenómeno.
+- [ ] Pendiente: que la policía requise latas y desmonte mesas de trile por su cuenta; grupos de
+  despedida que se muevan juntos; más personajes (after hours, narcopisos, aluminosis...).
 
 ## 4. Conversación con IA local
 

@@ -16,7 +16,8 @@ var display_name := ""
 var look := {
 	"skin": Color("d9a77c"), "shirt": Color.GRAY, "pants": Color.DIM_GRAY, "hair": Color.BLACK,
 }
-var accessory := ""  ## "", "gorra_poli", "mochila", "capucha", "chaleco"
+var accessory := ""  ## "", "gorra_poli", "mochila", "capucha", "chaleco", "despedida", "bolsa", "caja", "gorra"
+var body_size := 1.0  ## multiplicador de tamaño (los chavales son más bajos)
 var slow_factor := 1.0
 var run_factor := 1.0  ## > 1 al correr (Shift)
 var wobble := 0.0  ## 0..1: eses al seguir un camino (alcohol)
@@ -184,7 +185,7 @@ func _limb(parent: Node3D, size: Vector3, color: Color, pivot: Vector3) -> Node3
 
 func _build_body() -> void:
 	_body = Node3D.new()
-	_body.scale = Vector3.ONE * SCALE
+	_body.scale = Vector3.ONE * SCALE * body_size
 	add_child(_body)
 	var shirt: Color = look["shirt"]
 	_legs = [
@@ -214,6 +215,25 @@ func _build_body() -> void:
 		"chaleco":
 			_part(_body, CityProps.sphere(0.37), look["hair"], Vector3(0, 1.98, -0.04), Vector3(1, 0.55, 1))
 			_part(_body, CityProps.box(Vector3(0.66, 0.5, 0.4)), Color("f0d030"), Vector3(0, 1.2, 0))
+		"despedida":
+			# banda cruzada y diadema de despedida de soltero
+			_part(_body, CityProps.sphere(0.37), look["hair"], Vector3(0, 1.98, -0.04), Vector3(1, 0.55, 1))
+			var sash := _part(_body, CityProps.box(Vector3(0.18, 0.95, 0.4)), Color("fff0f8"), Vector3(0, 1.13, 0))
+			sash.rotation.z = deg_to_rad(40.0)
+			_part(_body, CityProps.sphere(0.1), Color("ff3c96"), Vector3(-0.18, 2.3, 0))
+			_part(_body, CityProps.sphere(0.1), Color("ff3c96"), Vector3(0.18, 2.3, 0))
+		"bolsa":
+			# bolsa de plástico con las latas, colgando de la mano
+			_part(_body, CityProps.sphere(0.37), look["hair"], Vector3(0, 1.98, -0.04), Vector3(1, 0.55, 1))
+			_part(_body, CityProps.box(Vector3(0.34, 0.4, 0.22)), Color("f4f4ee"), Vector3(0.48, 0.62, 0))
+		"caja":
+			# la caja de cartón que hace de mesa del trile
+			_part(_body, CityProps.sphere(0.37), look["hair"], Vector3(0, 1.98, -0.04), Vector3(1, 0.55, 1))
+			_part(_body, CityProps.box(Vector3(0.7, 0.6, 0.5)), Color("b08850"), Vector3(0, 0.3, 0.6))
+		"gorra":
+			# gorra del revés
+			_part(_body, CityProps.cylinder(0.36, 0.38, 0.16), look["shirt"].lightened(0.3), Vector3(0, 2.1, 0))
+			_part(_body, CityProps.box(Vector3(0.4, 0.04, 0.26)), look["shirt"].lightened(0.2), Vector3(0, 2.04, -0.32))
 		_:
 			_part(_body, CityProps.sphere(0.37), look["hair"], Vector3(0, 1.98, -0.04), Vector3(1, 0.55, 1))
 

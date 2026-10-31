@@ -4,6 +4,7 @@ extends Node3D
 ## Gestiona el paso del tiempo, la cámara isométrica, la entrada y los eventos del barrio.
 
 ## Bots por tipo en un barrio "mediano"; se multiplican por el índice de criminalidad.
+## Solo salen a la calle en sus horas (Npc.KINDS[...]["hours"]).
 const BASE_NPCS := {
 	"turista": [40, ""],
 	"vecino": [25, ""],
@@ -12,7 +13,18 @@ const BASE_NPCS := {
 	"camello": [4, "vulnerables"],
 	"mantero": [3, "venta_ambulante"],
 	"educador": [4, ""],
+	"fiestero": [8, "locales"],
+	"latero": [3, "venta_ambulante"],
+	"trilero": [2, ""],
+	"carterista": [4, ""],
+	"chaval": [4, ""],
 }
+## Calles de cada zona de Npc.KINDS (nombres de OpenStreetMap).
+const ZONE_STREETS := {
+	"rambla": ["La Rambla"],
+	"rambla_raval": ["Rambla del Raval", "Carrer de Sant Pau", "Carrer d'en Robador"],
+}
+const DESPAWN_DISTANCE := 30  ## casillas: fuera de su horario se van cuando no los ves
 const PLAYER_SPEED := 18.0  ## metros por segundo
 const RUN_FACTOR := 1.7  ## multiplicador de velocidad con Shift
 const INTERACT_RANGE := 4  ## casillas
@@ -88,8 +100,9 @@ func _ready() -> void:
 	_place_markers()
 	for kind in BASE_NPCS:
 		_npc_targets[kind] = _target_count(kind)
-		for i in _npc_targets[kind]:
-			_spawn_npc(kind)
+		if Npc.active_at(kind, GameState.hour()):
+			for i in _npc_targets[kind]:
+				_spawn_npc(kind)
 
 	hud = Hud.new()
 	add_child(hud)
@@ -168,6 +181,33 @@ func _spawn_npc(kind: String) -> void:
 	npc.init_kind(kind)
 	npc.player = player
 	var home: Vector2i
+	var zone: String = Npc.KINDS[kind].get("zone", "")
+	if zone != "":
+		home = _zone_cell(zone)
+	else:
+		home = _default_home(kind)
+	npc.home = home
+	city.entities.add_child(npc)
+	npc.setup(city, city.random_walkable_near(home, 8))
+	npc.caught_player.connect(func(_n): arrest_player())
+	npcs.append(npc)
+
+
+## Casilla al azar de una zona: sus calles, o cerca de los bares para la noche.
+func _zone_cell(zone: String) -> Vector2i:
+	if zone == "bares":
+		var bars := city.pois_of_kind("bar")
+		if not bars.is_empty():
+			var b: Dictionary = bars.pick_random()
+			return city.random_walkable_near(Vector2i(b["x"], b["y"]), 6)
+	var cells: Array[Vector2i] = []
+	for street in ZONE_STREETS.get(zone, []):
+		cells.append_array(city.street_cells(street))
+	return cells.pick_random() if not cells.is_empty() else city.random_walkable()
+
+
+func _default_home(kind: String) -> Vector2i:
+	var home: Vector2i
 	match kind:
 		"camello":
 			home = _random_cell_of(CityMap.Cell.STREET)
@@ -188,11 +228,7 @@ func _spawn_npc(kind: String) -> void:
 			home = Vector2i(p["x"], p["y"])
 		_:
 			home = city.random_walkable()
-	npc.home = home
-	city.entities.add_child(npc)
-	npc.setup(city, city.random_walkable_near(home, 8))
-	npc.caught_player.connect(func(_n): arrest_player())
-	npcs.append(npc)
+	return home
 
 
 func _random_cell_of(type: int) -> Vector2i:
@@ -461,6 +497,7 @@ func _open_pending() -> void:
 	if target is Npc:
 		var npc := target as Npc
 		npc.stop()
+		npc.known = true
 		title = npc.label()
 		actions = interactions.for_npc(npc)
 	else:
@@ -594,6 +631,14 @@ func remove_random_npc(kind: String) -> void:
 	npc.queue_free()
 
 
+## Quita un bot de la calle al cabo de unos segundos (se va con alguien, se mete en un portal...).
+func remove_npc_later(npc: Npc, seconds: float) -> void:
+	npcs.erase(npc)
+	get_tree().create_timer(seconds, false).timeout.connect(func():
+		if is_instance_valid(npc):
+			npc.queue_free())
+
+
 func highlight_poi(poi: Dictionary) -> void:
 	for m in markers:
 		if m.poi == poi:
@@ -601,15 +646,25 @@ func highlight_poi(poi: Dictionary) -> void:
 			get_tree().create_timer(12.0, false).timeout.connect(func(): m.highlighted = false)
 
 
+## Repone los bots que faltan y retira, lejos de tu vista, los que ya no están en su horario.
 func _respawn() -> void:
+	var h := GameState.hour()
+	for npc in npcs.duplicate():
+		if not Npc.active_at(npc.kind, h) and npc.distance_to_cell(player.cell) > DESPAWN_DISTANCE and not npc.chasing:
+			npcs.erase(npc)
+			npc.queue_free()
 	for kind in _npc_targets:
-		var have := npcs.filter(func(n): return n.kind == kind).size()
-		if have < _npc_targets[kind]:
+		if not Npc.active_at(kind, h):
+			continue
+		var missing: int = _npc_targets[kind] - npcs.filter(func(n): return n.kind == kind).size()
+		for i in mini(missing, ceili(_npc_targets[kind] / 4.0)):
 			_spawn_npc(kind)
 
 
-## Eventos del barrio: peleas entre yonkis y yonkis que vienen a pedirte.
+## Eventos del barrio: peleas entre yonkis, yonkis que vienen a pedirte y carteristas trabajando.
 func _random_event() -> void:
+	if randf() < 0.2 and pickpocket_event():
+		return
 	var yonkis := npcs.filter(func(n): return n.kind == "yonki")
 	if yonkis.is_empty():
 		return
@@ -633,6 +688,23 @@ func _random_event() -> void:
 			if npc.kind == "policia" and npc.distance_to_cell(a.cell) < 80:
 				npc.walk_to(a.cell)
 				break
+
+
+## Un carterista le vacía el bolsillo a un turista cercano (que luego ya no tiene nada que robarle).
+## Devuelve false si no hay a quién.
+func pickpocket_event() -> bool:
+	for thief in npcs.filter(func(n): return n.kind == "carterista").duplicate():
+		for victim in npcs:
+			if victim.kind in ["turista", "fiestero"] and not victim.robbed and victim.distance_to_cell(thief.cell) < 60:
+				victim.robbed = true
+				thief.money += victim.money
+				victim.money = 0
+				thief.walk_to(victim.cell)
+				if victim.distance_to_cell(player.cell) < 20:
+					victim.say(["My wallet!", "¿Y mi móvil?", "Where is my bag?!"].pick_random(), 4.0)
+					GameState.log_msg("A un guiri le acaban de vaciar el bolsillo cerca de %s. No has sido tú." % city.street_name_near(victim.cell))
+				return true
+	return false
 
 
 func _exit_tree() -> void:

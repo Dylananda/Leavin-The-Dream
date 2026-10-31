@@ -12,6 +12,16 @@ func _initialize() -> void:
 		await process_frame
 		await process_frame
 		var world = current_scene
+		# los que no salen a esta hora (despedidas, lateros...) se crean a mano para probarlos
+		for kind in world.BASE_NPCS:
+			if world.npcs.filter(func(n): return n.kind == kind).is_empty():
+				world._spawn_npc(kind)
+		for npc in world.npcs:
+			npc.known = true
+		var thief = world.npcs.filter(func(n): return n.kind == "carterista")[0]
+		var guiri = world.npcs.filter(func(n): return n.kind == "turista" and not n.robbed)[0]
+		guiri.setup(world.city, thief.cell)
+		_check(world.pickpocket_event(), "los carteristas no roban a nadie")
 		var counts := {}
 		for npc in world.npcs:
 			counts[npc.kind] = counts.get(npc.kind, 0) + 1
