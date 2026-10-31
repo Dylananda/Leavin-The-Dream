@@ -5,7 +5,11 @@ extends Actor
 
 signal caught_player(npc: Npc)
 
-## speed en metros por segundo; wander en casillas (2 m)
+## speed en metros por segundo; wander en casillas (2 m).
+## hours = [desde, hasta) en horas del día (puede pasar de medianoche); sin hours, a todas horas.
+## zone = dónde viven: "rambla", "rambla_raval", "bares" (ver World._spawn_npc).
+## disguise = cómo se le ve hasta que hablas con él; bios = historia de cada nombre.
+## Los tipos nuevos se basan en fenómenos documentados del barrio (fuentes en docs/ideas.md).
 const KINDS := {
 	"turista": {
 		"label": "Turista", "speed": 10.4, "wander": 80, "accessory": "mochila",
@@ -28,12 +32,12 @@ const KINDS := {
 		"lines": ["¿Tienes un euro, primo?", "Ayer vi a Dios en un cajero", "Esto antes era otra cosa", "¿Fuego?"],
 	},
 	"educador": {
-		"label": "Educadora social", "speed": 11.2, "wander": 60, "accessory": "chaleco",
+		"label": "Educadora social", "speed": 11.2, "wander": 60, "accessory": "chaleco", "hours": [9, 21],
 		"names": ["Núria", "Marc", "Laia", "Oriol"],
 		"lines": ["¿Has pasado por el Baluard?", "Si necesitas algo, aquí estamos", "¿Has comido hoy?"],
 	},
 	"vecino": {
-		"label": "Vecino", "speed": 9.6, "wander": 30, "accessory": "",
+		"label": "Vecino", "speed": 9.6, "wander": 30, "accessory": "", "hours": [7, 23],
 		"names": ["Sra. Pepita", "Sr. Antonio", "Fatima", "Rajesh", "Montse"],
 		"lines": ["¡Esto es una vergüenza!", "Que no se puede vivir", "Voy al mercado", "¡Ese portal no es un baño!"],
 	},
@@ -41,6 +45,64 @@ const KINDS := {
 		"label": "Mantero", "speed": 12.8, "wander": 20, "accessory": "",
 		"names": ["Moussa", "Ibrahima", "Lamine", "Cheikh"],
 		"lines": ["Gafas, bolsos, barato", "Amigo, mira", "¡Agua! ¡Water!"],
+	},
+	"fiestero": {
+		"label": "De despedida", "speed": 9.0, "wander": 25, "accessory": "despedida",
+		"hours": [22, 5], "zone": "bares",
+		"names": ["Dani", "Tom", "Lukas", "Chloe", "Marco", "Aitor", "Jess"],
+		"lines": ["¡Que se casa! ¡Que se casa!", "One more beer!", "¿Dónde está la fiesta?", "¡Uno más y nos vamos!", "*vomita en un portal*"],
+		"bios": {
+			"Dani": "Se casa el sábado en Valladolid. Sus amigos le han puesto una peluca rosa y le han hecho prometer que no llamará a su novia hasta el domingo.",
+			"Chloe": "Vuelo low cost desde Mánchester por 19 libras. Lleva una banda de «Bride to be» y no ha visto la Sagrada Familia ni de lejos.",
+			"Aitor": "Es el único sobrio del grupo: le toca devolverlos al apartamento turístico. Cuenta las horas.",
+		},
+	},
+	"latero": {
+		"label": "Latero", "speed": 10.0, "wander": 15, "accessory": "bolsa",
+		"hours": [20, 5], "zone": "bares",
+		"names": ["Shahid", "Imran", "Bilal", "Rafiq", "Nasir"],
+		"lines": ["¡Cerveza, beer!", "Un euro, amigo", "Fría, fría", "¿Cervezabeer?"],
+		"bios": {
+			"Shahid": "Estudió contabilidad. Lleva ocho años en Barcelona esperando papeles; manda a casa lo que saca y duerme cuatro horas.",
+			"Imran": "Fue cocinero en un restaurante del Born hasta que cerró. Las latas las guarda en una alcantarilla para que no se las requisen... ni se calienten.",
+			"Bilal": "Tiene diecinueve años y paga 150 € al mes por un colchón en un piso de la calle del Hospital. Su madre cree que trabaja en una tienda.",
+			"Rafiq": "Vino con un contrato de temporero en Lleida que nunca existió. Las latas son lo único que le salió.",
+			"Nasir": "La Guàrdia Urbana le ha quitado tantas latas que ya no las cuenta. Vuelve a por más al súper de enfrente.",
+		},
+	},
+	"trilero": {
+		"label": "Trilero", "speed": 12.0, "wander": 2, "accessory": "caja",
+		"hours": [10, 20], "zone": "rambla",
+		"names": ["El Profesor", "Pecas", "Ciri", "Manolo Cubiletes"],
+		"lines": ["¿Dónde está la bolita?", "¡Mira, mira, que gana!", "Cincuenta, doble o nada", "¡Agua! ¡Recoge!"],
+		"bios": {
+			"El Profesor": "Treinta años moviendo cubiletes en la Rambla. Dice que el truco no está en las manos, sino en los ganchos que fingen ganar.",
+			"Pecas": "Empezó de vigía con catorce años. Ahora tiene la mesa y dos chavales que le avisan de la Urbana.",
+		},
+	},
+	"carterista": {
+		"label": "Carterista", "speed": 11.5, "wander": 40, "accessory": "mochila", "disguise": "turista",
+		"hours": [9, 21], "zone": "rambla",
+		"names": ["Sandra", "Dedos", "Nico", "La Sombra", "Manu"],
+		"lines": ["Excuse me, the map...", "Perdona, ¿la Boqueria?", "Sorry, sorry"],
+		"bios": {
+			"Sandra": "Treinta y tantas detenciones y ninguna condena larga: robar menos de 400 € es delito leve. Lo sabe y lo cuenta riéndose.",
+			"Dedos": "Trabaja la Rambla por la mañana y el metro por la tarde. Va vestido de guiri, con mapa y todo.",
+			"La Sombra": "Le han prohibido entrar en el metro. Desde entonces se ha mudado a la Boqueria.",
+		},
+	},
+	"chaval": {
+		"label": "Chaval", "speed": 12.0, "wander": 30, "accessory": "gorra", "size": 0.8,
+		"hours": [15, 3], "zone": "rambla_raval",
+		"names": ["Anas", "Yassin", "Hamza", "Ilyas", "Omar"],
+		"lines": ["¿Tienes un cigarro?", "Un euro, hermano", "*huele a disolvente*", "No pasa nada, no pasa nada"],
+		"bios": {
+			"Anas": "Quince años. Se escapó de un centro de acogida y duerme en un portal de Sant Pau. Dice que la cola le quita el hambre y el frío.",
+			"Yassin": "Cruzó escondido bajo un camión para trabajar y mandar dinero a casa. Aquí nadie contrata a un menor.",
+			"Hamza": "Tiene un cuaderno donde apunta palabras en castellano. Va por la página doce.",
+			"Ilyas": "Las educadoras de calle le conocen por su nombre. Algunos días va con ellas; otros, no.",
+			"Omar": "Dieciséis años. Quiere ser mecánico. Cuando habla de motos se le olvida la bolsa.",
+		},
 	},
 }
 
@@ -55,6 +117,7 @@ var player: Actor
 var chasing := false
 var robbed := false  ## Ya le han robado (turistas)
 var last_interaction_day := -1
+var known := false  ## Ya has hablado con él (los disfrazados dejan de parecer lo que no son)
 
 var _idle := 0.0
 var _think := 0.0
@@ -68,6 +131,7 @@ func init_kind(p_kind: String) -> void:
 	speed = k["speed"]
 	wander_radius = k["wander"]
 	accessory = k["accessory"]
+	body_size = k.get("size", 1.0)
 	look = {
 		"skin": SKINS.pick_random(),
 		"shirt": Color.from_hsv(randf(), randf_range(0.2, 0.7), randf_range(0.35, 0.85)),
@@ -87,11 +151,40 @@ func init_kind(p_kind: String) -> void:
 			look["shirt"] = look["shirt"].darkened(0.4)
 		"educador":
 			look["shirt"] = Color("e07a30")
+		"fiestero":
+			money = randi_range(30, 120)
+			look["shirt"] = [Color("ff5fa0"), Color("f0f0f0"), Color("40c0f0")].pick_random()
+		"latero", "trilero":
+			money = randi_range(5, 30)
+		"carterista":
+			money = randi_range(20, 80)
+			look["shirt"] = Color.from_hsv(randf(), 0.6, 0.95)  # de guiri, como los turistas
+		"chaval":
+			money = randi_range(0, 3)
+			look["shirt"] = look["shirt"].darkened(0.3)
 	_idle = randf_range(0.0, 3.0)
 
 
 func label() -> String:
-	return "%s (%s)" % [display_name, KINDS[kind]["label"]]
+	var k: Dictionary = KINDS[kind]
+	if not known and k.has("disguise"):
+		return "%s (%s)" % [display_name, KINDS[k["disguise"]]["label"]]
+	return "%s (%s)" % [display_name, k["label"]]
+
+
+## Historia de este personaje, si la tiene.
+func bio() -> String:
+	return KINDS[kind].get("bios", {}).get(display_name, "")
+
+
+## Si los de este tipo andan por la calle a la hora `h`.
+static func active_at(p_kind: String, h: int) -> bool:
+	var hours: Array = KINDS[p_kind].get("hours", [])
+	if hours.is_empty():
+		return true
+	var from: int = hours[0]
+	var to: int = hours[1]
+	return (h >= from and h < to) if from < to else (h >= from or h < to)
 
 
 func _process(delta: float) -> void:

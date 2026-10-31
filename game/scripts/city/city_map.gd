@@ -199,6 +199,17 @@ func pois_of_kind(kind: String) -> Array:
 	return pois.filter(func(p): return p["kind"] == kind)
 
 
+## Casillas transitables de una calle (a partir de sus muestras); vacío si no está en el mapa.
+func street_cells(street: String) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	for s in streets:
+		if s["name"] == street:
+			var c := Vector2i(s["x"], s["y"])
+			if is_walkable(c):
+				out.append(c)
+	return out
+
+
 func street_name_near(cell: Vector2i, max_cells := 1e9) -> String:
 	var best := ""
 	var best_d := max_cells * max_cells

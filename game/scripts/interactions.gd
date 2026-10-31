@@ -34,15 +34,26 @@ func _heat(amount: float) -> void:
 # --------------------------------------------------------------------- bots
 
 func for_npc(npc: Npc) -> Array:
+	var acts: Array = []
 	match npc.kind:
-		"turista": return _turista(npc)
-		"camello": return _camello(npc)
-		"policia": return _policia(npc)
-		"yonki": return _yonki(npc)
-		"educador": return _educador(npc)
-		"vecino": return _vecino(npc)
-		"mantero": return _mantero(npc)
-	return []
+		"turista": acts = _turista(npc)
+		"camello": acts = _camello(npc)
+		"policia": acts = _policia(npc)
+		"yonki": acts = _yonki(npc)
+		"educador": acts = _educador(npc)
+		"vecino": acts = _vecino(npc)
+		"mantero": acts = _mantero(npc)
+		"fiestero": acts = _fiestero(npc)
+		"latero": acts = _latero(npc)
+		"trilero": acts = _trilero(npc)
+		"carterista": acts = _carterista(npc)
+		"chaval": acts = _chaval(npc)
+	if npc.bio() != "":
+		acts.append(_act("Escuchar su historia", func():
+			GameState.advance(15)
+			GameState.log_msg("%s: %s" % [npc.display_name, npc.bio()])
+			GameState.change_sanity(1)))
+	return acts
 
 
 func _turista(npc: Npc) -> Array:
@@ -76,6 +87,8 @@ func _rob_tourist(npc: Npc) -> void:
 	var gs := GameState
 	gs.advance(5)
 	var p := 0.6 - 0.12 * world.police_near(npc.cell, 20) + (0.1 if gs.is_night() else 0.0)
+	if "aprendiz" in gs.milestones:
+		p += 0.15  # un carterista te ha enseñado el oficio
 	if gs.high > 60.0:
 		p -= 0.15
 	if _chance(p):
@@ -296,6 +309,197 @@ func _mantero(npc: Npc) -> Array:
 			gs.add_money(-5)
 			gs.add_item("gafas")
 			npc.say("Ray-Ban, original")))
+	return acts
+
+
+func _fiestero(npc: Npc) -> Array:
+	var gs := GameState
+	var acts := [
+		_act("Pedirles para una cerveza", func():
+			gs.advance(5)
+			if npc.money > 0 and _chance(0.5 + _beg_bonus()):
+				var n := mini(npc.money, randi_range(2, 10))
+				npc.money -= n
+				gs.add_money(n)
+				npc.say("¡Toma, hombre! ¡Que se casa!")
+				gs.log_msg("Borrachos y generosos: %d €." % n, G.C_GOOD)
+			else:
+				npc.say("Bro, no tengo ni para el taxi")
+			gs.change_dignity(-2, "Pedirle a una despedida")),
+		_act("Unirte a la juerga (1 h)", func():
+			gs.advance(60)
+			gs.add_item("litrona")
+			gs.consume("litrona")
+			npc.say("¡Este tío es el mejor!")
+			gs.change_sanity(3)
+			gs.change_dignity(-3, "Bailar con una peluca rosa")
+			gs.milestone("despedida")),
+	]
+	if gs.has_item("gafas"):
+		acts.append(_act("Venderles unas gafas de mantero (10 €)", func():
+			gs.remove_item("gafas")
+			gs.add_money(10)
+			npc.say("Ray-Ban! Originals!")
+			gs.log_msg("Les vendes las gafas por el doble de lo que te costaron.", G.C_GOOD)))
+	if not npc.robbed:
+		acts.append(_act("Robarle el móvil", func():
+			gs.advance(5)
+			npc.robbed = true
+			if _chance(0.75 - 0.12 * world.police_near(npc.cell, 20)):
+				gs.add_item("movil")
+				_heat(15)
+				gs.log_msg("Va tan ciego que ni se entera.", G.C_GOOD)
+				gs.milestone("primer_robo")
+			else:
+				npc.say("OI! ¡Chicos, a por él!", 4.0)
+				_heat(40)
+				gs.change_health(-15, "Una paliza de despedida")
+				gs.log_msg("Sus colegas te rodean. Te llevas una buena.", G.C_BAD)
+			gs.change_dignity(-3)))
+	return acts
+
+
+func _latero(npc: Npc) -> Array:
+	var gs := GameState
+	var acts := []
+	if npc.has_meta("enemigo"):
+		npc.say("Tú no. Fuera.")
+		return acts
+	if gs.money >= 1:
+		acts.append(_act("Comprarle una lata (1 €)", func():
+			gs.add_money(-1)
+			gs.add_item("litrona")
+			npc.say("Fría, amigo")))
+	acts.append(_act("Ayudarle a esconder el alijo (1 h)", func():
+		gs.advance(60)
+		_heat(10)
+		gs.add_money(5)
+		npc.set_meta("alijo", true)
+		npc.say("Gracias. Aquí no lo encuentra la Urbana")
+		gs.log_msg("Bajáis las latas a una alcantarilla de %s. Te da 5 €." % world.city.street_name_near(npc.cell), G.C_GOOD)))
+	if npc.has_meta("alijo"):
+		acts.append(_act("Robarle el alijo de la alcantarilla", func():
+			gs.advance(10)
+			gs.add_item("litrona", 4)
+			npc.set_meta("enemigo", true)
+			npc.say("¡Ladrón! ¡Eso era para mi familia!", 4.0)
+			gs.log_msg("Cuatro latas. Él sabe perfectamente quién ha sido.", G.C_GOOD)
+			gs.change_dignity(-6, "Robarle a uno que está peor que tú")
+			gs.change_sanity(-3)))
+	if world.police_near(npc.cell, 25) > 0:
+		acts.append(_act("Avisarle de que viene la Urbana", func():
+			npc.say("¡Gracias, hermano! Toma, invita la casa")
+			gs.add_item("litrona")
+			gs.change_dignity(1, "Echar un cable")
+			npc.walk_to(world.city.random_walkable_near(npc.home, 30))))
+	return acts
+
+
+func _trilero(npc: Npc) -> Array:
+	var gs := GameState
+	var acts := []
+	if gs.money >= 10:
+		acts.append(_act("Apostar 10 € a la bolita", func():
+			gs.advance(5)
+			gs.milestone("trile")
+			# la bolita casi nunca está donde crees: solo «gana» el gancho
+			if _chance(0.08):
+				gs.add_money(10)
+				npc.say("¡Suerte de principiante!")
+				gs.log_msg("Ganas 10 €. Te dejan ganar para que vuelvas.", G.C_GOOD)
+			else:
+				gs.add_money(-10)
+				npc.say("Uy, casi. ¿Otra?")
+				gs.log_msg("Estabas seguro de que era la de la izquierda. Adiós, 10 €.", G.C_BAD)
+			gs.change_dignity(-1)))
+	acts.append(_act("Hacerle de gancho (1 h)", func():
+		gs.advance(60)
+		_heat(15)
+		var pay := randi_range(8, 15)
+		gs.add_money(pay)
+		gs.log_msg("Finges ganar una y otra vez para que piquen los guiris. %d €." % pay, G.C_GOOD)
+		gs.change_dignity(-3, "Engañar a los turistas")))
+	acts.append(_act("Hacerle de vigía (1 h)", func():
+		gs.advance(60)
+		if world.police_near(npc.cell, 30) > 0 and _chance(0.4):
+			_heat(30)
+			npc.say("¡Agua! ¡Recoge!", 3.0)
+			gs.log_msg("No has visto venir a la Urbana. %s recoge la caja y se larga sin pagarte." % npc.display_name, G.C_BAD)
+		else:
+			gs.add_money(6)
+			_heat(5)
+			gs.log_msg("Una hora mirando a los dos lados de la Rambla. 6 €.", G.C_GOOD)))
+	return acts
+
+
+func _carterista(npc: Npc) -> Array:
+	var gs := GameState
+	npc.say("Shhh. Tú no me has visto")
+	var acts := [
+		_act("Hacerle de pantalla (1 h)", func():
+			gs.advance(60)
+			if _chance(0.65 - 0.1 * world.police_near(npc.cell, 20)):
+				var n := randi_range(10, 35)
+				gs.add_money(n)
+				_heat(20)
+				gs.log_msg("Tú le preguntas por la Boqueria a una guiri; %s le vacía el bolso. Tu parte: %d €." % [npc.display_name, n], G.C_GOOD)
+				gs.milestone("primer_robo")
+			else:
+				_heat(60)
+				gs.log_msg("«¡Al ladrón!» %s se esfuma entre la gente. Tú no." % npc.display_name, G.C_BAD)
+			gs.change_dignity(-3)),
+	]
+	if not "aprendiz" in gs.milestones and gs.money >= 20:
+		acts.append(_act("Pagarle para que te enseñe (20 €)", func():
+			gs.add_money(-20)
+			gs.advance(120)
+			gs.milestone("aprendiz")
+			npc.say("Dos dedos, nunca tres. Y mira a los ojos")
+			gs.log_msg("Dos horas de clase en un banco de la Rambla. Ahora robas mejor a los turistas.", G.C_GOOD)))
+	if gs.has_item("cartera"):
+		acts.append(_act("Venderle la cartera con los papeles (12 €)", func():
+			gs.remove_item("cartera")
+			gs.add_money(12)
+			npc.say("Los pasaportes se pagan bien")
+			gs.change_dignity(-2)))
+	return acts
+
+
+## Los chavales que esnifan cola: solo se les puede ayudar (o no), nunca aprovecharse de ellos.
+func _chaval(npc: Npc) -> Array:
+	var gs := GameState
+	var acts := []
+	for food in ["bocadillo", "durum", "sobras"]:
+		if gs.has_item(food):
+			acts.append(_act("Darle tu %s" % Defs.item_name(food).to_lower(), func():
+				gs.remove_item(food)
+				npc.say("Gracias, hermano. De verdad")
+				gs.change_sanity(5)
+				gs.change_dignity(3, "Compartir lo poco que tienes")))
+			break
+	if gs.money >= 1:
+		acts.append(_act("Darle un euro", func():
+			gs.add_money(-1)
+			npc.money += 1
+			npc.say("Dios te lo pague")
+			gs.change_dignity(1)))
+	acts.append(_act("Preguntarle por la Urbana", func():
+		gs.advance(5)
+		npc.say("Hay dos en la plaza. Por aquí no pases")
+		gs.heat = maxf(0.0, gs.heat - 10.0)
+		gs.log_msg("Te dice por dónde patrulla la Urbana. Los chavales lo saben todo.", G.C_GOOD)))
+	var educators: Array = world.npcs.filter(func(n): return n.kind == "educador" and n.distance_to_cell(npc.cell) < 60)
+	if not educators.is_empty():
+		acts.append(_act("Llevarle con la educadora", func():
+			gs.advance(20)
+			var edu: Npc = educators[0]
+			edu.walk_to(npc.cell)
+			edu.say("¡%s! ¿Vienes a cenar?" % npc.display_name, 4.0)
+			npc.walk_to(edu.cell)
+			gs.log_msg("%s se va con %s. Hoy duerme bajo techo." % [npc.display_name, edu.display_name], G.C_GOOD)
+			gs.change_sanity(5)
+			gs.change_dignity(4, "Hacer algo bien por alguien")
+			world.remove_npc_later(npc, 4.0)))
 	return acts
 
 
