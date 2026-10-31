@@ -20,6 +20,7 @@ const CAMERA_PITCH := -40.0  ## grados; vista isométrica algo más cenital que 
 const CAMERA_DISTANCE := 160.0
 const ZOOM_RANGE := Vector2(10.0, 110.0)  ## tamaño ortográfico (metros de alto en pantalla)
 const PICK_RADIUS_PX := 28.0
+const WITNESS_KINDS := ["vecino", "turista"]  ## gente que se escandaliza si te ve consumiendo
 
 var city: CityMap
 var player: Actor
@@ -42,6 +43,11 @@ var _event_timer := 20.0
 var _respawn_timer := 30.0
 var _last_rummage := -999.0
 var _time := 0.0
+var _camera_zoom := 34.0  ## zoom elegido con la rueda; las sustancias lo alteran por encima
+var _fx := {}  ## efectos de GameState.effects() en este frame
+var _input_smooth := Vector3.ZERO  ## dirección de WASD con el retraso del alcohol
+var _stumble := 0.0  ## segundos que quedan de tropiezo
+var _stumble_timer := 3.0
 
 
 func _ready() -> void:
@@ -70,11 +76,12 @@ func _ready() -> void:
 
 	camera = Camera3D.new()
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
-	camera.size = 34.0
+	camera.size = _camera_zoom
 	camera.near = 1.0
 	camera.far = 600.0
 	add_child(camera)
 	_camera_focus = player.position
+	_fx = GameState.effects()
 	_update_camera(1.0)
 
 	interactions = Interactions.new(self)
@@ -92,6 +99,7 @@ func _ready() -> void:
 		get_tree().change_scene_to_file("res://scenes/main_menu.tscn"))
 	hud.use_item_requested.connect(use_item)
 	GameState.game_over.connect(_on_game_over)
+	GameState.relocated.connect(_on_relocated)
 
 	_intro()
 
@@ -201,8 +209,10 @@ func _process(delta: float) -> void:
 	_time += delta
 	if GameState.alive:
 		GameState.advance(delta * Defs.GAME_MINUTES_PER_SECOND)
-	_update_player_state()
-	_update_player_input()
+	_fx = GameState.effects()
+	hud.show_effects(_fx)
+	_update_player_state(delta)
+	_update_player_input(delta)
 	_update_camera(delta)
 	_update_daylight()
 	_update_xray()
@@ -221,31 +231,53 @@ func _process(delta: float) -> void:
 		_respawn()
 
 
-func _update_player_state() -> void:
-	var slow := 1.0
-	if GameState.mono > 70.0:
-		slow *= 0.7
-	if GameState.high > 80.0:
-		slow *= 0.75
+## Velocidad, eses, tropiezos y ritmo del tiempo según las sustancias, el mono y el cuerpo
+## (los efectos y sus intensidades vienen de GameState.effects() y se equilibran en Defs).
+func _update_player_state(delta: float) -> void:
+	var fx: Dictionary = _fx["fx"]
+	var slow := clampf(1.0 + fx.get("speed", 0.0), 0.35, 1.7)
+	# torpeza (mono): de vez en cuando tropiezas y casi te paras
+	_stumble = maxf(0.0, _stumble - delta)
+	var clumsy: float = fx.get("clumsy", 0.0)
+	if clumsy > 0.0 and (player.is_moving() or player.input_dir != Vector3.ZERO):
+		_stumble_timer -= delta * clumsy
+		if _stumble_timer <= 0.0:
+			_stumble_timer = randf_range(2.5, 6.0)
+			_stumble = 0.45
+			player.say(["¡Uy!", "Mierda...", "*tropieza*"].pick_random(), 1.0)
+	if _stumble > 0.0:
+		slow *= 0.15
 	player.slow_factor = slow
+	# andando por clic también se hacen eses
+	player.wobble = clampf(fx.get("drift", 0.0), 0.0, 1.0)
+	# el porro estira el tiempo: todo el barrio (y el reloj) va más lento
+	Engine.time_scale = lerpf(1.0, 0.6, clampf(fx.get("slowmo", 0.0), 0.0, 1.0))
 
 
 ## WASD (o las flechas) mueven al jugador respecto a la pantalla; Shift para correr.
-func _update_player_input() -> void:
+## Con alcohol la dirección se desvía (eses) y responde con retraso.
+func _update_player_input(delta: float) -> void:
+	var fx: Dictionary = _fx["fx"]
 	var v := Vector2.ZERO
 	if GameState.alive and not hud.is_menu_open():
 		v.x = float(_held(KEY_D, KEY_RIGHT)) - float(_held(KEY_A, KEY_LEFT))
 		v.y = float(_held(KEY_S, KEY_DOWN)) - float(_held(KEY_W, KEY_UP))
 	player.run_factor = RUN_FACTOR if Input.is_key_pressed(KEY_SHIFT) else 1.0
-	if v == Vector2.ZERO:
-		player.input_dir = Vector3.ZERO
-		return
-	_pending = null
-	# ejes de la cámara aplanados sobre el suelo: +X a la derecha de la pantalla, +Z hacia abajo
-	var b := camera.global_transform.basis
-	var right := Vector3(b.x.x, 0, b.x.z).normalized()
-	var down := Vector3(b.z.x, 0, b.z.z).normalized()
-	player.input_dir = (right * v.x + down * v.y).normalized()
+	var target := Vector3.ZERO
+	if v != Vector2.ZERO:
+		_pending = null
+		var drift := clampf(fx.get("drift", 0.0), 0.0, 1.0)
+		v = v.rotated((sin(_time * 0.9) * 0.7 + sin(_time * 2.3) * 0.3) * 0.8 * drift)
+		# ejes de la cámara aplanados sobre el suelo: +X a la derecha de la pantalla, +Z hacia abajo
+		var b := camera.global_transform.basis
+		var right := Vector3(b.x.x, 0, b.x.z).normalized()
+		var down := Vector3(b.z.x, 0, b.z.z).normalized()
+		target = (right * v.x + down * v.y).normalized()
+	var lag := clampf(fx.get("lag", 0.0), 0.0, 1.0)
+	_input_smooth = _input_smooth.lerp(target, minf(1.0, delta * lerpf(30.0, 2.5, lag)))
+	if target == Vector3.ZERO and _input_smooth.length() < 0.08:
+		_input_smooth = Vector3.ZERO
+	player.input_dir = _input_smooth
 
 
 func _held(letter: Key, arrow: Key) -> bool:
@@ -253,17 +285,25 @@ func _held(letter: Key, arrow: Key) -> bool:
 
 
 ## Cámara ortográfica que sigue al jugador; Q/E la giran de 90 en 90 grados.
-## Con mucho colocón la cámara se balancea.
+## Las sustancias la alteran: el caballo la balancea, la farlopa y el mono la hacen temblar,
+## el porro la acerca y la base la aleja.
 func _update_camera(delta: float) -> void:
+	var fx: Dictionary = _fx["fx"]
 	_camera_focus = _camera_focus.lerp(player.position, minf(1.0, delta * 6.0))
 	_camera_yaw = lerpf(_camera_yaw, _camera_yaw_target, minf(1.0, delta * 8.0))
-	var sway := clampf((GameState.high - 50.0) / 50.0, 0.0, 1.0)
+	var zoom := clampf(fx.get("zoom", 0.0), -0.5, 1.0)
+	camera.size = lerpf(camera.size, _camera_zoom * (1.0 - 0.35 * zoom), minf(1.0, delta * 3.0))
+	var sway := clampf(fx.get("sway", 0.0), 0.0, 1.5)
 	var yaw := deg_to_rad(_camera_yaw + sin(_time * 1.1) * 6.0 * sway)
 	var pitch := deg_to_rad(CAMERA_PITCH)
 	var dir := Vector3(sin(yaw) * cos(pitch), -sin(pitch), cos(yaw) * cos(pitch))
 	camera.position = _camera_focus + dir * CAMERA_DISTANCE
 	camera.look_at(_camera_focus, Vector3.UP)
 	camera.rotate_object_local(Vector3.FORWARD, sin(_time * 1.3) * 0.05 * sway)
+	var shake := clampf(fx.get("shake", 0.0), 0.0, 1.5)
+	if shake > 0.0:
+		var jitter := Vector3(sin(_time * 37.0) + sin(_time * 23.3), cos(_time * 31.0) + sin(_time * 19.7), 0.0)
+		camera.translate_object_local(jitter * shake * 0.004 * camera.size)
 
 
 ## Luz según la hora: sol que cruza el cielo, atardecer naranja, noche azul con ventanas encendidas.
@@ -354,9 +394,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			MOUSE_BUTTON_LEFT:
 				_on_click(event.position)
 			MOUSE_BUTTON_WHEEL_UP:
-				camera.size = clampf(camera.size / 1.12, ZOOM_RANGE.x, ZOOM_RANGE.y)
+				_camera_zoom = clampf(_camera_zoom / 1.12, ZOOM_RANGE.x, ZOOM_RANGE.y)
 			MOUSE_BUTTON_WHEEL_DOWN:
-				camera.size = clampf(camera.size * 1.12, ZOOM_RANGE.x, ZOOM_RANGE.y)
+				_camera_zoom = clampf(_camera_zoom * 1.12, ZOOM_RANGE.x, ZOOM_RANGE.y)
 	elif event is InputEventKey and event.pressed and not event.echo:
 		match event.keycode:
 			KEY_Q:
@@ -436,6 +476,8 @@ func _open_pending() -> void:
 # ------------------------------------------------------------------ acciones
 
 func use_item(id: String) -> void:
+	if not Defs.usable(id):
+		return
 	if id == "cartera":
 		GameState.remove_item("cartera")
 		var n := randi_range(5, 90)
@@ -443,9 +485,13 @@ func use_item(id: String) -> void:
 		GameState.log_msg("La cartera tenía %d €. Las fotos de sus hijos las tiras a la papelera." % n, GameState.C_GOOD)
 		GameState.change_dignity(-1)
 		return
-	if Defs.SUBSTANCES.has(id) and police_near(player.cell, 14) > 0:
-		GameState.heat = minf(100.0, GameState.heat + 35.0)
-		GameState.log_msg("Un agente te ha visto consumiendo en plena calle.", GameState.C_BAD)
+	if Defs.SUBSTANCES.has(id):
+		if police_near(player.cell, 14) > 0:
+			GameState.heat = minf(100.0, GameState.heat + 35.0)
+			GameState.log_msg("Un agente te ha visto consumiendo en plena calle.", GameState.C_BAD)
+		elif _witnesses_near(player.cell, 8) > 0:
+			GameState.heat = minf(100.0, GameState.heat + 10.0)
+			GameState.change_dignity(-2, "Te ven metiéndote en plena calle")
 	GameState.consume(id)
 
 
@@ -479,23 +525,16 @@ func _rummage() -> void:
 
 
 func _sleep_here() -> void:
-	sleep(6 * 60, 0.35, 10.0)
+	sleep(6 * 60, 0.35, 10.0, 0.5)
 	GameState.change_dignity(-5, "Dormir en el suelo de %s" % city.street_name_near(player.cell))
 	GameState.milestone("primera_calle")
 
 
-## Duerme `minutes` minutos. `robbery_risk` es la probabilidad de que te roben si llevas dinero.
-func sleep(minutes: float, robbery_risk: float, heal: float) -> void:
+## Duerme `minutes` minutos. `robbery_risk` es la probabilidad de que te roben si llevas dinero;
+## `quality` (0..1), lo que se descansa en ese sitio (ver GameState.rest).
+func sleep(minutes: float, robbery_risk: float, heal: float, quality: float) -> void:
 	player.stop()
-	GameState.advance(minutes)
-	if not GameState.alive:
-		return
-	GameState.change_health(heal)
-	GameState.log_msg("Duermes %d horas. Son las %02d:%02d." % [int(minutes / 60), GameState.hour(), int(GameState.minute_of_day) % 60])
-	if GameState.money > 0 and randf() < robbery_risk:
-		GameState.log_msg("Al despertar te faltan los %d € que llevabas." % GameState.money, GameState.C_BAD)
-		GameState.money = 0
-		GameState.change_dignity(-3)
+	GameState.rest(minutes, quality, robbery_risk, heal)
 
 
 func arrest_player() -> void:
@@ -512,6 +551,30 @@ func arrest_player() -> void:
 		var s: Dictionary = stations.pick_random()
 		player.setup(city, Vector2i(s["x"], s["y"]))
 		GameState.log_msg("Te sueltan en la puerta de la comisaría.")
+
+
+## Tras un desmayo o un ingreso apareces en otro sitio (por ahora, el centro de salud más cercano).
+func _on_relocated(place: String) -> void:
+	hud.close_menu()
+	_pending = null
+	player.stop()
+	var spots := city.pois_of_kind(place)
+	if spots.is_empty():
+		return
+	var best: Dictionary = spots[0]
+	for p in spots:
+		if player.distance_to_cell(Vector2i(p["x"], p["y"])) < player.distance_to_cell(Vector2i(best["x"], best["y"])):
+			best = p
+	player.setup(city, Vector2i(best["x"], best["y"]))
+	_camera_focus = player.position
+
+
+func _witnesses_near(cell: Vector2i, radius: int) -> int:
+	var n := 0
+	for npc in npcs:
+		if npc.kind in WITNESS_KINDS and npc.distance_to_cell(cell) <= radius:
+			n += 1
+	return n
 
 
 func police_near(cell: Vector2i, radius: int) -> int:
@@ -572,7 +635,12 @@ func _random_event() -> void:
 				break
 
 
+func _exit_tree() -> void:
+	Engine.time_scale = 1.0
+
+
 func _on_game_over(reason: String) -> void:
+	Engine.time_scale = 1.0
 	player.stop()
 	hud.close_menu()
 	hud.show_game_over(reason)

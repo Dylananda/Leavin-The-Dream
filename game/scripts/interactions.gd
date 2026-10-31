@@ -233,7 +233,8 @@ func _educador(npc: Npc) -> Array:
 		_act("Hablar un rato", func():
 			gs.advance(30)
 			npc.say("Cuídate, ¿vale?")
-			gs.mono = maxf(0.0, gs.mono - 5.0)
+			gs.ease_mono(5.0)
+			gs.change_sanity(5)
 			gs.change_dignity(4, "Alguien te trata como a una persona")),
 		_act("Preguntar dónde dan metadona", func():
 			var cas := world.city.pois_of_kind("cas")
@@ -372,7 +373,7 @@ func for_poi(poi: Dictionary) -> Array:
 					gs.log_msg("Sacas %d €." % gs.bank, G.C_GOOD)
 					gs.bank = 0))
 			acts.append(_act("Dormir en el cajero (7 h)", func():
-				world.sleep(7 * 60, 0.15, 25.0)
+				world.sleep(7 * 60, 0.15, 25.0, 0.7)
 				gs.change_dignity(-6, "Dormir entre recibos")
 				gs.milestone("cajero")))
 		"iglesia":
@@ -386,14 +387,16 @@ func for_poi(poi: Dictionary) -> Array:
 				gs.change_dignity(-2, "Pedir en la iglesia")))
 		"banco":
 			acts.append(_act("Dormir en el banco (6 h)", func():
-				world.sleep(6 * 60, 0.3, 15.0)
+				world.sleep(6 * 60, 0.3, 15.0, 0.6)
 				gs.change_dignity(-4, "Dormir al raso")
 				gs.milestone("primera_calle")))
 		"albergue":
 			if gs.hour() >= 19 or gs.hour() < 1:
 				acts.append(_act("Pasar la noche en el albergue", func():
 					var until_morning := (24 - gs.hour() + 8) % 24 * 60.0
-					world.sleep(until_morning, 0.0, 35.0)
+					gs.eat(40.0)
+					gs.log_msg("Cena caliente: lentejas y pan.", G.C_GOOD)
+					world.sleep(until_morning, 0.0, 35.0, 1.0)
 					gs.change_dignity(2, "Una cama de verdad")))
 			else:
 				acts.append(_act("Preguntar por una cama", func():
@@ -419,6 +422,8 @@ func for_poi(poi: Dictionary) -> Array:
 						gs.consume(id, true)))
 			acts.append(_act("Café y ducha", func():
 				gs.advance(40)
+				gs.eat(10.0)
+				gs.ease_mono(5.0)
 				gs.change_health(5)
 				gs.change_dignity(2)))
 		"comisaria":

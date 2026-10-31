@@ -3,10 +3,14 @@ extends Node
 ##
 ## Todas las estadísticas van de 0 a 100 salvo el dinero y la caída.
 ## La caída es la puntuación: sube al perder dignidad y al alcanzar hitos.
+## El hambre y el sueño son malos cuando suben; la salud, la salud mental y la dignidad, cuando bajan.
+## Cada sustancia que conoces lleva su propio colocón, mono y enganche (`subs`).
 
 signal changed
 signal message(text: String, color: Color)
 signal game_over(reason: String)
+## Algo te ha dejado fuera de juego y apareces en otro sitio ("cap": urgencias o el alta del psiquiátrico).
+signal relocated(place: String)
 
 const C_INFO := Color(0.85, 0.85, 0.8)
 const C_GOOD := Color(0.55, 0.85, 0.5)
@@ -18,25 +22,49 @@ var profile: Dictionary = {}
 var money := 0
 var bank := 0
 var health := 100.0
-var mono := 0.0
-var high := 0.0
-var addiction := 0.0
+var hunger := 0.0
+var fatigue := 0.0  ## Sueño
+var sanity := 100.0  ## Salud mental
 var dignity := 100.0
-var heat := 0.0  ## Lo buscada que te tiene la policía
+## Lo que llamas la atención y lo buscada que te tiene la policía. La barra de Discreción es su inverso.
+var heat := 0.0
 var caida := 0.0
 var debt := 0  ## Lo que debes a los camellos
 var inventory: Dictionary = {}
 var milestones: Array[String] = []
 var arrests := 0
+var admissions := 0  ## Ingresos en el psiquiátrico
+## Sustancias que conoces: id -> {"high": colocón, "mono": mono, "addiction": enganche, "crash": minutos de bajón}
+var subs: Dictionary = {}
 
 var day := 1
 var minute_of_day := 9.0 * 60.0  ## Se empieza a las 9:00
 var alive := true
 var papa_cut := false
+var sleeping := false
+var _sleep_quality := 1.0
+var _handling := false  ## Mientras se resuelve una consecuencia no se encadena otra
 var _next_income_day := 0
 var _last_meds_day := -99
 var _last_methadone_day := -99
 var _voice_timer := 0.0
+
+## Totales para lo que no distingue sustancias: colocón sumado, el peor mono y el mayor enganche.
+var high: float:
+	get:
+		var t := 0.0
+		for id in subs:
+			t += subs[id]["high"]
+		return t
+var mono: float:
+	get:
+		return _max_of("mono")
+var addiction: float:
+	get:
+		return _max_of("addiction")
+var discretion: float:
+	get:
+		return 100.0 - heat
 
 
 func new_game(profile_id: String) -> void:
@@ -45,19 +73,25 @@ func new_game(profile_id: String) -> void:
 	bank = 0
 	health = profile["health"]
 	dignity = profile["dignity"]
-	addiction = profile["addiction"]
-	mono = addiction * 0.5
-	high = 0.0
+	sanity = profile["sanity"]
+	hunger = 30.0
+	fatigue = 20.0
+	subs = {}
+	for id in profile["knows"]:
+		_learn(id, float(profile["knows"][id]))
 	heat = 0.0
 	caida = 0.0
 	debt = 0
 	inventory = profile["items"].duplicate()
 	milestones = []
 	arrests = 0
+	admissions = 0
 	day = 1
 	minute_of_day = 9.0 * 60.0
 	alive = true
 	papa_cut = false
+	sleeping = false
+	_handling = false
 	_next_income_day = 1 + int(profile["income"].get("every_days", 0)) if profile["income"] else 0
 	_last_meds_day = -99
 	_last_methadone_day = -99
@@ -81,18 +115,9 @@ func advance(minutes: float) -> void:
 	if not alive:
 		return
 	var m := minutes
-	high = maxf(0.0, high - 0.12 * m)
-	if high < 10.0:
-		mono = minf(100.0, mono + addiction * 0.004 * m)
-	else:
-		mono = maxf(0.0, mono - 0.05 * m)
-	heat = maxf(0.0, heat - 0.08 * m)
-	if mono > 70.0:
-		health -= 0.03 * m
-	if high > 90.0:
-		health -= 0.04 * m
-	if mono < 30.0 and high < 30.0:
-		health = minf(100.0, health + 0.004 * m)
+	_update_subs(m)
+	_update_body(m)
+	heat = maxf(heat - Defs.HEAT_DECAY * m, exposure())
 
 	var prev_hour := hour()
 	minute_of_day += m
@@ -102,14 +127,83 @@ func advance(minutes: float) -> void:
 	if OS.is_debug_build() and hour() != prev_hour:
 		print(debug_status())
 
-	if profile.get("id") == "psiquiatrico":
-		_voice_timer -= m
+	# las voces: Mari Loli siempre; los demás cuando la cabeza se les va
+	if profile.get("id") == "psiquiatrico" or sanity < 30.0:
+		_voice_timer -= m * (2.0 if sanity < 20.0 else 1.0)
 		if _voice_timer <= 0.0:
 			_voice_timer = randf_range(90.0, 240.0)
 			say_voice()
 
-	_check_death("El mono te ha consumido")
+	if not _handling and not sleeping:
+		if (sanity < 15.0 or mono > 85.0) and randf() < 0.003 * m:
+			_outburst()
+		_check_extremes()
+	_check_death(_worst_cause())
 	changed.emit()
+
+
+## Colocón, bajón, mono y enganche de cada sustancia conocida.
+func _update_subs(m: float) -> void:
+	for id in subs:
+		var s: Dictionary = subs[id]
+		var d: Dictionary = Defs.SUBSTANCES[id]
+		var was_high: bool = s["high"] >= 10.0
+		s["high"] = maxf(0.0, s["high"] - d.get("decay", 0.12) * m)
+		s["crash"] = maxf(0.0, s["crash"] - m)
+		if was_high and s["high"] < 10.0 and d.has("crash"):
+			_crash(id)
+		if s["high"] < 10.0 and not _relieved(id):
+			s["mono"] = minf(100.0, s["mono"] + s["addiction"] * 0.004 * m)
+		else:
+			s["mono"] = maxf(0.0, s["mono"] - 0.05 * m)
+		# sin tomarla, el enganche se va soltando muy despacio
+		if s["high"] < 1.0:
+			s["addiction"] = maxf(0.0, s["addiction"] - 0.003 * m)
+
+
+## Hambre, sueño, salud y salud mental.
+func _update_body(m: float) -> void:
+	var hunger_rate := 1.0
+	var fatigue_rate := 1.0
+	for id in subs:
+		var i := intensity(id)
+		if i > 0.0:
+			var d: Dictionary = Defs.SUBSTANCES[id]
+			hunger_rate *= lerpf(1.0, d.get("hunger_rate", 1.0), i)
+			fatigue_rate *= lerpf(1.0, d.get("fatigue_rate", 1.0), i)
+	if sleeping:
+		hunger += Defs.HUNGER_RATE * 0.5 * m
+		fatigue -= Defs.SLEEP_RECOVERY * _sleep_quality * m
+	else:
+		hunger += Defs.HUNGER_RATE * hunger_rate * m
+		fatigue += Defs.FATIGUE_RATE * fatigue_rate * m
+	hunger = clampf(hunger, 0.0, 100.0)
+	fatigue = clampf(fatigue, 0.0, 100.0)
+
+	var worst_mono := mono
+	if worst_mono > 70.0:
+		health -= 0.03 * m
+	if high > 90.0:
+		health -= 0.04 * m
+	if hunger > 85.0:
+		health -= 0.03 * m
+	if fatigue > 90.0:
+		health -= 0.015 * m
+	if worst_mono < 30.0 and high < 30.0 and hunger < 60.0:
+		health = minf(100.0, health + 0.004 * m)
+
+	var drain := 0.0
+	if hunger > 70.0:
+		drain += 0.02
+	if fatigue > 75.0:
+		drain += 0.03
+	if worst_mono > 50.0:
+		drain += 0.02
+	if sleeping:
+		sanity += 0.01 * _sleep_quality * m
+	elif drain == 0.0 and dignity > 30.0:
+		sanity += 0.008 * m
+	sanity = clampf(sanity - drain * m, 0.0, 100.0)
 
 
 func _new_day() -> void:
@@ -150,8 +244,11 @@ func log_msg(text: String, color: Color = C_INFO) -> void:
 
 ## Línea de estado para la consola de depuración.
 func debug_status() -> String:
-	return "[%s] salud=%d mono=%d colocón=%d dignidad=%d enganche=%d policía=%d dinero=%d banco=%d caída=%d inv=%s" % [
-		clock_text(), health, mono, high, dignity, addiction, heat, money, bank, caida, inventory]
+	var s := []
+	for id in subs:
+		s.append("%s(%d/%d/%d)" % [id, subs[id]["high"], subs[id]["mono"], subs[id]["addiction"]])
+	return "[%s] salud=%d hambre=%d sueño=%d mente=%d dignidad=%d policía=%d dinero=%d banco=%d caída=%d sustancias(colocón/mono/enganche)=%s inv=%s" % [
+		clock_text(), health, hunger, fatigue, sanity, dignity, heat, money, bank, caida, " ".join(s), inventory]
 
 
 func add_money(amount: int) -> void:
@@ -182,11 +279,12 @@ func add_caida(points: float) -> void:
 	changed.emit()
 
 
-## Perder dignidad es caer: cada punto perdido suma un punto de caída.
+## Perder dignidad es caer: cada punto perdido suma un punto de caída. También pesa en la cabeza.
 func change_dignity(amount: float, reason := "") -> void:
 	if amount < 0.0:
 		add_caida(-amount)
 	dignity = clampf(dignity + amount, 0.0, 100.0)
+	sanity = clampf(sanity + amount * 0.4, 0.0, 100.0)
 	if reason != "":
 		log_msg("%s (%+d dignidad)" % [reason, int(amount)], C_FALL if amount < 0 else C_GOOD)
 	if dignity <= 0.0:
@@ -204,6 +302,26 @@ func change_health(amount: float, cause := "") -> void:
 	changed.emit()
 
 
+func change_sanity(amount: float, reason := "") -> void:
+	sanity = clampf(sanity + amount, 0.0, 100.0)
+	if reason != "":
+		log_msg("%s (%+d salud mental)" % [reason, int(amount)], C_VOICE if amount < 0 else C_GOOD)
+	changed.emit()
+
+
+## Quita hambre sin pasar por el inventario (la cena del albergue, un café...).
+func eat(amount: float) -> void:
+	hunger = maxf(0.0, hunger - amount)
+	changed.emit()
+
+
+## Calma el mono de todas las sustancias (hablar con alguien, un café...).
+func ease_mono(amount: float) -> void:
+	for id in subs:
+		subs[id]["mono"] = maxf(0.0, subs[id]["mono"] - amount)
+	changed.emit()
+
+
 func milestone(id: String) -> void:
 	if id in milestones:
 		return
@@ -213,36 +331,260 @@ func milestone(id: String) -> void:
 	log_msg("★ Hito de la caída: %s (+%d)" % [m[0], m[1]], C_FALL)
 
 
+# ------------------------------------------------------------------ sustancias
+
+func knows(id: String) -> bool:
+	return subs.has(id)
+
+
+func _learn(id: String, enganche: float) -> void:
+	subs[id] = {"high": 0.0, "mono": enganche * 0.5, "addiction": enganche, "crash": 0.0}
+
+
+## Conocer una sustancia nueva es un hito de la caída y le da una barra en el HUD.
+func _discover(id: String) -> void:
+	if knows(id):
+		return
+	_learn(id, 0.0)
+	log_msg("Una sustancia nueva en tu vida: %s." % Defs.item_name(id).to_lower(), C_FALL)
+	milestone("probar_" + id)
+
+
+## Lo fuerte que pega ahora una sustancia (0..1): decide sus efectos en cámara y movimiento.
+func intensity(id: String) -> float:
+	return clampf(subs[id]["high"] / 50.0, 0.0, 1.0) if knows(id) else 0.0
+
+
+## Lo fuerte que aprieta el mono de una sustancia (0..1).
+func mono_intensity(id: String) -> float:
+	return clampf((subs[id]["mono"] - 30.0) / 50.0, 0.0, 1.0) if knows(id) else 0.0
+
+
+## Si otra sustancia que llevas encima calma el mono de `id` (la metadona, el del caballo).
+func _relieved(id: String) -> bool:
+	for other in subs:
+		if Defs.SUBSTANCES[other].get("relieves", "") == id and subs[other]["high"] >= 3.0:
+			return true
+	return false
+
+
+func _crash(id: String) -> void:
+	var c: Dictionary = Defs.SUBSTANCES[id]["crash"]
+	var s: Dictionary = subs[id]
+	s["crash"] = c["minutes"]
+	# el bajón trae mono en proporción al enganche: la primera vez casi nada
+	s["mono"] = minf(100.0, s["mono"] + c["mono"] * minf(1.0, s["addiction"] / 15.0))
+	fatigue = minf(100.0, fatigue + c.get("fatigue", 0.0))
+	change_sanity(c["sanity"], "Bajón de %s" % Defs.item_name(id).to_lower())
+
+
+func _max_of(key: String) -> float:
+	var best := 0.0
+	for id in subs:
+		best = maxf(best, subs[id][key])
+	return best
+
+
+func _add_mono(amount: float) -> void:
+	for id in subs:
+		if subs[id]["addiction"] > 5.0:
+			subs[id]["mono"] = minf(100.0, subs[id]["mono"] + amount)
+
+
 ## Consume una sustancia o comida del inventario.
 func consume(id: String, safe := false) -> void:
 	if not has_item(id):
 		return
-	remove_item(id)
-	if Defs.ITEMS.has(id) and Defs.ITEMS[id].has("food"):
-		change_health(Defs.ITEMS[id]["food"])
+	if Defs.ITEMS.get(id, {}).has("food"):
+		remove_item(id)
+		var food: float = Defs.ITEMS[id]["food"]
+		eat(food)
+		change_health(food * 0.15)
 		log_msg("Te comes: %s." % Defs.item_name(id), C_GOOD)
 		if id == "sobras":
 			change_dignity(-3)
 			milestone("sobras")
 		return
-	var s: Dictionary = Defs.SUBSTANCES[id]
-	high += s["high"]
-	addiction = clampf(addiction + s["addiction"], 0.0, 100.0)
-	mono = maxf(0.0, mono - s["high"] * 1.2 + s.get("mono", 0))
-	change_dignity(s["dignity"])
-	log_msg("Te metes: %s." % s["name"], C_INFO)
-	if id == "caballo":
-		milestone("primer_caballo")
-	elif id == "base":
-		milestone("primera_base")
-	if not safe and high > 100.0 and randf() < (high - 100.0) * 0.02 * s["od"] + 0.05 * s["od"]:
+	if not Defs.SUBSTANCES.has(id):
+		return
+	remove_item(id)
+	var d: Dictionary = Defs.SUBSTANCES[id]
+	_discover(id)
+	var s: Dictionary = subs[id]
+	s["high"] += d["high"]
+	s["crash"] = 0.0
+	s["addiction"] = clampf(s["addiction"] + d["addiction"], 0.0, 100.0)
+	s["mono"] = maxf(0.0, s["mono"] - d["high"] * 1.2)
+	if d.has("relieves") and knows(d["relieves"]):
+		var r: Dictionary = subs[d["relieves"]]
+		r["mono"] = maxf(0.0, r["mono"] + d["mono"])
+		r["addiction"] = maxf(0.0, r["addiction"] - d.get("relief_addiction", 0))
+	var meds: bool = id == "pastillas" and profile.get("id") == "psiquiatrico"
+	change_sanity(Defs.MEDS_SANITY if meds else d["sanity"])
+	change_dignity(d["dignity"])
+	log_msg("Te metes: %s." % d["name"], C_INFO)
+	if not safe and high > 100.0 and randf() < (high - 100.0) * 0.02 * d["od"] + 0.05 * d["od"]:
 		log_msg("Sobredosis. Te despiertas en el suelo con un desconocido encima.", C_BAD)
 		change_health(-45.0, "Sobredosis en un portal")
 		if alive:
 			milestone("sobredosis")
 			advance(120.0)
 			return
-	change_health(s["health"], "Tu cuerpo dijo basta")
+	change_health(d["health"], "Tu cuerpo dijo basta")
+
+
+## Lo que llamas la atención solo por tu aspecto: colocón a la vista, mono, mala pinta, hablar solo.
+## Es el mínimo por debajo del cual no baja `heat`.
+func exposure() -> float:
+	var e := 0.0
+	for id in subs:
+		e += subs[id]["high"] * Defs.SUBSTANCES[id].get("visible", 0.2)
+	e += maxf(0.0, mono - 50.0) * 0.4
+	e += maxf(0.0, 30.0 - dignity) * 0.4
+	if sanity < 20.0:
+		e += 8.0
+	if profile.get("id") == "jubilado":
+		e *= 0.5
+	return minf(e, Defs.MAX_EXPOSURE)
+
+
+## Efectos en cámara, movimiento y pantalla que tocan ahora, y sus causas para el HUD.
+## Devuelve {"fx": {efecto: intensidad}, "causes": [[texto, color], ...]}.
+func effects() -> Dictionary:
+	var fx := {}
+	var causes := []
+	for id in subs:
+		var d: Dictionary = Defs.SUBSTANCES[id]
+		var i := intensity(id)
+		if i > 0.1:
+			_add_fx(fx, d["fx"], i)
+			causes.append(["%s: %s" % [d["name"], d["fx_text"]], d["color"]])
+		if subs[id]["crash"] > 0.0:
+			_add_fx(fx, Defs.CRASH_FX, clampf(subs[id]["crash"] / 20.0, 0.0, 1.0))
+			causes.append(["Bajón de %s: %s" % [d["name"].to_lower(), Defs.CRASH_FX_TEXT], C_BAD])
+		var mi := mono_intensity(id)
+		if mi > 0.1:
+			_add_fx(fx, Defs.MONO_FX, mi)
+			fx["mono"] = maxf(fx.get("mono", 0.0), mi)
+			causes.append(["Mono de %s: %s" % [d["name"].to_lower(), Defs.MONO_FX_TEXT], Color("e05a4a")])
+	for key in Defs.BODY_FX:
+		var b: Dictionary = Defs.BODY_FX[key]
+		var i := clampf(inverse_lerp(b["from"], b["to"], get(key)), 0.0, 1.0)
+		if i > 0.1:
+			_add_fx(fx, b["fx"], i)
+			causes.append(["%s: %s" % [b["name"], b["text"]], Color("c0b0a0")])
+	fx["high"] = clampf((high - 60.0) / 60.0, 0.0, 1.0)
+	return {"fx": fx, "causes": causes}
+
+
+func _add_fx(fx: Dictionary, add: Dictionary, weight: float) -> void:
+	for k in add:
+		fx[k] = fx.get(k, 0.0) + add[k] * weight
+
+
+# ------------------------------------------------------------------ dormir y consecuencias
+
+## Duerme `minutes` minutos. `quality` (0..1) es lo que descansas; `robbery_risk`, la
+## probabilidad de que te roben si llevas dinero; `heal`, la salud que recuperas.
+func rest(minutes: float, quality: float, robbery_risk := 0.0, heal := 0.0) -> void:
+	var q := quality
+	for id in subs:
+		if intensity(id) > 0.3 and Defs.SUBSTANCES[id].get("fatigue_rate", 1.0) < 1.0:
+			q *= 0.3
+			log_msg("Con la %s en el cuerpo no pegas ojo." % Defs.item_name(id).to_lower(), C_BAD)
+			break
+	if mono > 60.0:
+		q *= 0.5
+		log_msg("El mono no te deja dormir: sudores, patadas, pesadillas.", C_BAD)
+	_sleep_quality = q
+	sleeping = true
+	advance(minutes)
+	sleeping = false
+	if not alive:
+		return
+	change_health(heal * q)
+	log_msg("Duermes %d horas. Son las %02d:%02d." % [int(minutes / 60), hour(), int(minute_of_day) % 60])
+	if money > 0 and randf() < robbery_risk:
+		log_msg("Al despertar te faltan los %d € que llevabas." % money, C_BAD)
+		money = 0
+		change_dignity(-3)
+
+
+## Si una barra ha llegado al extremo, pasa algo malo.
+func _check_extremes() -> void:
+	if not alive:
+		return
+	_handling = true
+	if fatigue >= 100.0:
+		_pass_out()
+	elif hunger >= 100.0:
+		_faint()
+	elif sanity <= 0.0:
+		_admit()
+	_handling = false
+
+
+func _pass_out() -> void:
+	log_msg("Llevas demasiadas horas sin dormir. Te quedas frito en plena calle.", C_BAD)
+	rest(5 * 60, 0.5, 0.5)
+	change_dignity(-4)
+	milestone("frito")
+
+
+func _faint() -> void:
+	log_msg("Te desmayas de hambre. Te despiertas en urgencias con un zumo y un sermón.", C_BAD)
+	advance(4 * 60)
+	hunger = 55.0
+	change_health(-8, "Desnutrición")
+	change_dignity(-3)
+	milestone("desmayo")
+	if alive:
+		relocated.emit("cap")
+
+
+## Brote: dos días de ingreso. Sales desintoxicado, pero sin nada de lo que llevabas.
+func _admit() -> void:
+	admissions += 1
+	log_msg("Brote. Te encuentran gritándoles a las palomas y acabas con un ingreso en el psiquiátrico.", C_BAD)
+	for id in inventory.keys():
+		if Defs.SUBSTANCES.has(id):
+			inventory.erase(id)
+	for i in 2:
+		_new_day()
+	for id in subs:
+		var s: Dictionary = subs[id]
+		s["high"] = 0.0
+		s["crash"] = 0.0
+		s["mono"] *= 0.2
+		s["addiction"] *= 0.7
+	hunger = 25.0
+	fatigue = 15.0
+	sanity = 55.0
+	heat = 0.0
+	health = minf(100.0, health + 10.0)
+	milestone("psiquiatrico")
+	add_caida(10.0)
+	var limit := 2 if profile.get("id") == "psiquiatrico" else 3
+	if admissions >= limit:
+		_end("Esta vez no te dan el alta. El Raval sigue sin ti.")
+	else:
+		log_msg("Dos días después te dan el alta, una receta y un «cuídate».")
+		relocated.emit("cap")
+
+
+## Estallas: gritos, una patada a un contenedor... Te mira todo el mundo.
+func _outburst() -> void:
+	var lines := [
+		"Le gritas a un vecino que te ha mirado mal.",
+		"Te encaras con un guiri por nada.",
+		"Le das una patada a un contenedor y medio barrio se te queda mirando.",
+	]
+	log_msg(lines.pick_random() + " (−discreción)", C_BAD)
+	heat = minf(100.0, heat + 25.0)
+	change_dignity(-2)
+	if randf() < 0.3:
+		log_msg("Alguien te contesta con un puñetazo.", C_BAD)
+		change_health(-6, "Una pelea que empezaste tú")
 
 
 func can_get_methadone() -> bool:
@@ -273,10 +615,24 @@ func arrest() -> void:
 	log_msg("Detenido. Te quitan lo que llevabas encima y pasas la noche en el calabozo.", C_BAD)
 	milestone("primera_detencion")
 	add_caida(8.0)
+	# en el calabozo se duerme mal, pero se duerme
+	_sleep_quality = 0.3
+	sleeping = true
 	advance(12.0 * 60.0)
-	mono = minf(100.0, mono + 25.0)
+	sleeping = false
+	_add_mono(25.0)
+	change_sanity(-5)
 	if profile.get("id") == "sin_papeles" and arrests >= 3 and alive:
 		_end("Orden de expulsión. Te deportan. El Raval no se acuerda de ti.")
+
+
+## La causa de muerte más probable según lo que más está tirando de la salud.
+func _worst_cause() -> String:
+	if hunger > 85.0:
+		return "Te has muerto de hambre en un portal"
+	if mono > 70.0:
+		return "El mono te ha consumido"
+	return "Tu cuerpo dijo basta"
 
 
 func _check_death(cause: String) -> void:

@@ -84,10 +84,13 @@ func _select(i: int) -> void:
 	var income_text := "Ninguno"
 	if income:
 		income_text = "%s: %+d € cada %d días" % [income["label"], income["amount"], income["every_days"]]
+	var knows := []
+	for id in p["knows"]:
+		knows.append("%s (enganche %d)" % [Defs.item_name(id), p["knows"][id]])
 	_detail.text = "[font_size=26][b]%s[/b][/font_size]\n[color=#e0a070]%s[/color]\n\n%s\n\n[color=#a0c0e0]%s[/color]\n\n" % [
 		p["name"], p["title"], p["desc"], p["perk"]] + \
-		"Dinero: [b]%d €[/b]    Salud: [b]%d[/b]    Dignidad: [b]%d[/b]    Enganche: [b]%d[/b]\nIngresos: %s" % [
-		p["money"], p["health"], p["dignity"], p["addiction"], income_text]
+		"Dinero: [b]%d €[/b]    Salud: [b]%d[/b]    Dignidad: [b]%d[/b]    Salud mental: [b]%d[/b]\nIngresos: %s\nYa conoce: %s" % [
+		p["money"], p["health"], p["dignity"], p["sanity"], income_text, ", ".join(knows)]
 
 
 func _start() -> void:

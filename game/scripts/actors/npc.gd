@@ -120,7 +120,8 @@ func _police_ai() -> void:
 		return
 	_think = 0.4
 	var d := distance_to_cell(player.cell)
-	var sees := d < (12 if GameState.is_night() else 18)
+	var sight := (12.0 if GameState.is_night() else 18.0) * (2.5 if GameState.heat >= 90.0 else 1.0)
+	var sees := d < sight
 	if not chasing and sees and GameState.heat > 40.0:
 		chasing = true
 		say("¡Alto! ¡Policía!")
