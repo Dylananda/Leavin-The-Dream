@@ -37,8 +37,8 @@ func _initialize() -> void:
 		conv.replied.disconnect(on_reply)
 		conv.failed.disconnect(on_fail)
 		print("%s (%.1f s): %s" % [npc.display_name, (Time.get_ticks_msec() - t0) / 1000.0, reply[0][0]])
-		for deal in reply[0][1]:
-			print("   [trato] ", conv.deal_label(deal))
+		for offer in reply[0][1]:
+			print("   [ofrece] ", offer["label"])
 		if reply[0][2]:
 			break
 	quit()

@@ -526,18 +526,19 @@ func _clear_deals() -> void:
 		c.queue_free()
 
 
-func _on_chat_reply(npc: Npc, text: String, deals: Array, ended: bool) -> void:
+func _on_chat_reply(npc: Npc, text: String, offers: Array, ended: bool) -> void:
 	if npc != _chat_npc or not _chat.visible:
 		return
 	_chat_said(false, text if text != "" else "...")
-	for deal in deals:
+	for offer in offers:
 		var b := Button.new()
-		b.text = Conversation.deal_label(deal)
+		b.text = "Aceptar: " + offer["label"]
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		var label: String = offer["label"]
 		b.pressed.connect(func():
-			if _chat_conv.accept_deal(npc, deal):
-				_chat_line("[color=#8fd080](Aceptas el trato.)[/color]")
-				_clear_deals())
+			_clear_deals()
+			_chat_line("[color=#8fd080](%s)[/color]" % label.replace("[", "[lb]"))
+			_chat_conv.accept(npc, offer["id"]))
 		_chat_deals.add_child(b)
 	_chat_set_waiting(false)
 	if ended:

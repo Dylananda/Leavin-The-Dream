@@ -1,58 +1,28 @@
 class_name Conversation
 extends Node
-## Conversación libre con los bots que tienen ficha (ver fichas.gd): arma el contexto
-## (quién es, qué sabe, la hora, la policía y los sitios de alrededor, cómo te ve), lleva
-## la memoria corta de lo hablado con cada uno y convierte las acciones que devuelve el
-## modelo en cosas que pasan en la partida: pistas, sitios marcados, tratos, regalos,
-## enfados y llamadas a la policía.
+## Conversación libre con los bots que tienen ficha (ver fichas.gd). El juego propone y la IA
+## habla: en cada frase el juego calcula lo que puede pasar de verdad (las acciones de su menú
+## en interactions.gd, datos ciertos que conoce, sitios cercanos) y el modelo solo elige entre
+## esos ids, que el esquema de la respuesta no le deja inventar, y lo pone en palabras.
+## Lleva además la memoria corta de lo hablado y de lo que ha pasado con cada uno.
 
 const G := preload("res://scripts/game_state.gd")
 
-## La respuesta, para la interfaz: lo que dice, los tratos que propone (para aceptarlos o no)
-## y si da la conversación por terminada.
-signal replied(npc: Npc, text: String, deals: Array, ended: bool)
+## La respuesta, para la interfaz: lo que dice, lo que te ofrece ([{"id", "label"}], para
+## aceptarlo o no) y si da la conversación por terminada.
+signal replied(npc: Npc, text: String, offers: Array, ended: bool)
 signal failed(npc: Npc, error: String)
 
 const MAX_MESSAGES := 12  ## Frases de la memoria corta con cada personaje (las más antiguas se olvidan)
-const MAX_FACTS := 8  ## Hechos que recuerda (tratos, pistas, enfados...)
+const MAX_FACTS := 8  ## Hechos que recuerda (lo que te ofreció, lo que te contó...)
+const MAX_DATA := 4  ## Datos ciertos que puede contar en cada frase
 const MINUTES_PER_LINE := 2.0  ## Lo que pasa el reloj por cada frase
 const POLICE_RADIUS := 60  ## Casillas a las que ve a los agentes
-const MAX_DEAL_MINUTES := 180
+const TOURIST_RADIUS := 40  ## Casillas a las que se fija en los guiris
 const POLICE_HEAT := 50.0  ## Lo que sube la búsqueda si te echa a la policía encima
-
-## Formato de la respuesta que se le exige al modelo: primero lo que dice, luego el trato
-## (siempre presente, con texto vacío si no propone ninguno) y luego las demás acciones.
-## Probado con qwen2.5:7b: si el trato es una acción opcional más, lo ofrece de palabra y no
-## lo apunta; si las acciones van antes de lo que dice, se las inventa y pierde el hilo.
-const SCHEMA := {
-	"type": "object",
-	"properties": {
-		"dice": {"type": "string"},
-		"trato": {
-			"type": "object",
-			"properties": {
-				"texto": {"type": "string"},
-				"euros_para_el": {"type": "integer"},
-				"euros_para_ti": {"type": "integer"},
-				"objeto": {"type": "string"},
-				"minutos": {"type": "integer"},
-			},
-			"required": ["texto", "euros_para_el", "euros_para_ti", "objeto", "minutos"],
-		},
-		"acciones": {"type": "array", "items": {
-			"type": "object",
-			"properties": {
-				"tipo": {"type": "string", "enum": ["dar_pista", "marcar_sitio", "regalar", "enfadarse", "llamar_a_la_policia_contra_el", "despedirse"]},
-				"texto": {"type": "string"},
-				"sitio": {"type": "string"},
-				"objeto": {"type": "string"},
-			},
-			"required": ["tipo"],
-		}},
-	},
-	"required": ["dice", "trato", "acciones"],
-}
-const NO_DEAL := {"texto": "", "euros_para_el": 0, "euros_para_ti": 0, "objeto": "", "minutos": 0}
+## Acciones del menú que el personaje nunca te propondría (las haces tú contra él, o ya están aquí).
+const NOT_OFFERED := ["Hablar", "Escuchar", "Robar", "Pelear", "Insultar"]
+const REACTIONS := ["ninguna", "enfadarse", "llamar_a_la_policia", "despedirse"]
 
 var world: World
 var client: LlmClient
@@ -60,7 +30,9 @@ var busy := false
 ## "tipo|nombre" -> {"messages": [{"role", "content"}], "facts": [String]}. Si vuelve a salir
 ## alguien con el mismo nombre, se acuerda de ti.
 var _memory := {}
-var _sites := {}  ## id ("s1"...) -> lugar, de la última vez que se armó el contexto
+## Lo que puede pasar en esta frase, con sus ids: "options" (o1... -> acción del menú),
+## "data" (d1... -> texto cierto) y "sites" (s1... -> lugar). Se recalcula en cada frase.
+var _turn := {"options": {}, "data": {}, "sites": {}}
 var _warned := false  ## Solo se avisa una vez en el registro de que la IA no responde
 
 
@@ -93,7 +65,7 @@ func history(npc: Npc) -> Array:
 		if m["role"] == "user":
 			out.append(["tu", m["content"]])
 		else:
-			out.append(["el", _parse(m["content"]).get("dice", "")])
+			out.append(["el", _parse(m["content"])["dice"]])
 	return out
 
 
@@ -107,7 +79,7 @@ func say(npc: Npc, text: String) -> void:
 	mem["messages"].append({"role": "user", "content": text})
 	var messages := [{"role": "system", "content": system_prompt(npc)}]
 	messages.append_array(mem["messages"])
-	client.ask(messages, SCHEMA, func(ok: bool, content: String):
+	client.ask(messages, schema(), func(ok: bool, content: String):
 		busy = false
 		if not is_instance_valid(npc):
 			return
@@ -122,150 +94,115 @@ func say(npc: Npc, text: String) -> void:
 			failed.emit(npc, content))
 
 
-## Aplica la respuesta del modelo (JSON con "dice" y "acciones") y avisa a la interfaz.
-## Devuelve lo mismo que manda por `replied`: {"text", "deals", "ended"}.
+## Formato de la respuesta: primero lo que decide (solo entre los ids de esta frase, o nada)
+## y luego lo que dice, que tiene que contarlo. Todos los campos son obligatorios: probado con
+## qwen2.5:7b, si son opcionales ofrece cosas de palabra y no las apunta.
+func schema() -> Dictionary:
+	return {
+		"type": "object",
+		"properties": {
+			"ofrece": {"type": "string", "enum": [""] + _turn["options"].keys()},
+			"cuenta": {"type": "string", "enum": [""] + _turn["data"].keys()},
+			"senala": {"type": "string", "enum": [""] + _turn["sites"].keys()},
+			"reaccion": {"type": "string", "enum": REACTIONS},
+			"dice": {"type": "string"},
+		},
+		"required": ["ofrece", "cuenta", "senala", "reaccion", "dice"],
+	}
+
+
+## Aplica la respuesta del modelo y avisa a la interfaz. Los ids que no son de esta frase
+## se ignoran. Devuelve lo mismo que manda por `replied`: {"text", "offers", "ended"}.
 func handle_reply(npc: Npc, content: String) -> Dictionary:
 	var data := _parse(content)
-	var text: String = data.get("dice", "").strip_edges().left(500)
+	var text: String = data["dice"].strip_edges().left(500)
 	var mem := _mem(npc)
-	mem["messages"].append({"role": "assistant", "content": JSON.stringify({"dice": text, "trato": data["trato"], "acciones": data["acciones"]})})
+	mem["messages"].append({"role": "assistant", "content": JSON.stringify({"dice": text})})
 	while mem["messages"].size() > MAX_MESSAGES:
 		mem["messages"].pop_front()
 	GameState.advance(MINUTES_PER_LINE)
 	if text != "":
 		npc.say(text.left(80), 4.0)
-	var deals := []
-	var ended := false
-	var offered := _deal(npc, data["trato"])
-	if not offered.is_empty():
-		deals.append(offered)
-	for a in data.get("acciones", []):
-		if not a is Dictionary:
-			continue
-		match a.get("tipo", ""):
-			"dar_pista":
-				var clue: String = str(a.get("texto", "")).strip_edges()
-				if clue != "":
-					GameState.log_msg("Pista de %s: %s" % [npc.display_name, clue], G.C_GOOD)
-					_fact(npc, "Le diste esta pista: " + clue)
-			"marcar_sitio":
-				var poi: Dictionary = _sites.get(str(a.get("sitio", "")), {})
-				if not poi.is_empty():
-					world.highlight_poi(poi)
-					GameState.log_msg("%s te señala %s." % [npc.display_name, _site_text(poi)], G.C_GOOD)
-					_fact(npc, "Le señalaste " + _site_text(poi))
-			"regalar":
-				var item := str(a.get("objeto", ""))
-				if item in Fichas.of(npc.kind)["puede_dar"] and npc.get_meta("regalo_dia", -1) != GameState.day:
-					npc.set_meta("regalo_dia", GameState.day)
-					GameState.add_item(item)
-					GameState.log_msg("%s te da: %s." % [npc.display_name, Defs.item_name(item)], G.C_GOOD)
-					_fact(npc, "Le regalaste " + Defs.item_name(item))
-			"enfadarse":
-				npc.set_meta("enemigo", true)
-				GameState.log_msg("%s no quiere saber nada más de ti." % npc.display_name, G.C_BAD)
-				GameState.change_dignity(-2, "Ganarte un enemigo")
-				ended = true
-			"llamar_a_la_policia_contra_el":
-				npc.set_meta("enemigo", true)
-				npc.say("¡Policía! ¡Este de aquí!", 4.0)
-				GameState.heat = minf(100.0, GameState.heat + POLICE_HEAT)
-				GameState.log_msg("%s te echa a la policía encima." % npc.display_name, G.C_BAD)
-				ended = true
-			"despedirse":
-				ended = true
-	replied.emit(npc, text, deals, ended)
-	return {"text": text, "deals": deals, "ended": ended}
+	var offers := []
+	var option: Dictionary = _turn["options"].get(data["ofrece"], {})
+	if not option.is_empty():
+		offers.append({"id": data["ofrece"], "label": option["label"]})
+		_fact(npc, "Le ofreciste: " + option["label"])
+	var fact: String = _turn["data"].get(data["cuenta"], "")
+	if fact != "":
+		GameState.log_msg("Pista de %s: %s" % [npc.display_name, fact], G.C_GOOD)
+		_fact(npc, "Le contaste: " + fact)
+	var poi: Dictionary = _turn["sites"].get(data["senala"], {})
+	if not poi.is_empty():
+		world.highlight_poi(poi)
+		GameState.log_msg("%s te señala %s." % [npc.display_name, _site_text(poi)], G.C_GOOD)
+		_fact(npc, "Le señalaste " + _site_text(poi))
+	var ended := true
+	match data["reaccion"]:
+		"enfadarse":
+			npc.set_meta("enemigo", true)
+			GameState.log_msg("%s no quiere saber nada más de ti." % npc.display_name, G.C_BAD)
+			GameState.change_dignity(-2, "Ganarte un enemigo")
+		"llamar_a_la_policia":
+			npc.set_meta("enemigo", true)
+			npc.say("¡Policía! ¡Este de aquí!", 4.0)
+			GameState.heat = minf(100.0, GameState.heat + POLICE_HEAT)
+			GameState.log_msg("%s te echa a la policía encima." % npc.display_name, G.C_BAD)
+		"despedirse":
+			pass
+		_:
+			ended = false
+	if ended:
+		offers.clear()
+	replied.emit(npc, text, offers, ended)
+	return {"text": text, "offers": offers, "ended": ended}
 
 
-## Un trato propuesto por el modelo, con las cifras dentro de lo que permite su ficha
-## (vacío si no propone ninguno).
-func _deal(npc: Npc, a: Dictionary) -> Dictionary:
-	var f := Fichas.of(npc.kind)
-	var item := str(a.get("objeto", ""))
-	var deal := {
-		"text": str(a.get("texto", "")).strip_edges().left(160).trim_suffix("."),
-		"pays": clampi(int(a.get("euros_para_el", 0)), 0, mini(f["max_pago"], npc.money)),
-		"costs": clampi(int(a.get("euros_para_ti", 0)), 0, 100),
-		"item": item if item in f["puede_dar"] else "",
-		"minutes": clampi(int(a.get("minutos", 0)), 0, MAX_DEAL_MINUTES),
-	}
-	if deal["text"] == "" or (deal["pays"] == 0 and deal["costs"] == 0 and deal["item"] == "" and deal["minutes"] == 0):
-		return {}
-	return deal
-
-
-## Texto del botón de un trato.
-static func deal_label(deal: Dictionary) -> String:
-	var parts := []
-	if deal["minutes"] > 0:
-		parts.append("%d min" % deal["minutes"])
-	if deal["costs"] > 0:
-		parts.append("pagas %d €" % deal["costs"])
-	if deal["pays"] > 0:
-		parts.append("te da %d €" % deal["pays"])
-	if deal["item"] != "":
-		parts.append("te da %s" % Defs.item_name(deal["item"]).to_lower())
-	return "Aceptar: %s (%s)" % [deal["text"], ", ".join(parts)]
-
-
-## El jugador acepta un trato: se cumple al momento y queda en la memoria del personaje.
-func accept_deal(npc: Npc, deal: Dictionary) -> bool:
-	var gs := GameState
-	if gs.money < deal["costs"]:
-		gs.log_msg("No te llega para ese trato.", G.C_BAD)
+## El jugador acepta lo que le ofrece: se hace la acción del menú como si la hubiera elegido allí.
+func accept(npc: Npc, id: String) -> bool:
+	var option: Dictionary = _turn["options"].get(id, {})
+	if option.is_empty():
 		return false
-	var f := Fichas.of(npc.kind)
-	gs.add_money(-deal["costs"])
-	var pays := mini(deal["pays"], npc.money)
-	npc.money -= pays
-	gs.add_money(pays)
-	if deal["item"] != "":
-		gs.add_item(deal["item"])
-	if deal["minutes"] > 0:
-		gs.advance(deal["minutes"])
-		gs.heat = minf(100.0, gs.heat + f["trato_calor"] * deal["minutes"] / 60.0)
-		if f["trato_dignidad"] != 0.0:
-			gs.change_dignity(f["trato_dignidad"], "Un trato con %s" % npc.display_name.to_lower())
-	gs.log_msg("Trato con %s: %s." % [npc.display_name, deal["text"]], G.C_GOOD)
-	_fact(npc, "Aceptó tu trato: %s" % deal_label(deal).trim_prefix("Aceptar: "))
+	_turn["options"] = {}  # tras hacerla, las demás pueden haber dejado de valer
+	_fact(npc, "Hizo contigo: " + option["label"])
+	option["do"].call()
 	return true
 
 
 func _fact(npc: Npc, text: String) -> void:
 	var facts: Array = _mem(npc)["facts"]
-	facts.append("Día %d, %s: %s" % [GameState.day, GameState.clock_text().get_slice(" ", 0), text])
+	facts.append("Día %d, %s: %s" % [GameState.day, GameState.clock_text().get_slice(" ", 2), text])
 	while facts.size() > MAX_FACTS:
 		facts.pop_front()
 
 
 static func _parse(content: String) -> Dictionary:
+	var out := {"dice": "", "ofrece": "", "cuenta": "", "senala": "", "reaccion": "ninguna"}
 	var json := JSON.new()  # (JSON.parse_string llena la consola de errores si no es JSON)
-	var data = json.data if json.parse(content) == OK else null
-	if data is Dictionary:
-		if not data.get("acciones", []) is Array:
-			data["acciones"] = []
-		if not data.get("trato") is Dictionary:
-			data["trato"] = NO_DEAL
-		data["dice"] = str(data.get("dice", ""))
-		return data
-	# un modelo que no respeta el formato: se toma el texto tal cual
-	return {"dice": content.strip_edges(), "trato": NO_DEAL, "acciones": []}
+	if json.parse(content) == OK and json.data is Dictionary:
+		for k in out:
+			out[k] = str(json.data.get(k, out[k]))
+	else:  # un modelo que no respeta el formato: se toma el texto tal cual
+		out["dice"] = content.strip_edges()
+	return out
 
 
 # ------------------------------------------------------------------ contexto
 
-func _site_text(poi: Dictionary) -> String:
-	var name: String = Interactions.POI_LABELS.get(poi["kind"], poi["kind"])
-	if poi.get("name", "") != "":
-		name += " «%s»" % poi["name"]
-	return "%s en %s" % [name, world.city.street_name_near(Vector2i(poi["x"], poi["y"]))]
-
-
-## El más cercano de cada tipo de sitio, con un id para que el modelo pueda marcarlo.
-func _nearby_sites(npc: Npc) -> String:
-	_sites = {}
-	var lines := []
+## Calcula lo que puede pasar en esta frase (opciones, datos y sitios, con sus ids).
+func _prepare(npc: Npc) -> void:
+	_turn = {"options": {}, "data": {}, "sites": {}}
+	for a in world.interactions.for_npc(npc):
+		if not NOT_OFFERED.any(func(w): return a["label"].begins_with(w)):
+			_turn["options"]["o%d" % (_turn["options"].size() + 1)] = a
+	var data := []
+	var f := Fichas.of(npc.kind)
+	if "policia" in f["datos"]:
+		data.append_array(_police_data(npc))
+	if "turistas" in f["datos"]:
+		data.append_array(_tourist_data(npc))
+	for d in data.slice(0, MAX_DATA):
+		_turn["data"]["d%d" % (_turn["data"].size() + 1)] = d
 	for kind in Fichas.SITE_KINDS:
 		var best: Dictionary = {}
 		var best_d := INF
@@ -274,22 +211,41 @@ func _nearby_sites(npc: Npc) -> String:
 			if d < best_d:
 				best_d = d
 				best = p
-		if best.is_empty():
-			continue
-		var id := "s%d" % (_sites.size() + 1)
-		_sites[id] = best
-		lines.append("- %s: %s, a unos %d m" % [id, _site_text(best), int(best_d * world.city.cell_m)])
-	return "\n".join(lines)
+		if not best.is_empty():
+			_turn["sites"]["s%d" % (_turn["sites"].size() + 1)] = best
 
 
-func _police_text(npc: Npc) -> String:
-	var lines := []
+func _site_text(poi: Dictionary) -> String:
+	var name: String = Interactions.POI_LABELS.get(poi["kind"], poi["kind"])
+	if poi.get("name", "") != "":
+		name += " «%s»" % poi["name"]
+	return "%s en %s" % [name, world.city.street_name_near(Vector2i(poi["x"], poi["y"]))]
+
+
+func _meters(a: Npc, cell: Vector2i) -> int:
+	return int(a.distance_to_cell(cell) * world.city.cell_m)
+
+
+func _police_data(npc: Npc) -> Array:
+	var out := []
 	for n in world.npcs:
 		if n.kind == "policia" and n.distance_to_cell(npc.cell) <= POLICE_RADIUS:
-			lines.append("un agente por %s (a unos %d m)" % [world.city.street_name_near(n.cell), int(n.distance_to_cell(npc.cell) * world.city.cell_m)])
-	if lines.is_empty():
-		return "No ves a ningún agente cerca."
-	return "Policía a la vista: " + "; ".join(lines) + "."
+			out.append("Hay un agente de la Urbana por %s, a unos %d m." % [world.city.street_name_near(n.cell), _meters(npc, n.cell)])
+	if out.is_empty():
+		out.append("Ahora mismo no hay ningún agente por aquí cerca.")
+	return out
+
+
+func _tourist_data(npc: Npc) -> Array:
+	var streets := {}
+	for n in world.npcs:
+		if n.kind == "turista" and not n.robbed and n.distance_to_cell(npc.cell) <= TOURIST_RADIUS:
+			var s := world.city.street_name_near(n.cell)
+			streets[s] = streets.get(s, 0) + 1
+	var out := []
+	for s in streets:
+		out.append("Hay %d %s con pinta de llevar pasta por %s." % [streets[s], "guiri" if streets[s] == 1 else "guiris", s])
+	return out
 
 
 ## Cómo ve el personaje al jugador (no sabe sus cifras, solo lo que se nota).
@@ -317,48 +273,45 @@ func _player_text() -> String:
 	return text
 
 
+static func _list(d: Dictionary, describe: Callable, empty: String) -> String:
+	if d.is_empty():
+		return "- (" + empty + ")"
+	var lines := []
+	for id in d:
+		lines.append("- %s: %s" % [id, describe.call(d[id])])
+	return "\n".join(lines)
+
+
+## Instrucciones para el modelo. También prepara las opciones de esta frase (ver `schema`).
 func system_prompt(npc: Npc) -> String:
+	_prepare(npc)
 	var f := Fichas.of(npc.kind)
 	var bio: String = npc.bio() if npc.bio() != "" else f["historia"]
 	var facts: Array = _mem(npc)["facts"]
-	var gives: Array = f["puede_dar"]
-	var gives_text := ", ".join(gives) if not gives.is_empty() else "nada (deja objeto vacío)"
 	return "\n".join([
-		"Eres %s, %s en el Raval de Barcelona, dentro de un videojuego. Hablas con otro del barrio, un yonki (el jugador)." % [npc.display_name, Npc.KINDS[npc.kind]["label"].to_lower()],
-		"Responde SIEMPRE con un objeto JSON: {\"dice\": \"...\", \"trato\": {...}, \"acciones\": [...]}. «dice» es lo que dices en voz alta: de una a tres frases cortas, con tu forma de hablar, sin narrar lo que haces, sin emojis. No rompas nunca el personaje ni digas que eres una IA.",
+		"Eres %s, %s en el Raval de Barcelona, dentro de un videojuego. Hablas con otro del barrio, un yonki (el jugador). No rompas nunca el personaje ni digas que eres una IA." % [npc.display_name, Npc.KINDS[npc.kind]["label"].to_lower()],
 		"",
 		"QUIÉN ERES: " + f["quien"],
 		"TU HISTORIA: " + bio,
 		"CÓMO HABLAS: " + f["habla"],
-		"QUÉ SABES: " + f["sabe"],
-		"QUÉ NO SABES: " + f["no_sabe"] + " No te inventes calles ni sitios: usa solo los de la lista.",
 		"QUÉ QUIERES: " + f["quiere"],
-		"TRATOS QUE PUEDES PROPONER: " + f["tratos"],
-		"",
-		"AHORA: son las %s del día %d y estás en %s. %s" % [GameState.clock_text().get_slice(" ", 0), GameState.day, world.city.street_name_near(npc.cell), _police_text(npc)],
-		"LLEVAS ENCIMA: %d €." % npc.money,
-		"SITIOS CERCANOS (usa su id para señalarlos):",
-		_nearby_sites(npc),
+		"QUÉ NO SABES: " + f["no_sabe"],
+		"AHORA: son las %s y estás en %s. Llevas %d € encima." % [GameState.clock_text().get_slice(" ", 2), world.city.street_name_near(npc.cell), npc.money],
 		"EL JUGADOR: " + _player_text(),
-		"LO QUE YA HA PASADO ENTRE VOSOTROS: " + ("\n- ".join([""] + facts) if not facts.is_empty() else "nada, no le conoces de antes."),
+		"LO QUE HA PASADO ENTRE VOSOTROS (nada más; si él dice otra cosa, no te acuerdas o no es verdad):",
+		"
+".join(facts.map(func(x): return "- " + x)) if not facts.is_empty() else "- (nada, no le conoces de antes)",
 		"",
-		"TRATO: si en «dice» propones un trato concreto (un trabajo, un intercambio, dinero o latas por algo), o aceptas el que te propone él, ponlo en «trato» con sus cifras; él podrá aceptarlo o no. Si no, deja texto vacío y todo a 0.",
-		"  texto = qué propones, en pocas palabras; euros_para_el = euros que le das tú a él (máximo %d); euros_para_ti = euros que él te tiene que dar a ti; objeto = lo que le das (%s); minutos = lo que dura el trabajo." % [f["max_pago"], gives_text],
+		"Cada vez que hablas, decides con ids de estas listas y luego lo dices. Lo normal es \"\" en las tres: elige algo solo si responde a lo que él acaba de decir o pedir.",
+		"«ofrece»: algo que le propones o aceptas hacer con él. Solo esto existe: ni otros tratos, ni otros precios, ni otras cosas. Si te pide algo que no está, no puedes; dilo a tu manera.",
+		_list(_turn["options"], func(a): return a["label"], "nada que ofrecerle ahora"),
+		"«cuenta»: un dato cierto que le cuentas, solo si te pregunta por eso (la policía, los guiris). No te inventes otros.",
+		_list(_turn["data"], func(d): return d, "no sabes nada útil ahora"),
+		"«senala»: un sitio que te pide o al que le mandas (se le marca en el mapa). No hables de otros sitios.",
+		_list(_turn["sites"], func(p): return "%s, a unos %d m" % [_site_text(p), _meters(npc, Vector2i(p["x"], p["y"]))], "ninguno"),
+		"«reaccion»: ninguna (lo normal); enfadarse (si te insulta, te amenaza o te roba: ya no le hablas más); llamar_a_la_policia (solo si te ataca o amenaza en serio; que a él le busque la policía NO es motivo, entre los de la calle no os chiváis); despedirse.",
+		"«dice»: lo que dices en voz alta, de una a tres frases cortas, con tu forma de hablar, sin narrar lo que haces ni emojis. Tiene que cuadrar con lo que has elegido: si ofreces algo, propónselo; si cuentas o señalas algo, dilo.",
 		"",
-		"ACCIONES: lo normal es una charla sin acciones (\"acciones\": []). Usa una solo cuando lo que dices la hace ocurrir de verdad, nunca por rellenar:",
-		"- {\"tipo\": \"dar_pista\", \"texto\": \"...\"}: le das un dato útil y concreto (dónde está la policía, dónde esconderse, dónde sacar algo). Solo si te lo pregunta o te cae bien; no para contar cómo estás.",
-		"- {\"tipo\": \"marcar_sitio\", \"sitio\": \"s3\"}: le dices dónde está un sitio de la lista y se le marca en el mapa (solo uno).",
-		"- {\"tipo\": \"regalar\", \"objeto\": \"...\"}: le das algo gratis (%s). Solo si te cae muy bien." % gives_text,
-		"- {\"tipo\": \"enfadarse\"}: te enfadas y no vuelves a hablarle. Si te insulta, te amenaza o te ha robado.",
-		"- {\"tipo\": \"llamar_a_la_policia_contra_el\"}: llamas a gritos a la policía para que lo detengan. Solo si te ataca o te amenaza en serio. Que la policía le busque a él NO es motivo: entre los de la calle no os chiváis.",
-		"- {\"tipo\": \"despedirse\"}: das la conversación por terminada.",
-		"",
-		"EJEMPLOS (con otros datos; SIN_TRATO = {\"texto\": \"\", \"euros_para_el\": 0, \"euros_para_ti\": 0, \"objeto\": \"\", \"minutos\": 0}):",
-		"«Hola, ¿qué tal?» → {\"dice\": \"Aquí, tirando. ¿Y tú?\", \"trato\": SIN_TRATO, \"acciones\": []}",
-		"«¿Viene la Urbana?» → {\"dice\": \"Hay uno por Carrer X. Tú ve por la otra punta.\", \"trato\": SIN_TRATO, \"acciones\": [{\"tipo\": \"dar_pista\", \"texto\": \"Hay un agente por Carrer X\"}]}",
-		"«¿Dónde hay un súper?» → {\"dice\": \"Ahí, en Carrer Y, a dos minutos.\", \"trato\": SIN_TRATO, \"acciones\": [{\"tipo\": \"marcar_sitio\", \"sitio\": \"s2\"}]}",
-		"«Necesito pasta» → {\"dice\": \"Vigílame esto una hora y te doy cinco.\", \"trato\": {\"texto\": \"Vigilar una hora\", \"euros_para_el\": 5, \"euros_para_ti\": 0, \"objeto\": \"\", \"minutos\": 60}, \"acciones\": []}",
-		"«Te enseño un atajo por tres euros» → {\"dice\": \"Vale, pero rápido.\", \"trato\": {\"texto\": \"Enseñarme el atajo\", \"euros_para_el\": 3, \"euros_para_ti\": 0, \"objeto\": \"\", \"minutos\": 15}, \"acciones\": []}",
-		"«¿Me vendes una lata?» → {\"dice\": \"Un euro, amigo.\", \"trato\": {\"texto\": \"Una lata\", \"euros_para_el\": 0, \"euros_para_ti\": 1, \"objeto\": \"litrona\", \"minutos\": 0}, \"acciones\": []}",
-		"«Te voy a robar» → {\"dice\": \"¿Qué dices? Lárgate de aquí.\", \"trato\": SIN_TRATO, \"acciones\": [{\"tipo\": \"enfadarse\"}]}",
+		"Ejemplo (con otros datos): «¿Hay algo de curro?» → {\"ofrece\": \"o2\", \"cuenta\": \"\", \"senala\": \"\", \"reaccion\": \"ninguna\", \"dice\": \"Pues mira, vigílame la esquina una hora y algo te caerá.\"}",
+		"Ejemplo: «¿Qué tal?» → {\"ofrece\": \"\", \"cuenta\": \"\", \"senala\": \"\", \"reaccion\": \"ninguna\", \"dice\": \"Aquí, tirando. ¿Y tú qué?\"}",
 	])

@@ -40,16 +40,17 @@ personajes nuevos tienen nombre e historia propia; las fuentes están en `docs/i
 
 A los lateros, trileros, carteristas y despedidas se les puede hablar libremente («Hablar»
 en su menú): escribes lo que dices y contesta un modelo de lenguaje que hace de ese personaje.
-Lo que digan puede cambiar la partida: te dan pistas, te señalan sitios en el mapa, te
-proponen tratos (botón para aceptarlos), te regalan algo, se enfadan o te echan a la policía.
-Se acuerdan de lo hablado.
+El juego propone y la IA habla: en cada frase solo puede elegir entre lo que el juego le
+deja (las acciones de su menú, datos ciertos como dónde están los agentes o los guiris, los
+sitios cercanos), así que lo que te ofrece aparece como botón y hace exactamente lo mismo que
+en el menú. También pueden enfadarse o echarte a la policía, y se acuerdan de lo hablado.
 
 Necesita [Ollama](https://ollama.com) en marcha con el modelo `qwen2.5:7b`
 (`ollama pull qwen2.5:7b`; unos 4,7 GB, cabe en una GPU de 6 GB). Si la descarga falla porque
 no llega a Cloudflare (en España pasa durante los partidos de fútbol), el mismo modelo se baja
 de Hugging Face: `ollama pull hf.co/bartowski/Qwen2.5-7B-Instruct-GGUF:Q4_K_M` y luego
 `ollama cp hf.co/bartowski/Qwen2.5-7B-Instruct-GGUF:Q4_K_M qwen2.5:7b`. Cada respuesta tarda
-unos 10 s (la primera, más: carga el modelo). Sin Ollama, el juego funciona igual y lo dice
+unos 15 s (la primera, más: carga el modelo). Sin Ollama, el juego funciona igual y lo dice
 en el registro. Para usar otro modelo, o uno en la nube con una API
 compatible con OpenAI, crea `%APPDATA%\Godot\app_userdata\Yonkiland\ia.cfg`:
 

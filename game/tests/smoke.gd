@@ -124,27 +124,32 @@ func _test_conversation(gs, world) -> void:
 		conv.failed.disconnect(on_fail)
 		_check(failed[0] and not conv.busy, "%s: sin IA, la conversación no termina" % kind)
 	_check(logged.any(func(t): return t.contains("no responde") or t.contains("IA")), "sin IA no se avisa en el registro")
-	# una respuesta con todas las acciones
-	var npc = world.npcs.filter(func(n): return n.kind == "fiestero")[0]
-	npc.money = 50
-	conv.system_prompt(npc)  # arma la lista de sitios
-	var money_before: int = gs.money
-	var r: Dictionary = conv.handle_reply(npc, JSON.stringify({"dice": "Bro, toma",
-		"trato": {"texto": "Llévanos a un bar", "euros_para_el": 999, "euros_para_ti": 0, "objeto": "caballo", "minutos": 30},
-		"acciones": [
-		{"tipo": "dar_pista", "texto": "El bar de la esquina cierra tarde"},
-		{"tipo": "marcar_sitio", "sitio": "s1"},
-		{"tipo": "regalar", "objeto": "litrona"},
-		{"tipo": "inventada"},
-	]}))
-	_check(r["text"] == "Bro, toma" and r["deals"].size() == 1, "la respuesta de la IA no se interpreta")
-	var deal: Dictionary = r["deals"][0]
-	_check(deal["pays"] == 20 and deal["item"] == "", "el trato no respeta los límites de la ficha: %s" % deal)
-	_check(conv.accept_deal(npc, deal) and gs.money == money_before + 20, "el trato aceptado no paga")
-	_check(conv.history(npc).size() >= 1, "no se acuerda de lo hablado")
+	# una respuesta que lo usa todo: el juego propone (acciones del menú, datos, sitios) y la IA elige
+	gs.alive = true
+	world._spawn_npc("latero")
+	var npc = world.npcs[-1]
+	npc.set_meta("alijo", true)
+	gs.money = 50
+	conv.system_prompt(npc)  # prepara las opciones de esta frase
+	var options: Dictionary = conv._turn["options"]
+	_check(not options.values().any(func(a): return a["label"].begins_with("Robar")), "le ofrece robarse a sí mismo")
+	var buy := ""
+	for id in options:
+		if options[id]["label"].begins_with("Comprarle una lata"):
+			buy = id
+	_check(buy != "" and not conv._turn["data"].is_empty() and conv._turn["sites"].has("s1"), "no prepara opciones, datos y sitios")
+	_check(conv.schema()["properties"]["ofrece"]["enum"].has(buy), "el esquema no deja elegir las opciones")
+	var r: Dictionary = conv.handle_reply(npc, JSON.stringify({"ofrece": buy, "cuenta": "d1", "senala": "s1", "reaccion": "ninguna", "dice": "Una lata, amigo"}))
+	_check(r["text"] == "Una lata, amigo" and r["offers"].size() == 1 and not r["ended"], "la respuesta de la IA no se interpreta")
+	var cans: int = gs.inventory.get("litrona", 0)
+	_check(conv.accept(npc, buy) and gs.inventory.get("litrona", 0) == cans + 1, "aceptar lo que ofrece no hace la acción")
+	_check(not conv.accept(npc, buy), "se puede aceptar dos veces lo mismo")
+	r = conv.handle_reply(npc, JSON.stringify({"ofrece": "o99", "cuenta": "d99", "senala": "s99", "reaccion": "inventada", "dice": "Hmm"}))
+	_check(r["offers"].is_empty() and not r["ended"], "acepta ids que no son de esta frase")
+	_check(conv.history(npc).size() >= 2, "no se acuerda de lo hablado")
 	r = conv.handle_reply(npc, "esto no es JSON")
 	_check(r["text"] == "esto no es JSON", "una respuesta sin formato no se muestra tal cual")
-	r = conv.handle_reply(npc, JSON.stringify({"dice": "¡Fuera!", "acciones": [{"tipo": "enfadarse"}]}))
+	r = conv.handle_reply(npc, JSON.stringify({"ofrece": "", "cuenta": "", "senala": "", "reaccion": "enfadarse", "dice": "¡Fuera!"}))
 	_check(r["ended"] and not conv.can_talk(npc), "el enfado no corta la conversación")
 	gs.message.disconnect(on_msg)
 	world.hud.close_chat()

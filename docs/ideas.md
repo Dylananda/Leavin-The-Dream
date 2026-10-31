@@ -120,24 +120,30 @@ nombre, historia y motivos, no estereotipos por nacionalidad.
   si la IA no responde, se avisa en el registro y todo lo demás sigue igual.
 - [x] Prototipo con 4 personajes: **lateros**, **trileros**, **carteristas** y **despedidas**
   («Hablar» en su menú). Cada tipo tiene su ficha (`scripts/ai/fichas.gd`): quién es, su
-  historia (la de su nombre en `Npc.KINDS`), cómo habla, qué sabe y qué no, qué quiere y qué
-  tratos puede proponer.
-- [x] El modelo recibe lo que el personaje ve de verdad: la hora, la calle, los agentes que hay
-  cerca (y por dónde), el sitio más cercano de cada tipo (bar, comisaría, compraventa, CAS...)
-  y cómo se ve al jugador (colocado, con mono, con mala pinta, buscado), sin cifras.
-- [x] Memoria corta de lo hablado con cada uno (12 frases) y de lo que ha pasado (tratos, pistas,
-  enfados); se acuerda de ti si vuelve a salir alguien con el mismo nombre.
-- [x] La IA hace cosas en el juego con una respuesta en JSON (Ollama la obliga a cumplir un
-  esquema): un **trato** en cada respuesta (vacío si no propone nada; botón para aceptarlo,
-  con dinero, objeto y minutos limitados por la ficha) y acciones: **dar una pista** (se apunta
-  en el registro), **marcar un sitio** de la lista (`world.highlight_poi`), **regalar** (una vez
-  al día), **enfadarse** (no vuelve a hablarte), **llamar a la policía** (sube mucho la
-  búsqueda) y **despedirse**.
-- Lo aprendido con `qwen2.5:7b` (unos 7–15 s por respuesta en la GTX 1060): con el trato como
-  acción opcional lo ofrecía de palabra sin apuntarlo, así que ahora es un campo obligatorio;
-  si las acciones van antes de lo que dice, se las inventa; nombres de acción ambiguos
-  («policia») los usaba para hablar de la policía; «pagas/cobras» los confundía, por eso los
-  campos son `euros_para_el` / `euros_para_ti`. Los ejemplos del prompt ayudan mucho.
+  historia (la de su nombre en `Npc.KINDS`), cómo habla, qué no sabe, qué quiere y qué datos
+  de la partida conoce.
+- [x] **El juego propone y la IA habla.** En cada frase el juego calcula lo que puede pasar de
+  verdad, con un id para cada cosa, y el esquema de la respuesta solo admite esos ids:
+  - **ofrecer** una de las acciones de su menú (`interactions.gd`): vender una lata, hacerle
+    de gancho, enseñarte el oficio... Sale un botón y, si lo aceptas, se hace la acción de
+    siempre, con sus precios y consecuencias. Nunca inventa tratos ni cifras.
+  - **contar** un dato cierto: dónde están ahora los agentes (y si no hay ninguno), o qué
+    guiris sin robar hay cerca y por dónde (trileros y carteristas). Se apunta en el registro.
+  - **señalar** el sitio más cercano de cada tipo (bar, comisaría, CAS...): se marca en el mapa.
+  - **reaccionar**: enfadarse (no vuelve a hablarte), llamar a la policía (sube mucho la
+    búsqueda) o despedirse.
+- [x] Memoria corta de lo hablado con cada uno (12 frases) y de lo que ha pasado de verdad (lo
+  que te ofreció, lo que hicisteis, lo que te contó); se le dice que no hay nada más, para que
+  no se invente encargos pasados. Se acuerda de ti si vuelve a salir alguien con su nombre.
+- Lo aprendido con `qwen2.5:7b` en la GTX 1060 (13–18 s por respuesta):
+  - Dejando que la IA inventara los tratos (cifras, objetos, minutos), salían disparates: un
+    trilero vendiendo latas, «vigilar una hora (15 min)», encargos que nunca se hicieron.
+    Con opciones cerradas por el juego, lo que ofrece siempre encaja.
+  - Si los campos son opcionales, ofrece cosas de palabra sin apuntarlas: todos son obligatorios
+    (con "" para «nada»). Nombres ambiguos («policia») los usaba para hablar de la policía.
+  - Sigue escribiendo regular (repite los datos al pie de la letra, se inventa detalles
+    sueltos) y tarda. Un modelo en la nube (p. ej. Claude por la API, de pago por uso) lo
+    haría mucho mejor y en un par de segundos; el cliente está preparado para cambiarlo.
 - [ ] Pendiente: más personajes con ficha (camellos, educadoras, chavales: con estos, solo ayudar).
 - [ ] Pendiente: que las pistas sirvan de algo más (p. ej. un log de conversaciones para el punto 5)
   y que los tratos tengan consecuencias más allá del momento (deudas, encargos con plazo).
