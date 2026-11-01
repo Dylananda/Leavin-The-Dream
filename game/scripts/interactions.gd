@@ -507,6 +507,9 @@ func _carterista(npc: Npc) -> Array:
 			gs.log_msg("Dos horas de clase en un banco de la Rambla. Ahora robas mejor a los turistas.", G.C_GOOD)))
 	if gs.has_item("cartera"):
 		acts.append(_act("Venderle la cartera con los papeles (12 €)", func():
+			if world.street_items.take_fake("cartera", "«¿Esto qué es?» Te la tira a la cara: es %s."):
+				npc.say("No me hagas perder el tiempo")
+				return
 			gs.remove_item("cartera")
 			gs.add_money(12)
 			npc.say("Los pasaportes se pagan bien")
@@ -695,6 +698,9 @@ func for_poi(poi: Dictionary) -> Array:
 				var item: Dictionary = Defs.ITEMS.get(id, {})
 				if item.get("sell", 0) > 0:
 					acts.append(_act("Vender %s (%d €)" % [item["name"].to_lower(), item["sell"]], func():
+						if world.street_items.take_fake(id, "«¿Me tomas el pelo?» Lo que querías vender es %s."):
+							gs.milestone("piedra")
+							return
 						gs.remove_item(id)
 						gs.add_money(item["sell"])
 						gs.log_msg("Vendido: %s." % item["name"], G.C_GOOD)

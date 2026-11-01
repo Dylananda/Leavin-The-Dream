@@ -54,6 +54,7 @@ func _initialize() -> void:
 		await _test_errands(gs, world)
 		if profile == Defs.PROFILES[0]:
 			_test_vision(gs, world)
+		_test_street_items(gs, world)
 		world._rummage()
 		world._sleep_here()
 		if gs.alive:
@@ -558,6 +559,75 @@ func _find_wall(city) -> Array:
 				if city.is_walkable(b) and not city.line_of_sight(a, b):
 					return [a, b]
 	return []
+## Objetos de la calle: se recogen, ido se confunden (basura que parece un móvil, y al revés)
+## y las piedras se descubren al venderlas o al volver a estar sereno.
+func _test_street_items(gs, world) -> void:
+	var si = world.street_items
+	_steady(gs)
+	for id in gs.subs:
+		gs.subs[id]["high"] = 0.0
+	_check(si.items.size() == Defs.STREET_ITEMS_COUNT, "no hay objetos por la calle")
+	_check(si.items.any(func(it): return it.id != "basura"), "en la calle solo hay basura")
+	var by_id := {}
+	for it in si.items:
+		by_id[it.id] = it
+	# sereno, cada cosa es lo que parece
+	si._refresh()
+	_check(si.items.all(func(it): return it.seen_as == it.id), "sereno, confundes lo que ves")
+	for id in Defs.STREET_ITEMS:
+		if not by_id.has(id):
+			si._spawn(0)
+			si.items[-1].id = id
+			by_id[id] = si.items[-1]
+		var it = by_id[id]
+		it.show_as(id)
+		var had: int = gs.inventory.get(id, 0)
+		si.pick_up(it)
+		_check(gs.inventory.get(id, 0) == had + 1, "al recoger %s no va al inventario" % id)
+		_check(not it in si.items, "%s sigue en el suelo tras recogerlo" % id)
+	# del todo ido, una basura con la tirada baja parece un móvil y te la llevas
+	gs.subs[gs.subs.keys()[0]]["high"] = 200.0
+	_check(gs.befuddlement() >= 1.0, "con 200 de colocón no vas ido")
+	si._spawn(0)
+	var junk = si.items[-1]
+	junk.id = "basura"
+	junk.decoy = "movil"
+	junk.roll = 0.0
+	si._refresh()
+	_check(junk.seen_as == "movil", "ido, la basura no parece un móvil")
+	_check(si.label(junk).begins_with("Móvil"), "el rótulo no dice lo que crees ver")
+	var moviles: int = gs.inventory.get("movil", 0)
+	si.pick_up(junk)
+	_check(gs.inventory.get("movil", 0) == moviles + 1 and gs.fakes.get("movil", 0) == 1, "la piedra no entra como móvil")
+	# un móvil de verdad, ido, parece basura
+	si._spawn(0)
+	var real = si.items[-1]
+	real.id = "movil"
+	real.roll = 0.0
+	si._refresh()
+	_check(real.seen_as == "basura", "ido, un móvil no parece basura")
+	# venderla en el compraventa: siempre descubres la piedra si solo te queda esa
+	for id in gs.inventory.keys():
+		if id == "movil":
+			gs.inventory[id] = 1
+	gs.fakes["movil"] = 1
+	var money: int = gs.money
+	var shop: Dictionary = world.city.pois_of_kind("compraventa")[0]
+	for a in world.interactions.for_poi(shop):
+		if a["label"].begins_with("Vender móvil ("):
+			a["do"].call()
+	_check(gs.money == money and not gs.fakes.has("movil") and not gs.has_item("movil"), "el compraventa te compra una piedra")
+	_check("piedra" in gs.milestones, "vender una piedra no es un hito")
+	# sereno otra vez, descubres las que te queden
+	var carteras: int = gs.inventory.get("cartera", 0)
+	gs.add_item("cartera", 2)
+	gs.fakes["cartera"] = 1
+	gs.subs[gs.subs.keys()[0]]["high"] = 0.0
+	si._next_refresh = 0.0
+	si.update()
+	_check(not gs.fakes.has("cartera") and gs.inventory.get("cartera", 0) == carteras + 1, "sereno, no descubres la cartera falsa")
+	world._update_hover()
+	print("  objetos de la calle: OK (%d en el suelo)" % si.items.size())
 
 
 ## Deja el cuerpo en calma para que una prueba no dispare otra consecuencia por el camino.

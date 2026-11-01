@@ -57,6 +57,7 @@ var camera: Camera3D
 var hud: Hud
 var interactions: Interactions
 var errands: Errands  ## Encargos con plazo y libreta
+var street_items: StreetItems  ## Objetos tirados por la calle
 var conversation: Conversation  ## Conversación libre con IA (scripts/ai/)
 var npcs: Array[Npc] = []
 var markers: Array[PoiMarker] = []
@@ -122,6 +123,8 @@ func _ready() -> void:
 
 	interactions = Interactions.new(self)
 	errands = Errands.new(self)
+	street_items = StreetItems.new(self)
+	street_items.populate()
 	conversation = Conversation.new(self)
 	add_child(conversation)
 	_place_markers()
@@ -275,6 +278,7 @@ func _process(delta: float) -> void:
 	if GameState.alive:
 		GameState.advance(delta * Defs.GAME_MINUTES_PER_SECOND)
 		errands.update()
+		street_items.update()
 	_fx = GameState.effects()
 	hud.show_effects(_fx)
 	_update_player_state(delta)
@@ -463,6 +467,10 @@ func _update_hover() -> void:
 			text = Interactions.POI_LABELS.get(p["kind"], p["kind"])
 			if p["name"] != "":
 				text += ": " + p["name"]
+		else:
+			var item := street_items.item_at(m)
+			if item:
+				text = street_items.label(item)
 	hud.set_hover(text, m)
 
 
@@ -541,6 +549,10 @@ func _on_click(screen_pos: Vector2) -> void:
 	if marker:
 		_approach(marker)
 		return
+	var item := street_items.item_at(screen_pos)
+	if item:
+		_approach(item)
+		return
 	_pending = null
 	player.walk_to(city.world_to_cell(_ground_at(screen_pos)))
 
@@ -556,7 +568,7 @@ func _approach(target: Node3D) -> void:
 
 
 func _target_cell(target: Node3D) -> Vector2i:
-	if target is Npc:
+	if target is Npc or target is StreetItem:
 		return target.cell
 	return Vector2i(target.poi["x"], target.poi["y"])
 
@@ -577,6 +589,9 @@ func _on_player_arrived() -> void:
 func _open_pending() -> void:
 	var target: Node3D = _pending
 	_pending = null
+	if target is StreetItem:
+		street_items.pick_up(target)
+		return
 	var title := ""
 	var actions: Array
 	if target is Npc:
@@ -604,6 +619,8 @@ func use_item(id: String) -> void:
 		errands.open_package()
 		return
 	if id == "cartera":
+		if street_items.take_fake("cartera", "La abres: es %s. Ni una moneda."):
+			return
 		GameState.remove_item("cartera")
 		var n := randi_range(5, 90)
 		GameState.add_money(n)

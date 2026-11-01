@@ -33,6 +33,9 @@ var debt := 0  ## Lo que debes a los camellos
 ## Hasta cuándo (minutos de now()) estás fichado: la policía que te vea te persigue. -1 = no.
 var wanted_until := -1.0
 var inventory: Dictionary = {}
+## Cuántos de los objetos de `inventory` no son lo que crees (la basura que recogiste ido
+## pensando que era un móvil): id -> número. Ver scripts/street_items.gd.
+var fakes: Dictionary = {}
 var milestones: Array[String] = []
 var arrests := 0
 var admissions := 0  ## Ingresos en el psiquiátrico
@@ -94,6 +97,7 @@ func new_game(profile_id: String) -> void:
 	caida = 0.0
 	debt = 0
 	inventory = profile["items"].duplicate()
+	fakes = {}
 	milestones = []
 	arrests = 0
 	admissions = 0
@@ -355,6 +359,12 @@ func remove_item(id: String, count := 1) -> void:
 		inventory.erase(id)
 	else:
 		inventory[id] = n
+	# si ya no te quedan tantos, los falsos se fueron con ellos
+	if fakes.get(id, 0) > maxi(n, 0):
+		if n <= 0:
+			fakes.erase(id)
+		else:
+			fakes[id] = n
 	changed.emit()
 
 
