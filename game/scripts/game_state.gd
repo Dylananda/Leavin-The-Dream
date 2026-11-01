@@ -31,6 +31,9 @@ var heat := 0.0
 var caida := 0.0
 var debt := 0  ## Lo que debes a los camellos
 var inventory: Dictionary = {}
+## Cuántos de los objetos de `inventory` no son lo que crees (la basura que recogiste ido
+## pensando que era un móvil): id -> número. Ver scripts/street_items.gd.
+var fakes: Dictionary = {}
 var milestones: Array[String] = []
 var arrests := 0
 var admissions := 0  ## Ingresos en el psiquiátrico
@@ -91,6 +94,7 @@ func new_game(profile_id: String) -> void:
 	caida = 0.0
 	debt = 0
 	inventory = profile["items"].duplicate()
+	fakes = {}
 	milestones = []
 	arrests = 0
 	admissions = 0
@@ -136,6 +140,8 @@ func time_text(t: float) -> String:
 func shown_clock_text() -> String:
 	if _clock_blank:
 		return "Día ? · --:--"
+	if clock_skew == 0.0:
+		return clock_text()  # sin pasar por now(): con días de partida, el redondeo comía un minuto
 	var t := maxf(0.0, now() + clock_skew)
 	var m := int(fposmod(t, 1440.0))
 	return "Día %d · %02d:%02d" % [int(t / 1440.0) + 1, int(m / 60.0), m % 60]
@@ -339,6 +345,12 @@ func remove_item(id: String, count := 1) -> void:
 		inventory.erase(id)
 	else:
 		inventory[id] = n
+	# si ya no te quedan tantos, los falsos se fueron con ellos
+	if fakes.get(id, 0) > maxi(n, 0):
+		if n <= 0:
+			fakes.erase(id)
+		else:
+			fakes[id] = n
 	changed.emit()
 
 

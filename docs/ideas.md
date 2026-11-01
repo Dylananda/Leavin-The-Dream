@@ -284,9 +284,19 @@ de ruta:
   vecinos...), con precios, riesgo y clientes que se acuerdan de ti.
 - [ ] **Trapichear con otros yonkis** para conseguir sustancias: cambiar objetos, favores o
   dinero.
-- [ ] **Objetos por la calle** con los que trapichear (cables, móviles, bicis, cosas tiradas).
+- [x] **Objetos por la calle** con los que trapichear (cables, móviles, bicis, cosas tiradas).
   Se ven poco y, si vas colocado o borracho, se confunden: lo que parecía un móvil es una
-  piedra, o pasas de largo de algo que valía la pena.
+  piedra, o pasas de largo de algo que valía la pena. Hecho (rama `feat/objetos-calle`,
+  `scripts/street_items.gd`; equilibrio en `Defs.STREET_ITEMS`): 45 cosas tiradas a la vez,
+  casi todo basura; móviles y carteras perdidos a la salida de los bares (más de noche), cable
+  de obra, chatarra, sobras junto a los kebabs, bicis y patinetes mal atados (tardan en soltarse
+  y, si te ve un vecino o un agente, sube la búsqueda). Los pequeños destellan de vez en cuando.
+  Ido, una tirada fija por objeto decide si lo confundes: la basura parece un móvil, una cartera
+  o un cable y te la guardas (en el inventario sale como tal: `GameState.fakes`), o un móvil
+  parece basura. Las piedras se descubren al venderlas en el compraventa (hito), al vaciar la
+  «cartera» o al volver a estar sereno. Lo que nadie recoge desaparece a las 10 h.
+  - [ ] Pendiente: más compradores (otros yonkis, chatarreros) y que los dueños de las bicis
+    las reconozcan; que la bici sirva para moverse más rápido.
 
 **Minijuegos (punto 9)**
 - [ ] Las acciones de habilidad pasan a un minijuego con otra vista (primer plano del

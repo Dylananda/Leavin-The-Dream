@@ -42,6 +42,14 @@ de guiri) en la Rambla; por la tarde y la noche, chavales que esnifan cola por l
 del Raval y Sant Pau; de noche, despedidas de soltero y lateros junto a los bares. Los
 personajes nuevos tienen nombre e historia propia; las fuentes están en `docs/ideas.md`.
 
+### Cosas por la calle
+
+Por el suelo hay de todo, casi siempre basura: móviles y carteras que se pierden a la salida
+de los bares, cable de obra, chatarra, sobras, bicis y patinetes mal atados. Con un clic vas
+y te lo llevas, y luego se vende en el compraventa. Llevarse una bici con un vecino o un agente
+delante sube la búsqueda. Ido, no te fíes de tus ojos: la basura puede parecerte un móvil (y
+no lo descubres hasta que intentas venderlo o se te pasa) o un móvil puede parecerte basura.
+
 ### Encargos y libreta
 
 Algunos personajes te hacen encargos con plazo («Encargo: ...» en su menú): el camello, que
@@ -114,6 +122,9 @@ python tools/make_textures.py
 - `game/scripts/game_state.gd` — estadísticas, sustancias (colocón, mono, enganche), consecuencias
   de los extremos, efectos activos (`effects()`), tiempo y puntuación de caída (autoload)
 - `game/scripts/interactions.gd` — qué se puede hacer con cada bot y en cada lugar
+- `game/scripts/street_items.gd` — objetos tirados por la calle (móviles, carteras, cable, bicis,
+  basura...) que se recogen con un clic y se confunden cuanto más ido vas; cada uno se dibuja
+  con `scripts/city/street_item.gd` según lo que *te parece* que es (equilibrio en `Defs.STREET_ITEMS`)
 - `game/scripts/errands.gd` — encargos con plazo (ofrecer, cumplir, fallar) y la libreta que
   se apunta y se lee peor cuanto más ido vas (equilibrio en `Defs.ERRANDS`)
 - `game/scripts/world.gd` — escena de juego, entrada, eventos del barrio y cómo los efectos

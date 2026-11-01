@@ -169,7 +169,48 @@ const ITEMS := {
 	# de los encargos (scripts/errands.gd)
 	"paquete": {"name": "Paquete del camello", "sell": 0},
 	"cartera_caliente": {"name": "Cartera caliente", "sell": 0},
+	# de la calle (scripts/street_items.gd)
+	"chatarra": {"name": "Chatarra", "sell": 3},
+	"bici": {"name": "Bici ajena", "sell": 25},
+	"patinete": {"name": "Patinete eléctrico", "sell": 45},
 }
+
+## Objetos tirados por la calle (scripts/street_items.gd). `weight` = lo a menudo que aparece;
+## `night` multiplica ese peso de noche; `near` = tipo de lugar junto al que suele estar (se
+## pierden móviles a la salida de los bares); `minutes` = lo que tardas en llevártelo; `risk` =
+## búsqueda que sube si te ve alguien (el doble si es un agente); `fake` = lo que era en
+## realidad cuando, ido, confundes basura con ese objeto (sin `fake`, nunca se confunde).
+const STREET_ITEMS := {
+	"movil": {"weight": 2.0, "night": 3.0, "near": "bar", "minutes": 1,
+		"found": "Un móvil en el suelo. Alguien de fiesta lo va a echar de menos.",
+		"fake": "una piedra negra y lisa"},
+	"movil_roto": {"weight": 2.0, "minutes": 1,
+		"found": "Un móvil con la pantalla hecha añicos, tirado junto a un alcorque.",
+		"fake": "un trozo de baldosa"},
+	"cartera": {"weight": 0.7, "night": 2.0, "near": "bar", "minutes": 1,
+		"found": "¡Una cartera perdida!",
+		"fake": "un cartón doblado"},
+	"cobre": {"weight": 2.0, "minutes": 10,
+		"found": "Un rollo de cable de una obra. Lo pelas en un portal.",
+		"fake": "un trozo de manguera"},
+	"chatarra": {"weight": 3.0, "minutes": 5,
+		"found": "Chatarra: un somier, dos tuberías y una sartén sin mango."},
+	"bici": {"weight": 1.2, "minutes": 8, "risk": 25.0,
+		"found": "Una bici con un candado de risa. Dos tirones y es tuya."},
+	"patinete": {"weight": 0.6, "night": 1.5, "minutes": 8, "risk": 35.0,
+		"found": "Un patinete eléctrico apoyado en una persiana. Sin candado."},
+	"sobras": {"weight": 1.5, "night": 1.5, "near": "kebab", "minutes": 1,
+		"found": "Media pizza en su caja, encima de un contenedor. Aún templada."},
+}
+const STREET_JUNK_WEIGHT := 9.0  ## basura (bolsas, cartones): lo que más hay por el suelo
+const STREET_ITEMS_COUNT := 45  ## objetos tirados a la vez por el barrio
+const STREET_ITEM_HOURS := 10.0  ## horas que dura algo en el suelo antes de que se lo lleve otro
+const STREET_SPAWN_AWAY := 18  ## casillas: los nuevos aparecen lejos, no delante de tus narices
+## Confundir lo que ves (GameState.befuddlement() de 0 a 1): probabilidad, del todo ido, de que
+## un objeto te parezca otra cosa (basura que parece un móvil, o un móvil que parece basura).
+const MISSEE_PER_BEFUDDLEMENT := 0.6
+## Por debajo de esta cabeza ida, miras bien lo que llevas y descubres las piedras.
+const FAKE_REVEAL_BELOW := 0.12
 
 ## Encargos de los personajes (scripts/errands.gd). `giver` = tipo de bot que lo ofrece;
 ## `place` = tipo de lugar del mapa al que hay que ir; `window` = [desde, hasta] en horas desde
@@ -228,6 +269,8 @@ const MILESTONES := {
 	"aprendiz": ["Aprender el oficio de carterista", 10],
 	"despedida": ["Colarte en una despedida de soltero", 5],
 	"paquete": ["Meterte la mercancía de un camello", 10],
+	"bici": ["Llevarte una bici ajena", 5],
+	"piedra": ["Intentar vender una piedra", 5],
 	# conocer una sustancia nueva (las que ya conoce el perfil no cuentan)
 	"probar_litrona": ["Empezar a beber en la calle", 3],
 	"probar_porro": ["Probar los porros", 3],
