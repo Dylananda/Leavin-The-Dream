@@ -49,7 +49,7 @@ sí y una memoria poco fiable**, que puede ir creciendo hacia misiones de rol en
    cuadrícula. Va primero porque sin esto lo demás no se puede jugar. — hecho (rama `feat/ver-y-moverse`)
 7. **Personajes que recuerdan y ven**: memoria de lo que has hecho con cada uno, visión en
    cono tapada por los edificios, escándalos al robar y una policía que solo te persigue si
-   te ve.
+   te ve. — hecho lo básico (rama `feat/recuerdan-y-ven`)
 8. **Trapicheo**: comprar y vender a más personajes, no solo a los camellos.
 9. **Minijuegos de habilidad** para las acciones (robar, distinguir a la gente).
 10. **Ciudad más grande y metro**
@@ -265,19 +265,44 @@ de ruta:
   - [ ] Pendiente: jugarlo y ver si hace falta bajar los edificios cercanos además de los rayos X.
 
 **Personajes que recuerdan y ven (punto 7)**
-- [ ] **Memoria por personaje** de lo que ha pasado contigo: si le has pedido, se aparta al
-  verte; si le has robado, busca a un policía; si le has ayudado, se acerca.
-- [ ] **Visión en cono** para los personajes y la policía, de un largo y un ancho dados y
-  tapada por los edificios, como en *Commandos*. Todos reaccionan a lo que ven, no solo a lo
-  cerca que estás.
-- [ ] **Escándalo al robar**: si te pillan, la víctima grita; algunos transeúntes intentan
+- [x] **Memoria por personaje** de lo que ha pasado contigo: si le has pedido, se aparta al
+  verte; si le has robado, busca a un policía; si le has ayudado, se acerca. Hecho:
+  `Npc.memory` cuenta las veces que le has pedido, robado, ayudado o pegado (lo apuntan las
+  acciones de `interactions.gd`) y `Npc.grudge()` decide qué hace al verte. Pedirle dos veces
+  (`Defs.BEG_ANNOY`) o pegarle hace que se aparte; ayudarle (compartir, dar comida, vigilar,
+  esconder el alijo...), que se acerque a saludarte; robarle, que vaya a por ti o a por un
+  agente. Los que viven de la calle no van con cuentos a la policía: se apartan.
+- [x] **Visión en cono** para los personajes y la policía, de un largo y un ancho dados y
+  tapada por los edificios, como en *Commandos*. Hecho: policía 14 casillas (28 m) y 70°; el
+  resto, 10 casillas y 90°; de noche, un 28 % menos; con la discreción vacía, ×1,5; a 2
+  casillas te notan aunque estés a su espalda (`Defs.VISION` y siguientes). La línea de visión
+  se traza sobre la cuadrícula (`CityMap.line_of_sight`). Miran hacia donde andan y, parados,
+  giran la cabeza. Mientras te ven se llena la sospecha («?» amarillo, más rápido de cerca) y,
+  llena, reaccionan («!» rojo y silueta roja). Los conos se dibujan en el suelo recortados por
+  las paredes: los de la policía y los de quien sospecha o va a por ti, y con **V** los de
+  todos los cercanos (azul tranquilo, amarillo sospecha, rojo persecución). Consumir a la vista
+  y las probabilidades de los robos dependen de qué agentes te ven, no de cuántos hay cerca.
+- [x] **Escándalo al robar**: si te pillan, la víctima grita; algunos transeúntes intentan
   pararte y otros no; varios llaman a la policía. Si lo oye un agente cercano, te persigue;
-  si no, quedas fichado y te buscan más tarde. Pero solo te persiguen si te ven: estar cerca
-  ya no basta (ahora sí).
-- [ ] **Camellos a los que debes dinero**: si te ven, te persiguen y te roban o se pelean
-  contigo.
-- [ ] **Turistas robados que te reconocen**: algunos (sobre todo hombres, por ejemplo) van a
-  por ti para recuperar lo suyo; otros buscan a un policía.
+  si no, quedas fichado y te buscan más tarde. Pero solo te persiguen si te ven. Hecho
+  (`World.scandal`): una onda roja muestra hasta dónde llega el grito (20 casillas). Cada
+  transeúnte tiene un carácter fijo por nombre (`Npc.temper()`): el valiente corre a pararte
+  y, si te alcanza, te agarra 1,5 s; otro llama a la policía (llega al agente más cercano a
+  60 casillas); el resto pasa. Si te pillan robando, o un testigo te ve robar, hay escándalo;
+  si nadie lo ve, la víctima quizá se da cuenta al rato y se queda con tu cara. Si no viene
+  ningún agente, quedas **FICHADO** un día (en el HUD); también si te escapas de una
+  persecución: el agente que te pierde de vista va al último sitio donde te vio, busca y se
+  rinde. La policía solo te persigue si te ve y estás fichado o muy buscado (`heat` > 40).
+- [x] **Camellos a los que debes dinero**: si te ven, te persiguen y te roban o se pelean
+  contigo. Hecho: lo fiado te da 12 horas (`Defs.DEBT_GRACE_HOURS`); el paquete que no
+  llega, ninguna. Si te alcanza, se cobra lo que lleves; si no llevas nada, paliza.
+- [x] **Turistas robados que te reconocen**: algunos van a por ti para recuperar lo suyo;
+  otros buscan a un policía. Hecho: van a por ti el 60 % de los hombres y el 30 % de las
+  mujeres (más en las despedidas), siempre los mismos; si te alcanzan te quitan la cartera o
+  el móvil, o dinero, o te dan un puñetazo. Los demás van hasta el agente más cercano, se lo
+  cuentan y quedas fichado.
+  - [ ] Pendiente: jugarlo y ajustar medidas y tiempos; que la memoria pase a los que vuelven
+    a salir con el mismo nombre; peleas de verdad (minijuego) en vez de una tirada.
 
 **Trapicheo (punto 8)**
 - [ ] Un sistema de tráfico: comprar y vender a más personajes (yonkis, fiesteros, turistas,

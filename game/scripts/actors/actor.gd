@@ -93,6 +93,11 @@ func say(text: String, seconds := 3.0) -> void:
 	_bubble_time = seconds
 
 
+## Hacia dónde mira, en el plano (unitario). Los bots ven en un cono en esta dirección.
+func facing() -> Vector3:
+	return Vector3(sin(_body.rotation.y), 0, cos(_body.rotation.y))
+
+
 func distance_to_cell(other: Vector2i) -> int:
 	return maxi(absi(other.x - cell.x), absi(other.y - cell.y))
 

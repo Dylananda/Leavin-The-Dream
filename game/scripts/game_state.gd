@@ -30,6 +30,8 @@ var dignity := 100.0
 var heat := 0.0
 var caida := 0.0
 var debt := 0  ## Lo que debes a los camellos
+## Hasta cuándo (minutos de now()) estás fichado: la policía que te vea te persigue. -1 = no.
+var wanted_until := -1.0
 var inventory: Dictionary = {}
 var milestones: Array[String] = []
 var arrests := 0
@@ -88,6 +90,7 @@ func new_game(profile_id: String) -> void:
 	for id in profile["knows"]:
 		_learn(id, float(profile["knows"][id]))
 	heat = 0.0
+	wanted_until = -1.0
 	caida = 0.0
 	debt = 0
 	inventory = profile["items"].duplicate()
@@ -124,6 +127,18 @@ func now() -> float:
 	return (day - 1) * 1440.0 + minute_of_day
 
 
+## Si estás fichado: la policía que te vea va a por ti aunque no hagas nada.
+func is_wanted() -> bool:
+	return wanted_until > now()
+
+
+## Te fichan (alguien ha dado tu descripción) durante Defs.WANTED_MINUTES.
+func mark_wanted(why: String) -> void:
+	if not is_wanted():
+		log_msg("Fichado: %s. Si un agente te ve, irá a por ti." % why, C_BAD)
+	wanted_until = now() + Defs.WANTED_MINUTES
+
+
 ## Hora de un instante de now(): «14:30», o «10:00 del día 3» si no es hoy.
 func time_text(t: float) -> String:
 	var d := int(t / 1440.0) + 1
@@ -136,7 +151,8 @@ func time_text(t: float) -> String:
 func shown_clock_text() -> String:
 	if _clock_blank:
 		return "Día ? · --:--"
-	var t := maxf(0.0, now() + clock_skew)
+	# el minuto se corta antes de sumar el día: 1349,9999 + 1440 redondea a 2790 y adelantaría un minuto
+	var t := maxf(0.0, (day - 1) * 1440.0 + floorf(minute_of_day) + clock_skew)
 	var m := int(fposmod(t, 1440.0))
 	return "Día %d · %02d:%02d" % [int(t / 1440.0) + 1, int(m / 60.0), m % 60]
 
@@ -680,6 +696,7 @@ func arrest() -> void:
 	for id in lost:
 		inventory.erase(id)
 	heat = 0.0
+	wanted_until = -1.0
 	log_msg("Detenido. Te quitan lo que llevabas encima y pasas la noche en el calabozo.", C_BAD)
 	milestone("primera_detencion")
 	add_caida(8.0)

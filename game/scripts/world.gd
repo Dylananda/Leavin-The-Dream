@@ -44,6 +44,12 @@ const C_POINTER := Color("ffd23c")  ## flechas hacia los sitios apuntados en la 
 ## más grande al andar con WASD para ver bien la calle por la que vas.
 const XRAY_RADIUS_M := 6.0
 const XRAY_RADIUS_WALKING_M := 9.0
+## Conos de visión en el suelo: se dibujan los de la policía y los de quien va a por ti a
+## menos de esta distancia (casillas); con V, los de todos.
+const CONE_SHOW_DISTANCE := 40
+const C_SUSPECT := Color("ffd23c")  ## «?» de quien te está viendo y sospecha
+const C_HUNTER := Color("ff4a3c")  ## «!» de quien te persigue (y su silueta)
+const GRAB_SECONDS := 1.5  ## lo que te retiene un transeúnte que te agarra
 
 var city: CityMap
 var player: Actor
@@ -75,6 +81,8 @@ var _stumble := 0.0  ## segundos que quedan de tropiezo
 var _stumble_timer := 3.0
 var _marker_timer := 0.0
 var _xray_m := XRAY_RADIUS_M
+var _all_cones := false  ## tecla V: ver los conos de visión de todos los cercanos
+var _grabbed := 0.0  ## segundos que te quedan agarrado por un transeúnte
 
 
 func _ready() -> void:
@@ -200,6 +208,7 @@ func _spawn_npc(kind: String) -> void:
 	var npc := Npc.new()
 	npc.init_kind(kind)
 	npc.player = player
+	npc.world = self
 	var home: Vector2i
 	var zone: String = Npc.KINDS[kind].get("zone", "")
 	if zone != "":
@@ -209,7 +218,7 @@ func _spawn_npc(kind: String) -> void:
 	npc.home = home
 	city.entities.add_child(npc)
 	npc.setup(city, city.random_walkable_near(home, 8))
-	npc.caught_player.connect(func(_n): arrest_player())
+	npc.caught_player.connect(_on_caught)
 	npcs.append(npc)
 
 
@@ -309,6 +318,9 @@ func _update_player_state(delta: float) -> void:
 			player.say(["¡Uy!", "Mierda...", "*tropieza*"].pick_random(), 1.0)
 	if _stumble > 0.0:
 		slow *= 0.15
+	_grabbed = maxf(0.0, _grabbed - delta)
+	if _grabbed > 0.0:
+		slow = 0.0
 	player.slow_factor = slow
 	# andando por clic también se hacen eses
 	player.wobble = clampf(fx.get("drift", 0.0), 0.0, 1.0)
@@ -398,13 +410,24 @@ func _update_xray(delta: float) -> void:
 		mat.set_shader_parameter("xray_radius", clampf(_xray_m / camera.size, 0.06, 0.4))
 
 
-## Iconos y siluetas de los bots: quién te puede dar un encargo, quién te lo ha dado y la policía.
+## Iconos, siluetas y conos de los bots: quién te persigue («!») o sospecha de ti («?»),
+## quién te puede dar un encargo, quién te lo ha dado y la policía.
 func _update_markers() -> void:
 	for npc in npcs:
 		var mark := errands.marker_for(npc)
 		var color := C_GIVER if mark == "★" else C_OFFER
+		if npc.mode in ["persigue", "busca"]:
+			mark = "!"
+			color = C_HUNTER
+		elif npc.alert > 0.05:
+			mark = "?"
+			color = C_SUSPECT
 		npc.set_marker(mark, color)
-		if mark != "":
+		var near := npc.distance_to_cell(player.cell) <= CONE_SHOW_DISTANCE
+		npc.cone_visible = near and (_all_cones or npc.kind == "policia" or npc.mode != "" or npc.alert > 0.05)
+		if color == C_HUNTER:
+			npc.set_silhouette(Color(C_HUNTER, 0.75))
+		elif mark != "":
 			npc.set_silhouette(Color(color, 0.75))
 		elif npc.kind == "policia":
 			npc.set_silhouette(C_POLICE_SILHOUETTE)
@@ -504,6 +527,9 @@ func _unhandled_input(event: InputEvent) -> void:
 				_rummage()
 			KEY_Z:
 				_sleep_here()
+			KEY_V:
+				_all_cones = not _all_cones
+				_update_markers()
 
 
 func _on_click(screen_pos: Vector2) -> void:
@@ -585,10 +611,10 @@ func use_item(id: String) -> void:
 		GameState.change_dignity(-1)
 		return
 	if Defs.SUBSTANCES.has(id):
-		if police_near(player.cell, 14) > 0:
+		if police_watching() > 0:
 			GameState.heat = minf(100.0, GameState.heat + 35.0)
 			GameState.log_msg("Un agente te ha visto consumiendo en plena calle.", GameState.C_BAD)
-		elif _witnesses_near(player.cell, 8) > 0:
+		elif not watching(WITNESS_KINDS).is_empty():
 			GameState.heat = minf(100.0, GameState.heat + 10.0)
 			GameState.change_dignity(-2, "Te ven metiéndote en plena calle")
 	GameState.consume(id)
@@ -643,7 +669,7 @@ func arrest_player() -> void:
 	_pending = null
 	player.stop()
 	for npc in npcs:
-		npc.chasing = false
+		npc.calm_down()
 	GameState.arrest()
 	var stations := city.pois_of_kind("comisaria")
 	if not stations.is_empty() and GameState.alive:
@@ -657,6 +683,8 @@ func _on_relocated(place: String) -> void:
 	hud.close_menu()
 	_pending = null
 	player.stop()
+	for npc in npcs:
+		npc.calm_down()
 	var spots := city.pois_of_kind(place)
 	if spots.is_empty():
 		return
@@ -668,12 +696,161 @@ func _on_relocated(place: String) -> void:
 	_camera_focus = player.position
 
 
-func _witnesses_near(cell: Vector2i, radius: int) -> int:
-	var n := 0
+## Bots de los tipos `kinds` (todos, si está vacío) que te están viendo ahora, menos `except`.
+func watching(kinds: Array = [], except: Npc = null) -> Array[Npc]:
+	var out: Array[Npc] = []
 	for npc in npcs:
-		if npc.kind in WITNESS_KINDS and npc.distance_to_cell(cell) <= radius:
-			n += 1
-	return n
+		if npc != except and (kinds.is_empty() or npc.kind in kinds) and npc.can_see(player):
+			out.append(npc)
+	return out
+
+
+## Agentes que te están viendo ahora (su cono te alcanza y no hay edificios en medio).
+func police_watching() -> int:
+	return watching(["policia"]).size()
+
+
+## Testigos de un robo a `victim`: los que te ven y no viven de la calle (esos miran a otro lado).
+func robbery_witnesses(victim: Npc) -> Array[Npc]:
+	var out: Array[Npc] = []
+	for npc in watching([], victim):
+		if npc.kind not in Defs.NEVER_INTERVENE:
+			out.append(npc)
+	return out
+
+
+## Escándalo: `shouter` (la víctima o un testigo; null si es un guardia de seguridad o alguien
+## a quien no ves) grita `text`. Quien lo oye reacciona según su carácter (Npc.temper()):
+## unos intentan pararte, otros llaman a la policía, otros pasan. Si lo oye un agente, viene;
+## si no, quedas fichado. En cualquier caso, la policía que te vea irá a por ti.
+func scandal(shouter: Npc, text: String) -> void:
+	var gs := GameState
+	var at := player.cell
+	if shouter:
+		at = shouter.cell
+		shouter.say(text, 4.0)
+		shouter.last_seen = player.cell
+	_shout_ring(city.cell_to_world(at))
+	gs.heat = maxf(gs.heat, Defs.CHASE_HEAT + 20.0)
+	var police := false
+	var stoppers := 0
+	var callers := 0
+	for npc in npcs:
+		if npc == shouter or npc.distance_to_cell(at) > Defs.SCANDAL_HEAR:
+			continue
+		if npc.kind == "policia":
+			npc.investigate(player.cell)
+			police = true
+			continue
+		if npc.mode != "":
+			continue
+		match npc.temper():
+			"valiente":
+				npc.say("¡Quieto ahí!", 3.0)
+				npc.start_chase("parar")
+				stoppers += 1
+			"llama":
+				npc.say(["¡Policía! ¡Al ladrón!", "*llama al 112*", "¡Que alguien avise a la Urbana!"].pick_random(), 3.0)
+				callers += 1
+			_:
+				if randf() < 0.3:
+					npc.say(["Yo no he visto nada", "Uf, yo no me meto", "Otra vez..."].pick_random(), 2.5)
+	if not police and callers > 0:
+		# la llamada llega al agente más cercano, si está en el barrio
+		var best: Npc = null
+		for npc in npcs:
+			if npc.kind == "policia" and npc.distance_to_cell(at) <= Defs.SCANDAL_CALL and (best == null or npc.distance_to_cell(at) < best.distance_to_cell(at)):
+				best = npc
+		if best:
+			best.investigate(player.cell)
+			police = true
+	var where := city.street_name_near(at)
+	var msg := "%s Se monta un escándalo en %s." % [text if shouter == null else "«%s»" % text, where]
+	if stoppers > 0:
+		msg += " %s intenta pararte." % ("Alguien" if stoppers == 1 else "Un par de valientes")
+	if police:
+		msg += " Viene la policía."
+	gs.log_msg(msg, GameState.C_BAD)
+	if not police:
+		gs.mark_wanted("te han visto robar en %s y han dado tu descripción" % where)
+
+
+## Onda roja en el suelo que muestra hasta dónde llega un grito.
+func _shout_ring(pos: Vector3) -> void:
+	var ring := MeshInstance3D.new()
+	var torus := TorusMesh.new()
+	torus.inner_radius = 0.92
+	torus.outer_radius = 1.0
+	torus.rings = 48
+	ring.mesh = torus
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.albedo_color = Color(1.0, 0.3, 0.2, 0.8)
+	mat.no_depth_test = true
+	ring.material_override = mat
+	ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	ring.position = pos + Vector3(0, 0.2, 0)
+	ring.scale = Vector3(1.0, 0.05, 1.0)
+	city.entities.add_child(ring)
+	var r := Defs.SCANDAL_HEAR * city.cell_m
+	var tw := ring.create_tween()
+	tw.set_parallel()
+	tw.tween_property(ring, "scale", Vector3(r, 0.05, r), 1.2).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	tw.tween_property(mat, "albedo_color:a", 0.0, 1.2).set_ease(Tween.EASE_IN)
+	tw.chain().tween_callback(ring.queue_free)
+
+
+## Alguien que te perseguía te ha alcanzado. Según por qué: la policía te detiene, el camello
+## se cobra, el robado recupera lo suyo y el transeúnte valiente te agarra un momento.
+func _on_caught(npc: Npc) -> void:
+	var gs := GameState
+	match npc.chase_reason:
+		"policia":
+			arrest_player()
+		"deuda":
+			var paid := mini(gs.money, npc.debt)
+			if paid > 0:
+				gs.add_money(-paid)
+				npc.debt -= paid
+				gs.debt = maxi(0, gs.debt - paid)
+				npc.say("Esto es mío.")
+				gs.log_msg("%s te alcanza y te vacía los bolsillos: %d €. Le debes %d €." % [npc.display_name, paid, npc.debt], GameState.C_BAD)
+			else:
+				npc.say("¿No tienes nada? Pues toma.", 3.0)
+				gs.change_health(-15, "Una paliza por una deuda")
+				gs.change_dignity(-3)
+				gs.log_msg("No llevas nada. %s te da una paliza para que no se te olvide." % npc.display_name, GameState.C_BAD)
+				gs.milestone("pelea_perdida")
+			npc.debt_due = gs.now() + Defs.DEBT_GRACE_HOURS * 60.0
+		"venganza":
+			npc.memory.erase("robado")
+			var loot := ""
+			for id in ["cartera", "movil"]:
+				if gs.has_item(id):
+					loot = id
+					break
+			if loot != "":
+				gs.remove_item(loot)
+				npc.say("Mine! ¡Es mío!", 3.0)
+				gs.log_msg("%s te alcanza y te arranca %s." % [npc.display_name, Defs.item_name(loot).to_lower()], GameState.C_BAD)
+			elif gs.money > 0:
+				var n := mini(gs.money, 40)
+				gs.add_money(-n)
+				npc.say("Give me that! ¡Dame!", 3.0)
+				gs.log_msg("%s te alcanza y se cobra lo suyo: %d €." % [npc.display_name, n], GameState.C_BAD)
+			else:
+				npc.say("Asshole!", 3.0)
+				gs.change_health(-8, "El puño de alguien a quien robaste")
+				gs.log_msg("No llevas nada que devolverle. %s te suelta un puñetazo." % npc.display_name, GameState.C_BAD)
+			gs.change_dignity(-3)
+		"parar":
+			player.stop()
+			_pending = null
+			_grabbed = GRAB_SECONDS
+			npc.say("¡Te tengo, ladrón!", 2.0)
+			gs.heat = minf(100.0, gs.heat + 10.0)
+			gs.log_msg("%s te agarra del brazo. Te sueltas como puedes." % npc.display_name, GameState.C_BAD)
 
 
 func police_near(cell: Vector2i, radius: int) -> int:
@@ -718,7 +895,7 @@ func highlight_poi(poi: Dictionary) -> void:
 func _respawn() -> void:
 	var h := GameState.hour()
 	for npc in npcs.duplicate():
-		if not Npc.active_at(npc.kind, h) and npc.distance_to_cell(player.cell) > DESPAWN_DISTANCE and not npc.chasing:
+		if not Npc.active_at(npc.kind, h) and npc.distance_to_cell(player.cell) > DESPAWN_DISTANCE and npc.mode == "":
 			npcs.erase(npc)
 			npc.queue_free()
 	for kind in _npc_targets:

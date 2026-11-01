@@ -2,6 +2,8 @@ class_name Npc
 extends Actor
 ## Bot del barrio. Cada tipo tiene su forma de moverse y sus frases;
 ## las interacciones con el jugador están en interactions.gd.
+## Ven en un cono tapado por los edificios y se acuerdan de lo que les has hecho: según eso
+## te persiguen, te denuncian, se apartan o se acercan (ver grudge() y react()).
 
 signal caught_player(npc: Npc)
 
@@ -138,6 +140,12 @@ const P_JACKET := 0.35
 const P_SKIRT := 0.35
 ## Tipos que van de uniforme (sin chaqueta ni falda).
 const UNIFORMED := ["policia", "educador"]
+const THINK_TIME := 0.25  ## cada cuánto miran y deciden (segundos)
+## Colores del cono de visión: tranquilo, con sospecha y persiguiéndote.
+const C_CONE_CALM := Color(0.6, 0.9, 1.0, 0.16)
+const C_CONE_ALERT := Color(1.0, 0.85, 0.2, 0.3)
+const C_CONE_CHASE := Color(1.0, 0.25, 0.2, 0.34)
+const CONE_RAYS := 16  ## rayos del abanico (más, mejor recorte contra las esquinas)
 
 var kind := "turista"
 var gender := "m"  ## "m" o "f", según el nombre (ver KINDS)
@@ -146,14 +154,41 @@ var wander_radius := 20
 var money := 0
 var debt := 0  ## Lo que le debe el jugador (camellos)
 var player: Actor
-var chasing := false
-var robbed := false  ## Ya le han robado (turistas)
+var world: World
+var robbed := false  ## Ya le han robado (turistas), tú o un carterista
 var last_interaction_day := -1
 var known := false  ## Ya has hablado con él (los disfrazados dejan de parecer lo que no son)
+## Lo que ha pasado contigo: "pedido", "robado", "ayudado", "pegado" -> veces. Decide cómo
+## reacciona al verte (ver grudge()).
+var memory := {}
+## Lo que está haciendo por ti: "" (su vida), "persigue", "busca" (donde te vio por última
+## vez), "aparta" (se quita de en medio), "denuncia" (va a por un policía), "acerca" (a saludar).
+var mode := ""
+var chase_reason := ""  ## por qué te persigue: "policia", "deuda", "venganza", "parar"
+var alert := 0.0  ## 0..1: la sospecha mientras te ve; llena, reacciona
+var sees_player := false
+var last_seen := Vector2i.ZERO  ## casilla donde te vio por última vez
+var debt_due := 0.0  ## now() a partir del cual el camello viene a cobrar lo fiado
+## Si se dibuja su cono de visión en el suelo (lo decide World según la distancia y la tecla V).
+var cone_visible := false
+var chasing: bool:
+	get:
+		return mode == "persigue"
 
 var _idle := 0.0
 var _think := 0.0
 var _chatter := randf_range(8.0, 30.0)
+var _lost := 0.0  ## segundos persiguiéndote sin verte
+var _search := 0.0  ## segundos que le quedan buscándote
+var _calm_until := 0.0  ## (segundos de reloj) hasta entonces no vuelve a reaccionar
+var _look_yaw := 0.0  ## hacia dónde gira la cabeza cuando está parado
+var _look_timer := 0.0
+var _cone: MeshInstance3D
+var _cone_mesh: ImmediateMesh
+var _cone_timer := 0.0
+var _denounce_to: Npc  ## el agente al que va a contarle lo que le hiciste
+
+static var _cone_material: StandardMaterial3D
 
 
 ## Prepara un bot del tipo `p_kind`; sin `p_name`, con uno de sus nombres al azar.
@@ -252,6 +287,166 @@ static func active_at(p_kind: String, h: int) -> bool:
 	return (h >= from and h < to) if from < to else (h >= from or h < to)
 
 
+
+
+# --------------------------------------------------------- memoria y visión
+
+## Apunta algo que ha pasado contigo ("pedido", "robado", "ayudado", "pegado").
+func remember(what: String) -> void:
+	memory[what] = memory.get(what, 0) + 1
+
+
+func remembers(what: String) -> int:
+	return memory.get(what, 0)
+
+
+## Te fía `amount` € y te da `hours` horas para pagar antes de venir a cobrar.
+func add_debt(amount: int, hours: float) -> void:
+	debt += amount
+	debt_due = GameState.now() + hours * 60.0
+
+
+## Lo que le toca hacer si te ve, según quién es y lo que recuerda de ti; "" si le da igual.
+## "persigue" (la policía, si estás fichado o muy buscado), "cobrar" (un camello al que
+## debes), "venganza" (le robaste y va a por lo suyo), "denuncia" (le robaste y busca a un
+## agente), "aparta" (le has pedido demasiado o le pegaste) o "acerca" (le ayudaste).
+func grudge() -> String:
+	var gs := GameState
+	if kind == "policia":
+		return "persigue" if gs.is_wanted() or gs.heat > Defs.CHASE_HEAT else ""
+	if kind == "camello" and debt > 0 and gs.now() >= debt_due:
+		return "cobrar"
+	if remembers("robado") > 0:
+		if avenger():
+			return "venganza"
+		# los que viven de la calle no van con cuentos a la policía
+		return "aparta" if kind in Defs.NEVER_INTERVENE else "denuncia"
+	if remembers("pegado") > 0 or remembers("pedido") >= Defs.BEG_ANNOY:
+		return "aparta"
+	if remembers("ayudado") > 0:
+		return "acerca"
+	return ""
+
+
+## Si, robado, va a por ti en vez de buscar a un agente (tirada fija por nombre).
+func avenger() -> bool:
+	var p: float = Defs.AVENGER_CHANCE[gender]
+	if kind == "fiestero":
+		p += 0.2  # van en grupo y van ciegos
+	return _trait("venganza") < p
+
+
+## Cómo reacciona ante un escándalo: "valiente" (intenta pararte), "llama" (a la policía) o
+## "pasa". Los que viven de la calle siempre pasan.
+func temper() -> String:
+	if kind in Defs.NEVER_INTERVENE or kind == "policia":
+		return "pasa"
+	var r := _trait("caracter")
+	if r < Defs.BRAVE_CHANCE:
+		return "valiente"
+	return "llama" if r < Defs.BRAVE_CHANCE + Defs.CALLER_CHANCE else "pasa"
+
+
+## Tirada 0..1 que depende solo del personaje y de `salt`: el mismo siempre hace lo mismo.
+func _trait(salt: String) -> float:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(kind + "|" + display_name + "|" + salt)
+	return rng.randf()
+
+
+## Alcance (metros, en x) y media apertura (radianes, en y) de su cono de visión ahora.
+func vision() -> Vector2:
+	var v: Dictionary = Defs.VISION.get(kind, Defs.VISION["_"])
+	var r: float = v["range"] * city.cell_m
+	if GameState.is_night():
+		r *= Defs.NIGHT_SIGHT
+	if GameState.heat >= 90.0:
+		r *= Defs.EXPOSED_SIGHT
+	return Vector2(r, deg_to_rad(v["angle"]) / 2.0)
+
+
+## Si ve a `who`: dentro del cono (o pegado a él) y sin edificios en medio.
+func can_see(who: Actor) -> bool:
+	if who == null or city == null:
+		return false
+	var v := vision()
+	var to := who.position - position
+	to.y = 0.0
+	var dist := to.length()
+	if dist > v.x:
+		return false
+	if dist > Defs.NEAR_SIGHT * city.cell_m and facing().dot(to / dist) < cos(v.y):
+		return false
+	return city.line_of_sight(cell, who.cell)
+
+
+## Deja de hacer lo que hacía por ti y vuelve a lo suyo.
+func calm_down() -> void:
+	mode = ""
+	chase_reason = ""
+	alert = 0.0
+	_denounce_to = null
+	speed = KINDS[kind]["speed"]
+
+
+## Empieza a perseguirte por `reason` ("policia", "deuda", "venganza", "parar").
+func start_chase(reason: String) -> void:
+	mode = "persigue"
+	chase_reason = reason
+	alert = 1.0
+	_lost = 0.0
+	last_seen = player.cell
+	speed = KINDS[kind]["speed"] * (1.3 if reason == "policia" else 1.2)
+	walk_to(player.cell)
+
+
+## Va a mirar a `at` (ha oído un escándalo o se lo han contado); si te ve allí, te persigue.
+func investigate(at: Vector2i) -> void:
+	if mode == "persigue":
+		return
+	mode = "busca"
+	if kind == "policia":
+		chase_reason = "policia"
+	last_seen = at
+	_search = Defs.SEARCH_TIME * 1.5
+	speed = KINDS[kind]["speed"] * 1.3
+	walk_to(at)
+
+
+## Te ha visto y reacciona según grudge(); sin motivo, nada.
+func react(why: String) -> void:
+	_calm_until = _clock() + 25.0
+	match why:
+		"persigue":
+			say("¡Alto! ¡Policía!")
+			start_chase("policia")
+		"cobrar":
+			say("¡Eh, tú! ¡Mi dinero!", 3.0)
+			start_chase("deuda")
+		"venganza":
+			say("You! ¡Tú! ¡Devuélvemelo!" if kind in ["turista", "fiestero"] else "¡Tú! ¡Ladrón!", 3.0)
+			start_chase("venganza")
+		"denuncia":
+			alert = 0.0
+			_denounce_to = _nearest_police()
+			say("¡Ese! ¡Ese me robó!", 3.0)
+			if _denounce_to:
+				mode = "denuncia"
+				walk_to(_denounce_to.cell)
+			else:
+				GameState.mark_wanted("%s te ha reconocido y ha llamado a la policía" % display_name)
+		"aparta":
+			alert = 0.0
+			mode = "aparta"
+			say(["Otra vez tú no...", "Ni me mires", "Uf, este otra vez"].pick_random())
+			var away := Vector2(cell - player.cell).normalized() * 10.0
+			walk_to(city.nearest_walkable(cell + Vector2i(roundi(away.x), roundi(away.y))))
+		"acerca":
+			alert = 0.0
+			mode = "acerca"
+			walk_to(player.cell)
+
+
 func _process(delta: float) -> void:
 	super._process(delta)
 	if not GameState.alive:
@@ -262,38 +457,178 @@ func _process(delta: float) -> void:
 		_chatter = randf_range(15.0, 45.0)
 		if player and distance_to_cell(player.cell) < 20:
 			say(KINDS[kind]["lines"].pick_random())
-	if kind == "policia":
-		_police_ai()
-	if chasing:
+	if player and _think <= 0.0:
+		_think = THINK_TIME
+		perceive(THINK_TIME)
+		_follow_mode(THINK_TIME)
+	_cone_timer -= delta
+	if _cone_timer <= 0.0:
+		_cone_timer = 0.1
+		_update_cone()
+	if mode != "":
+		if mode == "busca" and not is_moving():
+			_look_around(delta, 2.5)
 		return
 	if not is_moving():
+		_look_around(delta, 1.0)
 		_idle -= delta
 		if _idle <= 0.0:
 			_idle = randf_range(1.0, 5.0) if kind != "camello" else randf_range(4.0, 12.0)
 			walk_to(city.random_walkable_near(home, wander_radius))
 
 
-func _police_ai() -> void:
-	if not player or _think > 0.0:
+## Mira (cono de visión) y sube o baja la sospecha. Llena, reacciona si tiene motivo.
+func perceive(dt: float) -> void:
+	var far: float = Defs.VISION["policia"]["range"] * Defs.EXPOSED_SIGHT
+	sees_player = distance_to_cell(player.cell) <= far and can_see(player)
+	if mode in ["aparta", "denuncia", "acerca"]:
 		return
-	_think = 0.4
-	var d := distance_to_cell(player.cell)
-	var sight := (12.0 if GameState.is_night() else 18.0) * (2.5 if GameState.heat >= 90.0 else 1.0)
-	var sees := d < sight
-	if not chasing and sees and GameState.heat > 40.0:
-		chasing = true
-		say("¡Alto! ¡Policía!")
-		speed = KINDS["policia"]["speed"] * 1.3
-	if chasing:
-		if GameState.heat <= 10.0 or d > 50:
-			chasing = false
-			speed = KINDS["policia"]["speed"]
-			say("Se ha escapado...")
-			walk_to(city.random_walkable_near(home, wander_radius))
-		elif d <= 2:
-			chasing = false
-			speed = KINDS["policia"]["speed"]
-			stop()
-			caught_player.emit(self)
-		else:
-			walk_to(player.cell)
+	var why := grudge() if sees_player else ""
+	if sees_player:
+		last_seen = player.cell
+		_lost = 0.0
+	if why != "" or (sees_player and mode == "persigue"):
+		var closeness := clampf(position.distance_to(player.position) / vision().x, 0.0, 1.0)
+		alert = minf(1.0, alert + dt / Defs.ALERT_TIME * lerpf(3.0, 1.0, closeness))
+	elif mode != "persigue":
+		alert = maxf(0.0, alert - dt * Defs.ALERT_DECAY)
+	if alert >= 1.0 and mode in ["", "busca"] and why != "" and _clock() >= _calm_until:
+		react(why)
+
+
+## Sigue con lo que esté haciendo por ti: perseguir, buscar, apartarse, denunciar, saludar.
+func _follow_mode(dt: float) -> void:
+	match mode:
+		"persigue":
+			if chase_reason == "policia" and GameState.heat <= 10.0 and not GameState.is_wanted():
+				say("Bah, déjalo.")
+				calm_down()
+				return
+			if distance_to_cell(player.cell) <= 2:
+				stop()
+				var why := chase_reason
+				calm_down()
+				_calm_until = _clock() + 30.0
+				chase_reason = why
+				caught_player.emit(self)
+				chase_reason = ""
+				return
+			if sees_player:
+				walk_to(player.cell)
+			else:
+				_lost += dt
+				if _lost >= Defs.LOSE_SIGHT_TIME:
+					if chase_reason == "parar":
+						calm_down()  # un transeúnte no sigue a nadie por las esquinas
+						return
+					mode = "busca"
+					_search = Defs.SEARCH_TIME
+					say("¿Dónde se ha metido?")
+					walk_to(last_seen)
+		"busca":
+			if not is_moving():
+				_search -= dt
+				if _search <= 0.0:
+					if chase_reason == "policia":
+						say("Se ha escapado...")
+						GameState.mark_wanted("te has escapado de la policía")
+					calm_down()
+					walk_to(city.random_walkable_near(home, wander_radius))
+		"denuncia":
+			if not is_instance_valid(_denounce_to):
+				_denounce_to = _nearest_police()
+				if _denounce_to == null:
+					GameState.mark_wanted("%s ha llamado a la policía" % display_name)
+					calm_down()
+					return
+			if distance_to_cell(_denounce_to.cell) <= 4:
+				say("¡Agente! ¡Ese me ha robado!", 3.0)
+				_denounce_to.say("¿Cuál? Vale, vamos.")
+				_denounce_to.investigate(last_seen)
+				GameState.mark_wanted("%s te ha denunciado a %s" % [display_name, _denounce_to.display_name])
+				calm_down()
+			elif not is_moving() or randf() < 0.2:
+				walk_to(_denounce_to.cell)
+		"aparta":
+			if not is_moving():
+				calm_down()
+		"acerca":
+			if distance_to_cell(player.cell) <= 3:
+				stop()
+				say(["¡Eh, colega!", "¡Hombre! ¿Qué tal?", "Gracias por lo del otro día"].pick_random(), 3.0)
+				calm_down()
+			elif not is_moving():
+				calm_down()
+
+
+## Parado, gira la cabeza a un lado y a otro (para que el cono barra la calle).
+func _look_around(delta: float, pace: float) -> void:
+	_look_timer -= delta * pace
+	if _look_timer <= 0.0:
+		_look_timer = randf_range(1.5, 4.0)
+		_look_yaw = atan2(facing().x, facing().z) + randf_range(-1.6, 1.6)
+	_face(Vector3(sin(_look_yaw), 0, cos(_look_yaw)), delta * 0.25 * pace)
+
+
+func _nearest_police() -> Npc:
+	if world == null:
+		return null
+	var best: Npc = null
+	for n in world.npcs:
+		if n.kind == "policia" and is_instance_valid(n) and (best == null or n.distance_to_cell(cell) < best.distance_to_cell(cell)):
+			best = n
+	return best
+
+
+func _clock() -> float:
+	return Time.get_ticks_msec() / 1000.0
+
+
+## Dibuja en el suelo lo que ve, recortado por los edificios, como en *Commandos*.
+## El color dice qué piensa: tranquilo, con sospecha o persiguiéndote.
+func _update_cone() -> void:
+	if not cone_visible or city == null:
+		if _cone:
+			_cone.visible = false
+		return
+	if _cone == null:
+		if _cone_material == null:
+			_cone_material = StandardMaterial3D.new()
+			_cone_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+			_cone_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			_cone_material.vertex_color_use_as_albedo = true
+			_cone_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+			_cone_material.render_priority = 1
+		_cone_mesh = ImmediateMesh.new()
+		_cone = MeshInstance3D.new()
+		_cone.mesh = _cone_mesh
+		_cone.material_override = _cone_material
+		_cone.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_cone.top_level = true
+		add_child(_cone)
+	_cone.visible = true
+	_cone.global_transform = Transform3D.IDENTITY
+	var color := C_CONE_CALM
+	if mode in ["persigue", "busca"]:
+		color = C_CONE_CHASE
+	elif alert > 0.05:
+		color = C_CONE_CALM.lerp(C_CONE_ALERT, minf(1.0, alert * 2.0))
+	var edge := Color(color, color.a * 0.35)
+	var v := vision()
+	var origin := global_position + Vector3(0, 0.08, 0)
+	var ahead := facing()
+	_cone_mesh.clear_surfaces()
+	_cone_mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLES)
+	var prev := Vector3.ZERO
+	for i in CONE_RAYS + 1:
+		var dir := ahead.rotated(Vector3.UP, lerpf(-v.y, v.y, float(i) / CONE_RAYS))
+		var p := origin + dir * city.clear_distance(global_position, dir, v.x)
+		if i > 0:
+			_cone_mesh.surface_set_color(color)
+			_cone_mesh.surface_add_vertex(origin)
+			_cone_mesh.surface_set_color(edge)
+			_cone_mesh.surface_add_vertex(prev)
+			_cone_mesh.surface_set_color(edge)
+			_cone_mesh.surface_add_vertex(p)
+		prev = p
+	_cone_mesh.surface_end()

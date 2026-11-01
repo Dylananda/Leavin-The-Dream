@@ -2,6 +2,8 @@ class_name Interactions
 extends RefCounted
 ## Acciones disponibles con cada bot y en cada lugar del barrio.
 ## Cada acción es {"label": String, "do": Callable}; el menú las muestra tal cual.
+## Cada bot se acuerda de lo que le haces (Npc.remember): pedirle, robarle, ayudarle o pegarle
+## cambia cómo reacciona cuando te vuelve a ver. Un robo visto acaba en escándalo (World.scandal).
 
 const G := preload("res://scripts/game_state.gd")
 
@@ -29,6 +31,29 @@ func _heat(amount: float) -> void:
 	if GameState.profile.get("id") == "jubilado":
 		amount *= 0.5
 	GameState.heat = minf(100.0, GameState.heat + amount)
+
+
+## Un robo a `victim` que ha salido bien. Si lo ha visto un agente, va a por ti; si lo ha
+## visto otro, grita y se monta el escándalo; si no, la víctima quizá se da cuenta al rato
+## y se queda con tu cara.
+func _after_theft(victim: Npc) -> void:
+	if world.police_watching() > 0:
+		victim.remember("robado")
+		_heat(60)
+		GameState.log_msg("Un agente lo ha visto todo.", G.C_BAD)
+		return
+	var seen := world.robbery_witnesses(victim)
+	if not seen.is_empty():
+		victim.remember("robado")
+		world.scandal(seen[0], ["¡Eh! ¡Ese le ha robado!", "¡Al ladrón!"].pick_random())
+	elif _chance(0.4):
+		victim.remember("robado")
+
+
+## Te han pillado robando a `victim`: se acuerda de ti y grita `text`.
+func _caught_stealing(victim: Npc, text: String) -> void:
+	victim.remember("robado")
+	world.scandal(victim, text)
 
 
 # --------------------------------------------------------------------- bots
@@ -64,6 +89,7 @@ func _turista(npc: Npc) -> Array:
 	var acts := [
 		_act("Pedirle una moneda", func():
 			gs.advance(10)
+			npc.remember("pedido")
 			if not npc.robbed and _chance(0.35 + _beg_bonus()):
 				var n := randi_range(1, 5)
 				gs.add_money(n)
@@ -74,6 +100,7 @@ func _turista(npc: Npc) -> Array:
 			gs.change_dignity(-2, "Pedir a un guiri")),
 		_act("Contarle tu drama", func():
 			gs.advance(20)
+			npc.remember("pedido")
 			npc.say("Oh my god...")
 			if _chance(0.25 + _beg_bonus()):
 				var n := randi_range(8, 20)
@@ -89,7 +116,7 @@ func _turista(npc: Npc) -> Array:
 func _rob_tourist(npc: Npc) -> void:
 	var gs := GameState
 	gs.advance(5)
-	var p := 0.6 - 0.12 * world.police_near(npc.cell, 20) + (0.1 if gs.is_night() else 0.0)
+	var p := 0.6 - 0.2 * world.police_watching() + (0.1 if gs.is_night() else 0.0)
 	if "aprendiz" in gs.milestones:
 		p += 0.15  # un carterista te ha enseñado el oficio
 	if gs.high > 60.0:
@@ -105,10 +132,11 @@ func _rob_tourist(npc: Npc) -> void:
 		_heat(20)
 		gs.milestone("primer_robo")
 		gs.change_dignity(-3)
+		_after_theft(npc)
 	else:
-		npc.say("THIEF! ¡Al ladrón!", 4.0)
 		npc.robbed = true
 		_heat(70)
+		_caught_stealing(npc, "THIEF! ¡Al ladrón!")
 		gs.log_msg("Te ha pillado. Ahora la policía te busca.", G.C_BAD)
 		gs.change_dignity(-2)
 
@@ -146,7 +174,7 @@ func _camello(npc: Npc) -> Array:
 			acts.append(_act("Pedirle fiado: %s" % s["name"], func():
 				if _chance(0.4):
 					gs.add_item(id)
-					npc.debt += price
+					npc.add_debt(price, Defs.DEBT_GRACE_HOURS)
 					gs.debt += price
 					npc.say("Mañana me lo pagas. Sé dónde duermes")
 					gs.milestone("deuda")
@@ -192,6 +220,7 @@ func _yonki(npc: Npc) -> Array:
 	var acts := [
 		_act("Pedirle algo", func():
 			gs.advance(5)
+			npc.remember("pedido")
 			if _chance(0.2):
 				gs.add_item("sobras")
 				npc.say("Toma, que hoy estoy generoso")
@@ -207,6 +236,7 @@ func _yonki(npc: Npc) -> Array:
 			gs.remove_item(id)
 			npc.say("Eres un hermano, tío")
 			npc.set_meta("colega", true)
+			npc.remember("ayudado")
 			gs.change_dignity(2, "Compartir es vivir")
 			if _chance(0.4):
 				gs.add_money(randi_range(2, 8))
@@ -223,6 +253,7 @@ func _fight(npc: Npc) -> void:
 	var gs := GameState
 	gs.advance(10)
 	_heat(30)
+	npc.remember("pegado")
 	var me := gs.health + gs.high * 0.3 - gs.mono * 0.3 + randf_range(-20, 20)
 	var him := randf_range(30.0, 70.0)
 	if me > him:
@@ -275,6 +306,7 @@ func _vecino(npc: Npc) -> Array:
 	return [
 		_act("Pedirle una moneda", func():
 			gs.advance(5)
+			npc.remember("pedido")
 			if _chance(0.1 + _beg_bonus()):
 				gs.add_money(1)
 				npc.say("Toma, y vete")
@@ -288,9 +320,10 @@ func _vecino(npc: Npc) -> Array:
 				_heat(40)
 				gs.log_msg("Sales corriendo con su móvil.", G.C_GOOD)
 				gs.milestone("primer_robo")
-				npc.say("¡Mi móvil! ¡Policía!", 4.0)
+				_caught_stealing(npc, "¡Mi móvil! ¡Policía!")
 			else:
 				_heat(25)
+				npc.remember("pedido")
 				npc.say("¡Ni se te ocurra!", 3.0)
 			gs.change_dignity(-3)),
 	]
@@ -304,6 +337,7 @@ func _mantero(npc: Npc) -> Array:
 			var pay := 20 if gs.profile.get("id") == "sin_papeles" else 8
 			gs.add_money(pay)
 			_heat(10)
+			npc.remember("ayudado")
 			npc.say("Gracias, hermano")
 			gs.log_msg("Vigilas por si viene la policía. Te da %d €." % pay, G.C_GOOD)),
 	]
@@ -320,6 +354,7 @@ func _fiestero(npc: Npc) -> Array:
 	var acts := [
 		_act("Pedirles para una cerveza", func():
 			gs.advance(5)
+			npc.remember("pedido")
 			if npc.money > 0 and _chance(0.5 + _beg_bonus()):
 				var n := mini(npc.money, randi_range(2, 10))
 				npc.money -= n
@@ -333,6 +368,7 @@ func _fiestero(npc: Npc) -> Array:
 			gs.advance(60)
 			gs.add_item("litrona")
 			gs.consume("litrona")
+			npc.remember("ayudado")
 			npc.say("¡Este tío es el mejor!")
 			gs.change_sanity(3)
 			gs.change_dignity(-3, "Bailar con una peluca rosa")
@@ -348,14 +384,15 @@ func _fiestero(npc: Npc) -> Array:
 		acts.append(_act("Robarle el móvil", func():
 			gs.advance(5)
 			npc.robbed = true
-			if _chance(0.75 - 0.12 * world.police_near(npc.cell, 20)):
+			if _chance(0.75 - 0.2 * world.police_watching()):
 				gs.add_item("movil")
 				_heat(15)
 				gs.log_msg("Va tan ciego que ni se entera.", G.C_GOOD)
 				gs.milestone("primer_robo")
+				_after_theft(npc)
 			else:
-				npc.say("OI! ¡Chicos, a por él!", 4.0)
 				_heat(40)
+				_caught_stealing(npc, "OI! ¡Chicos, a por él!")
 				gs.change_health(-15, "Una paliza de despedida")
 				gs.log_msg("Sus colegas te rodean. Te llevas una buena.", G.C_BAD)
 			gs.change_dignity(-3)))
@@ -378,6 +415,7 @@ func _latero(npc: Npc) -> Array:
 		_heat(10)
 		gs.add_money(5)
 		npc.set_meta("alijo", true)
+		npc.remember("ayudado")
 		npc.say("Gracias. Aquí no lo encuentra la Urbana")
 		gs.log_msg("Bajáis las latas a una alcantarilla de %s. Te da 5 €." % world.city.street_name_near(npc.cell), G.C_GOOD)))
 	if npc.has_meta("alijo"):
@@ -385,12 +423,14 @@ func _latero(npc: Npc) -> Array:
 			gs.advance(10)
 			gs.add_item("litrona", 4)
 			npc.set_meta("enemigo", true)
+			npc.remember("robado")
 			npc.say("¡Ladrón! ¡Eso era para mi familia!", 4.0)
 			gs.log_msg("Cuatro latas. Él sabe perfectamente quién ha sido.", G.C_GOOD)
 			gs.change_dignity(-6, "Robarle a uno que está peor que tú")
 			gs.change_sanity(-3)))
 	if world.police_near(npc.cell, 25) > 0:
 		acts.append(_act("Avisarle de que viene la Urbana", func():
+			npc.remember("ayudado")
 			npc.say("¡Gracias, hermano! Toma, invita la casa")
 			gs.add_item("litrona")
 			gs.change_dignity(1, "Echar un cable")
@@ -420,6 +460,7 @@ func _trilero(npc: Npc) -> Array:
 		_heat(15)
 		var pay := randi_range(8, 15)
 		gs.add_money(pay)
+		npc.remember("ayudado")
 		gs.log_msg("Finges ganar una y otra vez para que piquen los guiris. %d €." % pay, G.C_GOOD)
 		gs.change_dignity(-3, "Engañar a los turistas")))
 	acts.append(_act("Hacerle de vigía (1 h)", func():
@@ -444,7 +485,8 @@ func _carterista(npc: Npc) -> Array:
 	var acts := [
 		_act("Hacerle de pantalla (1 h)", func():
 			gs.advance(60)
-			if _chance(0.65 - 0.1 * world.police_near(npc.cell, 20)):
+			npc.remember("ayudado")
+			if _chance(0.65 - 0.15 * world.police_watching()):
 				var n := randi_range(10, 35)
 				gs.add_money(n)
 				_heat(20)
@@ -452,7 +494,8 @@ func _carterista(npc: Npc) -> Array:
 				gs.milestone("primer_robo")
 			else:
 				_heat(60)
-				gs.log_msg("«¡Al ladrón!» %s se esfuma entre la gente. Tú no." % npc.display_name, G.C_BAD)
+				gs.log_msg("%s se esfuma entre la gente. Tú no." % npc.display_name, G.C_BAD)
+				world.scandal(null, "«¡Al ladrón!»")
 			gs.change_dignity(-3)),
 	]
 	if not "aprendiz" in gs.milestones and gs.money >= 20:
@@ -479,6 +522,7 @@ func _chaval(npc: Npc) -> Array:
 		if gs.has_item(food):
 			acts.append(_act("Darle tu %s" % Defs.item_name(food).to_lower(), func():
 				gs.remove_item(food)
+				npc.remember("ayudado")
 				npc.say("Gracias, hermano. De verdad")
 				gs.change_sanity(5)
 				gs.change_dignity(3, "Compartir lo poco que tienes")))
@@ -487,6 +531,7 @@ func _chaval(npc: Npc) -> Array:
 		acts.append(_act("Darle un euro", func():
 			gs.add_money(-1)
 			npc.money += 1
+			npc.remember("ayudado")
 			npc.say("Dios te lo pague")
 			gs.change_dignity(1)))
 	acts.append(_act("Preguntarle por la Urbana", func():
@@ -527,13 +572,14 @@ func for_poi(poi: Dictionary) -> Array:
 			acts.append(_buy("Comprar una litrona", 2, "litrona"))
 			acts.append(_buy("Comprar un bocadillo", 3, "bocadillo"))
 			acts.append(_act("Robar una litrona", func():
-				if _chance(0.6 - 0.1 * world.police_near(world.player.cell, 16)):
+				if _chance(0.6 - 0.2 * world.police_watching()):
 					gs.add_item("litrona")
 					gs.log_msg("Litrona bajo el abrigo. Nadie ha visto nada.", G.C_GOOD)
 					gs.milestone("primer_robo")
 				else:
 					_heat(40)
 					gs.log_msg("El de seguridad te pilla y te echa a empujones.", G.C_BAD)
+					world.scandal(null, "«¡Al ladrón!», grita el de seguridad.")
 				gs.change_dignity(-2)))
 		"farmacia":
 			if gs.can_get_meds():
@@ -567,7 +613,7 @@ func for_poi(poi: Dictionary) -> Array:
 					gs.milestone("primer_robo")
 				else:
 					_heat(40)
-					gs.log_msg("«¡Eh, tú!» Sales por patas.", G.C_BAD)
+					world.scandal(null, "«¡Eh, tú! ¡Esa propina!» Sales por patas.")
 				gs.change_dignity(-2)))
 		"kebab":
 			acts.append(_buy_effect("Comerte un dürüm", 4, func():

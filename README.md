@@ -10,6 +10,7 @@ Abre `game/project.godot` con Godot 4.7 y pulsa F5.
 - WASD o flechas: andar (Shift: correr)
 - Clic: ir a un sitio, o hablar con un bot / entrar en un lugar
 - I: inventario · L: libreta · R: rebuscar en la basura · Z: dormir donde estés
+- V: ver los conos de visión de todos los que tienes cerca
 - Q/E: girar la cámara · Rueda: zoom
 
 Con WASD el muñeco sigue la calle aunque no vaya en la dirección de la tecla, y se desliza
@@ -18,11 +19,25 @@ la policía en azul y quien tiene un encargo para ti en su color, con un «!» s
 uno o una «★» si ya te lo dio. Las flechas del borde de la pantalla llevan a los sitios de los
 encargos en marcha... según lo que apuntaste en la libreta.
 
+### Lo que ven y lo que recuerdan
+
+Cada personaje ve en un cono, como en *Commandos*, que tapan los edificios: la policía, más
+lejos y más estrecho. Los conos de los agentes y de quien sospecha de ti o va a por ti se
+dibujan en el suelo (con V, los de todos): azul si están tranquilos, amarillo si te están
+viendo («?») y rojo si van a por ti («!»). Se acuerdan de lo que les has hecho: si les pides
+mucho se apartan, si les ayudaste se acercan a saludar, si les robaste van a por ti o a por
+un agente, y el camello al que debes viene a cobrar en cuanto te ve.
+
+La policía solo te persigue si te ve y estás muy buscado o **fichado**. Si te pillan robando
+se monta un escándalo: la víctima grita, algún valiente intenta pararte, otros llaman a la
+policía. Si no viene ningún agente, o si te escapas, quedas fichado un día (lo dice el HUD).
+Escapar es salir de su vista: tras una esquina te buscan un rato donde te vieron por última vez.
+
 ### El estado del personaje
 
 Arriba a la izquierda, las barras del cuerpo (pasa el ratón por encima para ver qué las mueve):
 **Salud**, **Hambre**, **Sueño**, **Mente** (salud mental), **Dignidad** y **Discreción**
-(lo poco que llamas la atención; vacía, la policía va a por ti). La etiqueta se pone roja
+(lo poco que llamas la atención; con poca, la policía va a por ti si te ve). La etiqueta se pone roja
 cuando una barra está en zona de peligro. En los extremos pasan cosas: con el hambre al
 máximo te desmayas y despiertas en urgencias, con el sueño al máximo te quedas frito en la
 calle (y te pueden robar), con la mente a 0 te ingresan en el psiquiátrico.
@@ -113,7 +128,8 @@ python tools/make_textures.py
 - `game/scripts/defs.gd` — perfiles, sustancias, objetos, hitos y títulos (aquí se equilibra el juego)
 - `game/scripts/game_state.gd` — estadísticas, sustancias (colocón, mono, enganche), consecuencias
   de los extremos, efectos activos (`effects()`), tiempo y puntuación de caída (autoload)
-- `game/scripts/interactions.gd` — qué se puede hacer con cada bot y en cada lugar
+- `game/scripts/interactions.gd` — qué se puede hacer con cada bot y en cada lugar, lo que
+  recuerdan de ello y los robos que acaban en escándalo
 - `game/scripts/errands.gd` — encargos con plazo (ofrecer, cumplir, fallar) y la libreta que
   se apunta y se lee peor cuanto más ido vas (equilibrio en `Defs.ERRANDS`)
 - `game/scripts/world.gd` — escena de juego, entrada, eventos del barrio y cómo los efectos
@@ -128,15 +144,21 @@ python tools/make_textures.py
 - Los monumentos con modelo propio se configuran en `LANDMARKS` (`tools/build_map.py`) y `CityProps.building_extra`
 - `game/scripts/actors/` — personajes (jugador y bots comparten `Actor`: modelo con género y
   rasgos, silueta, icono flotante y el andar con WASD que sigue la calle); en `Npc.KINDS`,
-  cada tipo de bot con su horario, zona, disfraz, historias y el género de cada nombre
+  cada tipo de bot con su horario, zona, disfraz, historias y el género de cada nombre; en
+  `Npc`, la visión en cono, la memoria y las reacciones (perseguir, buscar, denunciar, apartarse).
+  Las medidas de la visión y del escándalo están en `Defs`
 - `game/shaders/silhouette.gdshader` — silueta de los personajes a través de los edificios (stencil)
 - `game/tests/smoke.gd` — ejecuta todas las acciones con los 6 perfiles, cada sustancia,
-  los extremos de hambre, sueño y salud mental, y los encargos con la libreta, el género de los personajes y los iconos de encargo; termina con `OK` o el número de fallos:
+  los extremos de hambre, sueño y salud mental, los encargos con la libreta, el género de los personajes,
+  los iconos de encargo, y la visión, la memoria, el escándalo, los camellos y los turistas
+  que te reconocen; termina con `OK` o el número de fallos:
   `godot --headless --path game --script res://tests/smoke.gd`
 - `game/tests/charla.gd` — conversación real con la IA sin abrir el juego (necesita Ollama):
   `godot --headless --path game --script res://tests/charla.gd -- latero "Hola" "¿Viene la Urbana?"`
 - `game/tests/retratos.gd` — captura de los perfiles (o de los bots de un tipo, o `todos`) en fila
   y de cerca, para revisar género y rasgos: `godot --path game --script res://tests/retratos.gd -- out.png todos`
+- `game/tests/conos.gd` — captura de los conos de visión y de un escándalo:
+  `godot --path game --resolution 1600x900 --script res://tests/conos.gd -- out.png [hora]`
 - `game/tests/screenshot.gd` — capturas sin abrir el editor; el sexto argumento consume
   sustancias antes (p. ej. `... -- res://scenes/world.tscn shot.png parado "" 12 caballo,litrona`)
 
