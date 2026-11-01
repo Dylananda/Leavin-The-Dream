@@ -22,6 +22,7 @@ func _initialize() -> void:
 		var guiri = world.npcs.filter(func(n): return n.kind == "turista" and not n.robbed)[0]
 		guiri.setup(world.city, thief.cell)
 		_check(world.pickpocket_event(), "los carteristas no roban a nadie")
+		_test_looks(world)
 		var counts := {}
 		for npc in world.npcs:
 			counts[npc.kind] = counts.get(npc.kind, 0) + 1
@@ -98,6 +99,25 @@ var _failures := 0
 ## Conversación con IA sin depender de Ollama: contra un puerto en el que no escucha nadie
 ## (el juego debe seguir y avisar en el registro) y con una respuesta inventada que usa
 ## todas las acciones de juego.
+## Género según el nombre, etiquetas en femenino y el mismo aspecto para el mismo nombre.
+func _test_looks(world) -> void:
+	var npc_script = load("res://scripts/actors/npc.gd")  # cargado aquí: usa los autoloads
+	_check(Defs.PROFILES.filter(func(p): return p["name"] == "Mari Loli")[0]["look"]["gender"] == "f", "Mari Loli no es mujer")
+	for npc in world.npcs:
+		var k: Dictionary = npc_script.KINDS[npc.kind]
+		if npc.display_name in k.get("women", []):
+			_check(npc.gender == "f" and npc.look["gender"] == "f", "%s no es mujer" % npc.display_name)
+		elif not npc.display_name in k.get("either", []):
+			_check(npc.gender == "m", "%s no es hombre" % npc.display_name)
+	var a = npc_script.new()
+	a.init_kind("vecino", "Montse")
+	var b = npc_script.new()
+	b.init_kind("vecino", "Montse")
+	_check(a.look == b.look and a.label() == "Montse (Vecina)", "Montse no sale siempre igual o no es vecina")
+	a.free()
+	b.free()
+
+
 func _test_conversation(gs, world) -> void:
 	gs.alive = true
 	var conv = world.conversation
@@ -201,9 +221,13 @@ func _test_errands(gs, world) -> void:
 		_check(offer.size() == 1, "%s: no ofrece su encargo" % kind)
 		if offer.is_empty():
 			return
+		_check(errands.marker_for(npc) == "!", "%s: no lleva el «!» de encargo" % kind)
 		offer[0]["do"].call()
+		_check(errands.marker_for(npc) == "★", "%s: no lleva la estrella del encargo en marcha" % kind)
 		_check(not errands.active(id).is_empty(), "%s: el encargo no queda en marcha" % id)
 		_check(world.interactions.for_npc(npc).all(func(a): return not a["label"].begins_with("Encargo:")), "%s: ofrece el encargo dos veces" % id)
+	world._update_pointers()
+	_check(errands.noted_places().size() == gs.notes.filter(func(n): return not n["poi"].is_empty()).size(), "las flechas no siguen a la libreta")
 	_check(gs.notes.size() == 4 and gs.has_item("paquete") and gs.has_item("cartera_caliente"), "no se apuntan los encargos o no te dan lo que hay que llevar")
 	_check(errands.active("paquete")["poi"] != errands.active("juerga")["poi"], "dos encargos en el mismo bar")
 	print("  encargos: %s" % " | ".join(gs.notes.map(func(n): return errands.note_text(n))))

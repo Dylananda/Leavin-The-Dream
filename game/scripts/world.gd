@@ -33,6 +33,17 @@ const CAMERA_DISTANCE := 160.0
 const ZOOM_RANGE := Vector2(10.0, 110.0)  ## tamaño ortográfico (metros de alto en pantalla)
 const PICK_RADIUS_PX := 28.0
 const WITNESS_KINDS := ["vecino", "turista"]  ## gente que se escandaliza si te ve consumiendo
+## Para encontrar a la gente tras los edificios: color de la silueta (con su opacidad) y del
+## icono flotante de cada caso. El resto de bots usan Actor.SILHOUETTE, más tenue.
+const C_PLAYER_SILHOUETTE := Color(1.0, 0.85, 0.2, 0.85)
+const C_POLICE_SILHOUETTE := Color(0.35, 0.55, 1.0, 0.6)
+const C_OFFER := Color("ffd23c")  ## te puede dar un encargo («!»)
+const C_GIVER := Color("ff9a3c")  ## te ha dado un encargo en marcha («★»)
+const C_POINTER := Color("ffd23c")  ## flechas hacia los sitios apuntados en la libreta
+## Rayos X alrededor del jugador: radio en metros (sobre el tamaño de la cámara),
+## más grande al andar con WASD para ver bien la calle por la que vas.
+const XRAY_RADIUS_M := 6.0
+const XRAY_RADIUS_WALKING_M := 9.0
 
 var city: CityMap
 var player: Actor
@@ -62,6 +73,8 @@ var _fx := {}  ## efectos de GameState.effects() en este frame
 var _input_smooth := Vector3.ZERO  ## dirección de WASD con el retraso del alcohol
 var _stumble := 0.0  ## segundos que quedan de tropiezo
 var _stumble_timer := 3.0
+var _marker_timer := 0.0
+var _xray_m := XRAY_RADIUS_M
 
 
 func _ready() -> void:
@@ -87,6 +100,7 @@ func _ready() -> void:
 	# aro bajo los pies para encontrarte entre la multitud
 	var ring := CityProps.part(player, CityProps.cylinder(1.1, 1.1, 0.05, 24), Color(1.0, 0.85, 0.2), Vector3(0, 0.05, 0))
 	ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	player.set_silhouette(C_PLAYER_SILHOUETTE)
 
 	camera = Camera3D.new()
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
@@ -258,8 +272,13 @@ func _process(delta: float) -> void:
 	_update_player_input(delta)
 	_update_camera(delta)
 	_update_daylight()
-	_update_xray()
+	_update_xray(delta)
 	_update_hover()
+	_update_pointers()
+	_marker_timer -= delta
+	if _marker_timer <= 0.0:
+		_marker_timer = 0.25
+		_update_markers()
 	_street_timer -= delta
 	if _street_timer <= 0.0:
 		_street_timer = 0.4
@@ -366,15 +385,46 @@ func _update_daylight() -> void:
 
 
 ## Pasa al shader de edificios dónde está el jugador en pantalla y a qué profundidad,
-## para hacer transparentes los que lo tapan.
-func _update_xray() -> void:
+## para hacer transparentes los que lo tapan. Al andar con WASD el agujero crece.
+func _update_xray(delta: float) -> void:
+	var want := XRAY_RADIUS_WALKING_M if player.input_dir != Vector3.ZERO else XRAY_RADIUS_M
+	_xray_m = lerpf(_xray_m, want, minf(1.0, delta * 3.0))
 	var vp := get_viewport().get_visible_rect().size
 	var target := player.global_position + Vector3(0, 1.2, 0)
 	for mat in [city.building_material, CityProps.foliage_material]:
 		mat.set_shader_parameter("focus_uv", camera.unproject_position(target) / vp)
 		mat.set_shader_parameter("focus_depth", -(camera.global_transform.affine_inverse() * target).z)
 		mat.set_shader_parameter("aspect", vp.x / vp.y)
-		mat.set_shader_parameter("xray_radius", clampf(5.0 / camera.size, 0.06, 0.3))
+		mat.set_shader_parameter("xray_radius", clampf(_xray_m / camera.size, 0.06, 0.4))
+
+
+## Iconos y siluetas de los bots: quién te puede dar un encargo, quién te lo ha dado y la policía.
+func _update_markers() -> void:
+	for npc in npcs:
+		var mark := errands.marker_for(npc)
+		var color := C_GIVER if mark == "★" else C_OFFER
+		npc.set_marker(mark, color)
+		if mark != "":
+			npc.set_silhouette(Color(color, 0.75))
+		elif npc.kind == "policia":
+			npc.set_silhouette(C_POLICE_SILHOUETTE)
+		else:
+			npc.set_silhouette(Actor.SILHOUETTE)
+
+
+## Flechas del HUD hacia los sitios de los encargos en marcha, según la libreta.
+func _update_pointers() -> void:
+	var list := []
+	for n in errands.noted_places():
+		var poi: Dictionary = n["poi"]
+		var at := city.cell_to_world(Vector2i(poi["x"], poi["y"]))
+		var meters := snappedi(int(player.position.distance_to(at)), 10)
+		list.append({
+			"pos": camera.unproject_position(at + Vector3(0, PoiMarker.SIGN_Y + 1.5, 0)),
+			"label": "%s · %d m" % [errands.place_name(poi), meters],
+			"color": C_POINTER,
+		})
+	hud.set_pointers(list)
 
 
 func _update_hover() -> void:

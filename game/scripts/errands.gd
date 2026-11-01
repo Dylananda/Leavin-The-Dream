@@ -150,6 +150,28 @@ func _offer_text(id: String, plan: Dictionary) -> String:
 	return id
 
 
+## Icono sobre `npc` para encontrarlo: "★" si te ha dado un encargo que tienes en marcha,
+## "!" si te puede dar uno ahora, "" si nada. Los disfrazados no se delatan hasta que les hablas.
+func marker_for(npc: Npc) -> String:
+	for e in GameState.errands:
+		if e["state"] == "activo" and is_same(e["giver"], npc):
+			return "★"
+	if npc.has_meta("enemigo") or npc.get_meta("encargo_dia", -1) == GameState.day:
+		return ""
+	if not npc.known and Npc.KINDS[npc.kind].has("disguise"):
+		return ""
+	for id in Defs.ERRANDS:
+		if Defs.ERRANDS[id]["giver"] == npc.kind and active(id).is_empty():
+			return "!"
+	return ""
+
+
+## Notas de la libreta de los encargos en marcha que tienen sitio apuntado. Las flechas
+## del HUD llevan a ese sitio: si lo apuntaste mal, te llevan al sitio equivocado.
+func noted_places() -> Array:
+	return GameState.notes.filter(func(n): return n["errand"]["state"] == "activo" and not n["poi"].is_empty())
+
+
 ## Nombre de un lugar para los textos: el suyo, o el tipo de sitio y la calle.
 func place_name(poi: Dictionary) -> String:
 	if poi.get("kind") == "cas":

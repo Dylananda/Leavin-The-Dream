@@ -290,7 +290,7 @@ func system_prompt(npc: Npc) -> String:
 	var bio: String = npc.bio() if npc.bio() != "" else f["historia"]
 	var facts: Array = _mem(npc)["facts"]
 	return "\n".join([
-		"Eres %s, %s en el Raval de Barcelona, dentro de un videojuego. Hablas con otro del barrio, un yonki (el jugador). No rompas nunca el personaje ni digas que eres una IA." % [npc.display_name, Npc.KINDS[npc.kind]["label"].to_lower()],
+		"Eres %s, %s en el Raval de Barcelona, dentro de un videojuego. Hablas con otro del barrio, un yonki (el jugador). No rompas nunca el personaje ni digas que eres una IA." % [npc.display_name, Npc.kind_label(npc.kind, npc.gender).to_lower()],
 		"",
 		"QUIÉN ERES: " + f["quien"],
 		"TU HISTORIA: " + bio,
