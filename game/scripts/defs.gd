@@ -299,6 +299,10 @@ const BLUR_FROM := 0.25  ## por debajo, la libreta se lee bien
 const BLUR_MAX := 0.4  ## proporción máxima de palabras que no se leen
 const CLOCK_LIE_PER_HOUR := 0.3  ## probabilidad por hora (del todo ido) de que el reloj mienta un rato
 
+## Los bots fuera de la pantalla que no tienen nada contigo se actualizan cada tantos frames
+## (con el tiempo acumulado): andan y piensan igual, pero cuestan una fracción.
+const OFFSCREEN_EVERY := 6
+
 ## Minijuegos de habilidad (scripts/minigames/). La dificultad (0..1) sale de la probabilidad
 ## que tenía la acción (1 - p): lo que antes era una tirada ahora se juega, con las mismas
 ## circunstancias a favor y en contra (agentes mirando, la noche, el colocón, el oficio).

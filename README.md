@@ -199,6 +199,10 @@ python tools/make_textures.py
   cada tipo de bot con su horario, zona, disfraz, historias y el género de cada nombre; en
   `Npc`, la visión en cono, la memoria y las reacciones (perseguir, buscar, denunciar, apartarse).
   Las medidas de la visión y del escándalo están en `Defs`
+- Rendimiento: al montar cada personaje, sus piezas se juntan en cinco mallas con el color en
+  los vértices (`Actor._merge_parts`: cuerpo y extremidades, con un solo material) y los bots
+  fuera de la pantalla que no tienen nada contigo se actualizan cada `Defs.OFFSCREEN_EVERY`
+  frames. En una GTX 1060 a 1600×900: unos 1.000 bots a 60 FPS (54 con todo el zoom)
 - `game/shaders/silhouette.gdshader` — silueta de los personajes a través de los edificios (stencil)
 - `game/tests/smoke.gd` — ejecuta todas las acciones con los 6 perfiles, cada sustancia,
   los extremos de hambre, sueño y salud mental, los encargos con la libreta, el género de los personajes,
