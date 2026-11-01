@@ -70,6 +70,7 @@ var _chat_input: LineEdit
 var _chat_send: Button
 var _chat_npc: Npc
 var _chat_conv: Conversation
+var _minigame: Minigame  ## Minijuego en marcha (robar, vigilar...), si lo hay
 
 
 func _ready() -> void:
@@ -445,7 +446,14 @@ func _draw_pointers() -> void:
 
 
 func is_menu_open() -> bool:
-	return _menu.visible or _chat.visible or (_game_over != null and _game_over.visible)
+	return _menu.visible or _chat.visible or (_game_over != null and _game_over.visible) \
+		or is_instance_valid(_minigame)
+
+
+## Pone encima de todo un minijuego (World.play_minigame lo quita al terminar).
+func open_minigame(game: Minigame) -> void:
+	_minigame = game
+	add_child(game)
 
 
 ## Muestra un menú con acciones {"label", "do"}; al elegir una se ejecuta y se cierra.

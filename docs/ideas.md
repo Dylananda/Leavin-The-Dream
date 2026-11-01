@@ -302,7 +302,8 @@ de ruta:
   el móvil, o dinero, o te dan un puñetazo. Los demás van hasta el agente más cercano, se lo
   cuentan y quedas fichado.
   - [ ] Pendiente: jugarlo y ajustar medidas y tiempos; que la memoria pase a los que vuelven
-    a salir con el mismo nombre; peleas de verdad (minijuego) en vez de una tirada.
+    a salir con el mismo nombre. Peleas de verdad (minijuego `Fight`): hecho para la pelea
+    con un yonki y las palizas del camello y del de la esquina (rama `feat/minijuegos`).
 
 **Trapicheo (punto 8)**
 - [x] Un sistema de tráfico: comprar y vender a más personajes (yonkis, fiesteros, turistas,
@@ -338,11 +339,20 @@ de ruta:
     las reconozcan; que la bici sirva para moverse más rápido.
 
 **Minijuegos (punto 9)**
-- [ ] Las acciones de habilidad pasan a un minijuego con otra vista (primer plano del
+- [x] Las acciones de habilidad pasan a un minijuego con otra vista (primer plano del
   personaje en plano medio) y otros controles. Robar a un turista: una mano con WASD le
-  distrae y la otra, con el ratón, le saca la cartera mientras no mira.
-- [ ] Tiro de feria: pasan personajes variados y hay que distinguir a policías, secretas,
-  camellos, vecinos y posibles compradores.
+  distrae y la otra, con el ratón, le saca la cartera mientras no mira. Hecho
+  (`Pickpocket`, rama `feat/minijuegos`) para la cartera del guiri y el móvil de la
+  despedida: la víctima es una marioneta con su mismo aspecto en una vista 3D propia; la
+  probabilidad de antes es ahora la dificultad (y, sin pantalla, la tirada de siempre).
+- [x] Tiro de feria: pasan personajes variados y hay que distinguir a policías, secretas,
+  camellos, vecinos y posibles compradores. Hecho como el trabajo de vigía (`Lookout`) del
+  mantero, el trilero y el camello: clic izquierdo a los agentes, derecho a los clientes;
+  las secretas se delatan por el pinganillo.
+- [x] Peleas como minijuego (`Fight`): esquivar con A/D el puño que se ve venir y pegar
+    cuando se queda abierto. Con un yonki y cuando te alcanzan para darte una paliza.
+  - [ ] Pendiente: jugarlos y ajustar tiempos y dificultad; más acciones (robar la litrona,
+    el platito de propinas, el alijo del latero; el puñetazo del turista robado).
 
 ## Más adelante
 

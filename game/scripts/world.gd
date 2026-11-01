@@ -837,10 +837,11 @@ func _on_caught(npc: Npc) -> void:
 				gs.log_msg("%s te alcanza y te vacía los bolsillos: %d €. Le debes %d €." % [npc.display_name, paid, npc.debt], GameState.C_BAD)
 			else:
 				npc.say("¿No tienes nada? Pues toma.", 3.0)
-				gs.change_health(-15, "Una paliza por una deuda")
-				gs.change_dignity(-3)
-				gs.log_msg("No llevas nada. %s te da una paliza para que no se te olvide." % npc.display_name, GameState.C_BAD)
-				gs.milestone("pelea_perdida")
+				_beating(npc, func():
+					gs.change_health(-15, "Una paliza por una deuda")
+					gs.change_dignity(-3)
+					gs.log_msg("No llevas nada. %s te da una paliza para que no se te olvide." % npc.display_name, GameState.C_BAD)
+					gs.milestone("pelea_perdida"))
 			npc.debt_due = gs.now() + Defs.DEBT_GRACE_HOURS * 60.0
 		"venganza":
 			npc.memory.erase("robado")
@@ -879,8 +880,9 @@ func _on_caught(npc: Npc) -> void:
 				gs.log_msg("%s te alcanza y se cobra %d € por vender en su esquina." % [npc.display_name, n], GameState.C_BAD)
 			else:
 				npc.say("Que no te vuelva a ver por aquí.", 3.0)
-				gs.change_health(-12, "Vender en la esquina de otro")
-				gs.log_msg("%s te alcanza y te da una paliza por vender en su esquina." % npc.display_name, GameState.C_BAD)
+				_beating(npc, func():
+					gs.change_health(-12, "Vender en la esquina de otro")
+					gs.log_msg("%s te alcanza y te da una paliza por vender en su esquina." % npc.display_name, GameState.C_BAD))
 			gs.change_dignity(-3)
 		"parar":
 			player.stop()
@@ -889,6 +891,19 @@ func _on_caught(npc: Npc) -> void:
 			npc.say("¡Te tengo, ladrón!", 2.0)
 			gs.heat = minf(100.0, gs.heat + 10.0)
 			gs.log_msg("%s te agarra del brazo. Te sueltas como puedes." % npc.display_name, GameState.C_BAD)
+
+
+## Te van a dar una paliza (`npc` te ha alcanzado y no llevas nada): se pelea (minijuego
+## Fight), cuesta arriba. Si ganas, te lo quitas de encima con algún golpe; si no, `lose`.
+func _beating(npc: Npc, lose: Callable) -> void:
+	play_minigame(Fight.new(npc), Defs.BEATING_FIGHT_CHANCE, func(result: String, _stats: Dictionary):
+		if result != "ok":
+			lose.call()
+			return
+		var gs := GameState
+		gs.change_health(-5, "Quitarte de encima a %s" % npc.display_name)
+		npc.say("Esto no se acaba aquí.", 3.0)
+		gs.log_msg("Te quitas de encima a %s a golpes y sales corriendo." % npc.display_name, GameState.C_GOOD))
 
 
 func police_near(cell: Vector2i, radius: int) -> int:
@@ -917,6 +932,32 @@ func remove_npc_later(npc: Npc, seconds: float) -> void:
 
 
 ## Conversación libre (IA) con un bot que tiene ficha.
+## Juega `game` (un Minigame) en vez de tirar los dados; `done` recibe el resultado y las
+## cuentas del minijuego (result, stats). El barrio se queda en pausa mientras tanto. Sin
+## pantalla (tests --headless) se decide al momento con la probabilidad `chance`.
+func play_minigame(game: Minigame, chance: float, done: Callable) -> void:
+	chance = clampf(chance, 0.0, 1.0)
+	game.difficulty = 1.0 - chance
+	if DisplayServer.get_name() == "headless":
+		var result := game.auto_result(chance)
+		var stats := game.stats
+		game.free()
+		done.call(result, stats)
+		return
+	game.fx = _fx.get("fx", {})
+	_pending = null
+	player.stop()
+	player.input_dir = Vector3.ZERO
+	_input_smooth = Vector3.ZERO
+	get_tree().paused = true
+	game.finished.connect(func(result: String):
+		get_tree().paused = false
+		var stats := game.stats
+		game.queue_free()
+		done.call(result, stats))
+	hud.open_minigame(game)
+
+
 func open_chat(npc: Npc) -> void:
 	npc.stop()
 	hud.open_chat(npc, conversation)
