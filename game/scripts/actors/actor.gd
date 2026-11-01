@@ -55,7 +55,7 @@ var _silhouette: ShaderMaterial  ## pasada que pinta al personaje donde lo tapa 
 var _marker: Label3D  ## icono flotante (encargos)
 
 static var _materials := {}
-static var _outline: StandardMaterial3D
+static var _toon_material: StandardMaterial3D
 static var _silhouette_shader: Shader = preload("res://shaders/silhouette.gdshader")
 
 
@@ -231,25 +231,98 @@ func _animate(delta: float, moving: bool) -> void:
 
 # ------------------------------------------------------------------ modelo
 
+## Material de una pieza de color `color` (mientras se monta el modelo; luego se juntan
+## todas en `_merge_parts`, que se queda con el color).
 static func _mat(color: Color) -> StandardMaterial3D:
 	var key := color.to_html()
 	if not _materials.has(key):
-		if _outline == null:
-			_outline = StandardMaterial3D.new()
-			_outline.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-			_outline.albedo_color = Color(0.08, 0.06, 0.06)
-			_outline.cull_mode = BaseMaterial3D.CULL_FRONT
-			_outline.grow = true
-			_outline.grow_amount = 0.035
-			_stencil_write(_outline)
 		var m := StandardMaterial3D.new()
 		m.albedo_color = color
+		_materials[key] = m
+	return _materials[key]
+
+
+## El único material de los personajes ya montados: toon, con el color en los vértices,
+## el contorno negro (otra pasada que crece hacia fuera) y la marca en el stencil.
+static func _toon() -> StandardMaterial3D:
+	if _toon_material == null:
+		var outline := StandardMaterial3D.new()
+		outline.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		outline.albedo_color = Color(0.08, 0.06, 0.06)
+		outline.cull_mode = BaseMaterial3D.CULL_FRONT
+		outline.grow = true
+		outline.grow_amount = 0.035
+		_stencil_write(outline)
+		var m := StandardMaterial3D.new()
+		m.vertex_color_use_as_albedo = true
+		m.vertex_color_is_srgb = true
 		m.diffuse_mode = BaseMaterial3D.DIFFUSE_TOON
 		m.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
 		_stencil_write(m)
-		m.next_pass = _outline
-		_materials[key] = m
-	return _materials[key]
+		m.next_pass = outline
+		_toon_material = m
+	return _toon_material
+
+
+## Junta las piezas de cada parte rígida (el cuerpo y cada extremidad, que se mueven aparte)
+## en una sola malla con el color en los vértices. Cada pieza suelta se dibujaba tres veces
+## (ella, su contorno y su silueta): con decenas por personaje, con muchos bots era lo que
+## más pesaba. Así quedan cinco mallas por personaje.
+func _merge_parts() -> void:
+	var holders: Array[Node3D] = [_body]
+	holders.append_array(_legs)
+	holders.append_array(_arms)
+	for holder in holders:
+		var parts: Array[MeshInstance3D] = []
+		for c in holder.get_children():
+			if c is MeshInstance3D:
+				parts.append(c)
+		if parts.is_empty():
+			continue
+		var merged := MeshInstance3D.new()
+		merged.mesh = _merged_mesh(parts)
+		merged.material_override = _toon()
+		merged.material_overlay = _silhouette
+		for p in parts:
+			holder.remove_child(p)
+			p.free()
+		holder.add_child(merged)
+
+
+## Una malla con todas las `parts` (en el espacio de su padre), con su color en los vértices.
+static func _merged_mesh(parts: Array[MeshInstance3D]) -> ArrayMesh:
+	var verts := PackedVector3Array()
+	var normals := PackedVector3Array()
+	var colors := PackedColorArray()
+	var index := PackedInt32Array()
+	for p in parts:
+		var a := p.mesh.surface_get_arrays(0)
+		var t := p.transform
+		var nb := t.basis.inverse().transposed()
+		var color: Color = (p.material_override as StandardMaterial3D).albedo_color
+		var base := verts.size()
+		var pv: PackedVector3Array = a[Mesh.ARRAY_VERTEX]
+		var pn: PackedVector3Array = a[Mesh.ARRAY_NORMAL]
+		for i in pv.size():
+			verts.append(t * pv[i])
+			normals.append((nb * pn[i]).normalized())
+			colors.append(color)
+		var pi = a[Mesh.ARRAY_INDEX]
+		if pi == null or (pi as PackedInt32Array).is_empty():
+			for i in pv.size():
+				index.append(base + i)
+		else:
+			for i in pi:
+				index.append(base + i)
+	var arrays := []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = verts
+	arrays[Mesh.ARRAY_NORMAL] = normals
+	arrays[Mesh.ARRAY_COLOR] = colors
+	arrays[Mesh.ARRAY_INDEX] = index
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	return mesh
 
 
 ## Marca en el stencil dónde se ve al personaje (también su contorno), para que su
@@ -265,7 +338,6 @@ func _part(parent: Node3D, mesh: Mesh, color: Color, pos: Vector3, scale := Vect
 	var mi := MeshInstance3D.new()
 	mi.mesh = mesh
 	mi.material_override = _mat(color)
-	mi.material_overlay = _silhouette
 	mi.position = pos
 	mi.scale = scale
 	parent.add_child(mi)
@@ -354,6 +426,7 @@ func _build_body() -> void:
 			# gorra del revés
 			_part(_body, CityProps.cylinder(0.36, 0.38, 0.16), shirt.lightened(0.3), Vector3(0, 2.1, 0))
 			_part(_body, CityProps.box(Vector3(0.4, 0.04, 0.26)), shirt.lightened(0.2), Vector3(0, 2.04, -0.32))
+	_merge_parts()
 
 	_bubble = Label3D.new()
 	_bubble.billboard = BaseMaterial3D.BILLBOARD_ENABLED

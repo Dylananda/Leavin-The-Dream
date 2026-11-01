@@ -173,6 +173,9 @@ var last_seen := Vector2i.ZERO  ## casilla donde te vio por última vez
 var debt_due := 0.0  ## now() a partir del cual el camello viene a cobrar lo fiado
 ## Si se dibuja su cono de visión en el suelo (lo decide World según la distancia y la tecla V).
 var cone_visible := false
+var on_screen := true  ## lo pone World: fuera de la pantalla se actualiza menos (ver _process)
+var _offscreen_dt := 0.0
+var _offscreen_frame := randi()  ## desfasado para que no les toque a todos en el mismo frame
 var chasing: bool:
 	get:
 		return mode == "persigue"
@@ -459,6 +462,15 @@ func react(why: String) -> void:
 
 
 func _process(delta: float) -> void:
+	# fuera de la pantalla y sin nada contigo, a trompicones: cada OFFSCREEN_EVERY frames, con
+	# el tiempo acumulado (no se ve, y con muchos bots es casi todo el trabajo)
+	if not on_screen and mode == "":
+		_offscreen_dt += delta
+		_offscreen_frame += 1
+		if _offscreen_frame % Defs.OFFSCREEN_EVERY != 0:
+			return
+		delta = _offscreen_dt
+	_offscreen_dt = 0.0
 	super._process(delta)
 	if not GameState.alive:
 		return

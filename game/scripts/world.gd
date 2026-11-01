@@ -49,6 +49,7 @@ const XRAY_RADIUS_WALKING_M := 9.0
 const CONE_SHOW_DISTANCE := 40
 const C_SUSPECT := Color("ffd23c")  ## «?» de quien te está viendo y sospecha
 const C_HUNTER := Color("ff4a3c")  ## «!» de quien te persigue (y su silueta)
+const ON_SCREEN_MARGIN_PX := 200.0  ## los bots a menos de esto del borde cuentan como en pantalla
 const GRAB_SECONDS := 1.5  ## lo que te retiene un transeúnte que te agarra
 
 var city: CityMap
@@ -419,7 +420,9 @@ func _update_xray(delta: float) -> void:
 ## Iconos, siluetas y conos de los bots: quién te persigue («!») o sospecha de ti («?»),
 ## quién te puede dar un encargo, quién te lo ha dado y la policía.
 func _update_markers() -> void:
+	var screen := get_viewport().get_visible_rect().grow(ON_SCREEN_MARGIN_PX)
 	for npc in npcs:
+		npc.on_screen = screen.has_point(camera.unproject_position(npc.global_position))
 		var mark := errands.marker_for(npc)
 		var color := C_GIVER if mark == "★" else C_OFFER
 		if npc.mode in ["persigue", "busca"]:
@@ -481,6 +484,8 @@ func _npc_at(screen_pos: Vector2) -> Npc:
 	var best: Npc = null
 	var best_d := PICK_RADIUS_PX
 	for npc in npcs:
+		if not npc.on_screen:
+			continue
 		var body := npc.global_position + Vector3(0, 1.4, 0)
 		if camera.is_position_behind(body):
 			continue
