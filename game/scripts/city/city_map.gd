@@ -182,6 +182,38 @@ func nearest_walkable(cell: Vector2i, max_radius := 40) -> Vector2i:
 	return cell
 
 
+## Si desde la casilla `from` se ve la casilla `to`: la recta entre las dos (Bresenham) no
+## pasa por ninguna casilla que no sea calle o plaza (edificios, interiores de manzana).
+func line_of_sight(from: Vector2i, to: Vector2i) -> bool:
+	var d := Vector2i(absi(to.x - from.x), -absi(to.y - from.y))
+	var s := Vector2i(1 if from.x < to.x else -1, 1 if from.y < to.y else -1)
+	var err := d.x + d.y
+	var c := from
+	while c != to:
+		var e2 := 2 * err
+		if e2 >= d.y:
+			err += d.y
+			c.x += s.x
+		if e2 <= d.x:
+			err += d.x
+			c.y += s.y
+		if c != to and not is_walkable(c):
+			return false
+	return true
+
+
+## Metros que se ven en línea recta desde `from` en la dirección `dir` (plana) antes de
+## topar con un edificio, hasta `max_m`. Para dibujar los conos de visión.
+func clear_distance(from: Vector3, dir: Vector3, max_m: float) -> float:
+	var step := cell_m * 0.25
+	var d := step
+	while d < max_m:
+		if not is_walkable(world_to_cell(from + dir * d)):
+			return d
+		d += step
+	return max_m
+
+
 func random_walkable() -> Vector2i:
 	return _walkable_cells.pick_random()
 

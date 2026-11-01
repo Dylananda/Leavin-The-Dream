@@ -287,7 +287,7 @@ func _fail(e: Dictionary, opened := false) -> void:
 			var debt: int = d["debt_opened"] if opened else d["debt"]
 			gs.debt += debt
 			if npc:
-				npc.debt += debt
+				npc.add_debt(debt, 0.0)  # ya va tarde: viene a cobrar en cuanto te vea
 			gs.heat = minf(100.0, gs.heat + d["heat"])
 			if not opened:
 				gs.log_msg("Se te ha pasado la hora del paquete. %s dice que ahora le debes %d €." % [e["who"], debt], G.C_BAD)

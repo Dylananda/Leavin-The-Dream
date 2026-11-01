@@ -52,6 +52,8 @@ func _initialize() -> void:
 		if profile == Defs.PROFILES[0]:
 			await _test_conversation(gs, world)
 		await _test_errands(gs, world)
+		if profile == Defs.PROFILES[0]:
+			_test_vision(gs, world)
 		world._rummage()
 		world._sleep_here()
 		if gs.alive:
@@ -260,7 +262,10 @@ func _test_errands(gs, world) -> void:
 	world.use_item("paquete")
 	_check(gs.inventory.get("farlopa", 0) == coke + 2 and gs.debt >= 60 and gs.errands[-1]["state"] == "fallado", "abrir el paquete no lo falla ni da la farlopa")
 	# cada forma de apuntar mal cambia lo que se lee
-	var note: Dictionary = gs.notes[-1]
+	# partiendo de una nota fiel (la de verdad puede haberse apuntado mal ya: Defs.SLIP_BASE)
+	var note: Dictionary = gs.notes[-1].duplicate()
+	var real: Dictionary = note["errand"]
+	note.merge({"poi": real["poi"], "from": real["from"], "until": real["until"], "slip": ""}, true)
 	var truth: String = errands.note_text(note)
 	for kind in errands.SLIPS:
 		var bad: Dictionary = note.duplicate()
@@ -278,7 +283,7 @@ func _test_errands(gs, world) -> void:
 	gs._clock_lie_left = 0.0
 	gs.clock_skew = 0.0
 	gs._clock_blank = false
-	_check(gs.shown_clock_text() == gs.clock_text(), "sobrio, el reloj miente")
+	_check(gs.shown_clock_text() == gs.clock_text(), "sobrio, el reloj miente (%s en vez de %s, minuto %.6f)" % [gs.shown_clock_text(), gs.clock_text(), gs.minute_of_day])
 	gs.clock_skew = 45.0
 	gs._clock_lie_left = 30.0
 	_check(gs.shown_clock_text() != gs.clock_text(), "el reloj no miente cuando toca")
@@ -301,6 +306,258 @@ func _test_errands(gs, world) -> void:
 	_check(world.hud.is_notebook_open(), "la libreta no se abre")
 	world.hud.toggle_notebook(errands)
 	print("  encargos y libreta: OK (deuda %d €, %d notas)" % [gs.debt, gs.notes.size()])
+
+
+## Visión en cono tapada por los edificios, memoria de cada personaje, policía que solo
+## persigue si te ve, escándalo al robar, camellos que cobran y robados que te reconocen.
+func _test_vision(gs, world) -> void:
+	var city = world.city
+	var player = world.player
+	_steady(gs)
+	gs.heat = 0.0
+	gs.wanted_until = -1.0
+	gs.money = 50
+	for npc in world.npcs:
+		npc.calm_down()
+	# una calle recta de 7 casillas y dos casillas de calle con un edificio en medio
+	var line := _find_line(city, 7)
+	var wall := _find_wall(city)
+	_check(line.size() == 2 and wall.size() == 2, "no hay calle recta o pared para probar la visión")
+	if line.size() < 2 or wall.size() < 2:
+		return
+	_check(city.line_of_sight(line[0], line[1]) and not city.line_of_sight(wall[0], wall[1]), "la línea de visión no ve la calle o atraviesa edificios")
+	var cop = world.npcs.filter(func(n): return n.kind == "policia")[0]
+	# delante y en la calle: lo ve; a la espalda o tras la pared, no
+	_place(cop, line[0], line[1])
+	player.setup(city, line[1])
+	_check(cop.can_see(player) and world.police_watching() >= 1, "un agente no ve lo que tiene delante")
+	_place(cop, line[0] + Vector2i(3, 0), line[1])
+	player.setup(city, line[0])
+	_check(not cop.can_see(player), "un agente ve a su espalda")
+	_place(cop, wall[0], wall[1])
+	player.setup(city, wall[1])
+	_check(not cop.can_see(player), "un agente ve a través de los edificios")
+	# la policía no persigue por estar cerca: solo si te ve y estás fichado (o muy buscado)
+	_place(cop, line[0], line[1])
+	player.setup(city, line[1])
+	cop.perceive(3.0)
+	_check(cop.mode == "", "la policía te persigue sin motivo")
+	gs.mark_wanted("prueba")
+	_place(cop, wall[0], wall[1])
+	player.setup(city, wall[1])
+	cop.perceive(3.0)
+	_check(cop.mode == "" and cop.alert == 0.0, "la policía te persigue sin verte")
+	_place(cop, line[0], line[1])
+	player.setup(city, line[1])
+	cop.perceive(3.0)
+	_check(cop.mode == "persigue" and cop.chase_reason == "policia", "fichado y a la vista, la policía no te persigue")
+	# si te pierde de vista, busca donde te vio y, si no te encuentra, te quedas fichado
+	gs.wanted_until = -1.0
+	gs.heat = 80.0
+	player.setup(city, wall[1])
+	_place(cop, wall[0], wall[1])
+	cop.start_chase("policia")
+	cop.perceive(0.25)
+	cop._follow_mode(Defs.LOSE_SIGHT_TIME + 0.1)
+	_check(cop.mode == "busca", "la policía no va a buscarte donde te perdió")
+	cop.stop()
+	cop._follow_mode(Defs.SEARCH_TIME * 2.0)
+	_check(cop.mode == "" and gs.is_wanted(), "escaparte de la policía no te deja fichado")
+	# el cono se dibuja (recortado por los edificios)
+	cop.cone_visible = true
+	cop._update_cone()
+	_check(cop._cone != null and cop._cone.visible and cop._cone_mesh.get_surface_count() == 1, "no se dibuja el cono de visión")
+	cop.cone_visible = false
+	cop._update_cone()
+	world.hud.refresh()
+	_check(world.hud._wanted_label.visible, "el HUD no dice que estás fichado")
+	cop.calm_down()
+	cop._calm_until = 0.0
+	gs.wanted_until = -1.0
+	gs.heat = 0.0
+
+	# memoria: al que le pides mucho se aparta; al que ayudas se acerca
+	var guiri = _fresh(world, "turista")
+	for i in Defs.BEG_ANNOY:
+		_do(world, guiri, "Pedirle una moneda")
+	_check(guiri.remembers("pedido") == Defs.BEG_ANNOY and guiri.grudge() == "aparta", "no se acuerda de que le has pedido")
+	_place(guiri, line[0], line[1])
+	player.setup(city, line[1])
+	guiri.perceive(3.0)
+	_check(guiri.mode == "aparta", "al que le has pedido mucho no se aparta al verte")
+	var kid = _fresh(world, "chaval")
+	_do(world, kid, "Darle un euro")
+	_place(kid, line[0], line[1])
+	kid.perceive(3.0)
+	_check(kid.remembers("ayudado") == 1 and kid.mode == "acerca", "al que has ayudado no se acerca")
+	var yonki = _fresh(world, "yonki")
+	_do(world, yonki, "Pelearte con él")
+	_check(yonki.grudge() == "aparta", "al que le has pegado no se aparta")
+
+	# robados que te reconocen: unos van a por lo suyo, otros a por un agente
+	var avenger = null
+	var snitch = null
+	for name in load("res://scripts/actors/npc.gd").KINDS["turista"]["names"]:
+		var t = _fresh(world, "turista")
+		t.display_name = name
+		if t.avenger() and avenger == null:
+			avenger = t
+		elif not t.avenger() and snitch == null:
+			snitch = t
+	_check(avenger != null and snitch != null, "todos los turistas reaccionan igual al reconocerte")
+	if avenger and snitch:
+		avenger.remember("robado")
+		_place(avenger, line[0], line[1])
+		avenger.perceive(3.0)
+		_check(avenger.mode == "persigue" and avenger.chase_reason == "venganza", "el turista robado no va a por ti")
+		gs.add_item("cartera")
+		var n: int = gs.inventory.get("cartera", 0)
+		avenger._follow_mode(0.25)  # está a menos de dos casillas: te alcanza
+		player.setup(city, avenger.cell)
+		avenger._follow_mode(0.25)
+		_check(gs.inventory.get("cartera", 0) == n - 1 and avenger.mode == "", "el turista que te alcanza no recupera lo suyo")
+		snitch.remember("robado")
+		player.setup(city, line[1])
+		_place(snitch, line[0], line[1])
+		snitch.perceive(3.0)
+		_check(snitch.mode == "denuncia", "el turista robado no busca a un agente")
+		cop.setup(city, snitch.cell)
+		snitch._denounce_to = cop
+		snitch._follow_mode(0.25)
+		_check(snitch.mode == "" and cop.mode == "busca" and gs.is_wanted(), "la denuncia no llega a la policía")
+	cop.calm_down()
+	gs.wanted_until = -1.0
+
+	# camellos: con la deuda vencida te persiguen y te cobran; sin dinero, paliza
+	var dealer = _fresh(world, "camello")
+	dealer.add_debt(10, Defs.DEBT_GRACE_HOURS)
+	_check(dealer.grudge() == "", "el camello viene a cobrar antes de tiempo")
+	dealer.debt = 0
+	dealer.add_debt(20, 0.0)
+	gs.debt = 20
+	_place(dealer, line[0], line[1])
+	player.setup(city, line[1])
+	dealer.perceive(3.0)
+	_check(dealer.mode == "persigue" and dealer.chase_reason == "deuda", "el camello al que debes no va a por ti")
+	gs.money = 50
+	player.setup(city, dealer.cell)
+	dealer._follow_mode(0.25)
+	_check(gs.money == 30 and dealer.debt == 0 and gs.debt == 0, "el camello no se cobra la deuda")
+	dealer.add_debt(20, 0.0)
+	gs.money = 0
+	var health: float = gs.health
+	dealer.chase_reason = "deuda"
+	world._on_caught(dealer)
+	_check(gs.health < health and dealer.grudge() == "", "sin dinero, el camello no te pega (o vuelve enseguida)")
+	_steady(gs)
+
+	# escándalo: si lo oye un agente, viene; si no, quedas fichado; unos valientes te paran
+	var brave = null
+	var caller = null
+	for kind in ["vecino", "turista"]:
+		for name in load("res://scripts/actors/npc.gd").KINDS[kind]["names"]:
+			var b = _fresh(world, kind)
+			b.display_name = name
+			if b.temper() == "valiente" and brave == null:
+				brave = b
+			elif b.temper() == "llama" and caller == null:
+				caller = b
+	_check(brave != null and caller != null, "nadie es valiente o nadie llama a la policía")
+	var victim = _fresh(world, "turista")
+	player.setup(city, line[1])
+	for b in [victim, brave, caller]:
+		if b:
+			b.setup(city, line[0])
+			b.calm_down()
+	cop.setup(city, line[0])
+	gs.heat = 0.0
+	world.scandal(victim, "THIEF! ¡Al ladrón!")
+	_check(cop.mode == "busca" and not gs.is_wanted() and gs.heat > Defs.CHASE_HEAT, "el agente que oye el escándalo no viene")
+	if brave:
+		_check(brave.mode == "persigue" and brave.chase_reason == "parar", "el valiente no intenta pararte")
+		world._on_caught(brave)
+		_check(world._grabbed > 0.0, "el valiente que te alcanza no te agarra")
+	var police: Array = world.npcs.filter(func(n): return n.kind == "policia")
+	for p in police:
+		world.npcs.erase(p)
+	for b in [victim, brave, caller]:
+		if b:
+			b.calm_down()
+	world.scandal(victim, "THIEF! ¡Al ladrón!")
+	_check(gs.is_wanted(), "sin policía que lo oiga, no quedas fichado")
+	world.npcs.append_array(police)
+	# un robo a la vista de un testigo acaba en escándalo; y la víctima se acuerda de ti
+	gs.wanted_until = -1.0
+	for p in police:
+		p.calm_down()
+		p.setup(city, wall[0])
+	var mark = _fresh(world, "turista")
+	mark.setup(city, line[1])
+	if caller:
+		_place(caller, line[0], line[1])
+		caller.calm_down()
+		world.interactions._after_theft(mark)
+		_check(mark.remembers("robado") == 1, "robar a la vista de un testigo no se sabe")
+	world._grabbed = 0.0
+	for npc in world.npcs:
+		npc.calm_down()
+	gs.wanted_until = -1.0
+	gs.heat = 0.0
+	print("  visión, memoria y escándalo: OK")
+
+
+## Un bot nuevo del tipo `kind`, sin pasado contigo.
+func _fresh(world, kind: String):
+	world._spawn_npc(kind)
+	var npc = world.npcs[-1]
+	npc.known = true
+	return npc
+
+
+## Pone a `npc` en `at` mirando hacia `toward`.
+func _place(npc, at: Vector2i, toward: Vector2i) -> void:
+	npc.setup(npc.city, at)
+	npc.calm_down()
+	npc._calm_until = 0.0
+	var d := Vector2(toward - at)
+	npc._body.rotation.y = atan2(d.x, d.y)
+
+
+## Ejecuta la acción de menú `label` con `npc`.
+func _do(world, npc, label: String) -> void:
+	for a in world.interactions.for_npc(npc):
+		if a["label"] == label:
+			a["do"].call()
+			return
+	_check(false, "%s: no tiene la acción «%s»" % [npc.kind, label])
+
+
+## Dos casillas de una calle recta (`n` casillas libres en horizontal entre ellas).
+func _find_line(city, n: int) -> Array:
+	for y in city.height:
+		for x in city.width - n:
+			var ok := true
+			for k in n + 1:
+				if not city.is_walkable(Vector2i(x + k, y)) or not city.is_walkable(Vector2i(x + k, y + 1)) or not city.is_walkable(Vector2i(x + k, y - 1)):
+					ok = false
+					break
+			if ok:
+				return [Vector2i(x, y), Vector2i(x + n, y)]
+	return []
+
+
+## Dos casillas de calle cercanas (a 3–5 casillas) con un edificio en medio.
+func _find_wall(city) -> Array:
+	for y in range(2, city.height - 6):
+		for x in range(2, city.width - 6):
+			var a := Vector2i(x, y)
+			if not city.is_walkable(a):
+				continue
+			for d in [Vector2i(4, 0), Vector2i(0, 4), Vector2i(3, 3), Vector2i(5, 0), Vector2i(0, 5)]:
+				var b: Vector2i = a + d
+				if city.is_walkable(b) and not city.line_of_sight(a, b):
+					return [a, b]
+	return []
 
 
 ## Deja el cuerpo en calma para que una prueba no dispare otra consecuencia por el camino.

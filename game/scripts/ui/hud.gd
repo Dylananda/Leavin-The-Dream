@@ -22,7 +22,7 @@ const BARS := [
 	["dignity", "Dignidad", Color("4a8ad0"), false,
 		"Cada punto perdido es un punto de caída. Por debajo de 30 llamas más la atención."],
 	["discretion", "Discreción", Color("7a8ab8"), false,
-		"Lo poco que llamas la atención. Baja al robar, pelear o consumir a la vista, y con tu aspecto (colocón, mono, mala pinta). Vacía, la policía va a por ti."],
+		"Lo poco que llamas la atención. Baja al robar, pelear o consumir a la vista, y con tu aspecto (colocón, mono, mala pinta). Con poca, la policía va a por ti si te ve; vacía, te ven desde más lejos."],
 ]
 const DANGER := 75.0  ## a partir de aquí (en el lado malo) la etiqueta se pone roja
 const C_DANGER := Color("ff6a5a")
@@ -40,6 +40,7 @@ var _fx_label: RichTextLabel
 var _fx_text := ""
 var _name_label: Label
 var _money_label: Label
+var _wanted_label: Label  ## «FICHADO»: la policía que te vea irá a por ti
 var _clock_label: Label
 var _caida_label: Label
 var _title_label: Label
@@ -148,6 +149,13 @@ func _build_stats() -> void:
 		_bar_labels[b[0]] = l
 	_money_label = Label.new()
 	v.add_child(_money_label)
+	_wanted_label = Label.new()
+	_wanted_label.add_theme_font_size_override("font_size", 16)
+	_wanted_label.add_theme_color_override("font_color", C_DANGER)
+	_wanted_label.mouse_filter = Control.MOUSE_FILTER_PASS
+	_wanted_label.tooltip_text = "Te han denunciado o te has escapado de la policía. Cualquier agente que te vea irá a por ti, aunque no estés haciendo nada. Se olvida con el tiempo o cuando te detienen."
+	_wanted_label.visible = false
+	v.add_child(_wanted_label)
 	_caida_label = Label.new()
 	_caida_label.add_theme_font_size_override("font_size", 18)
 	_caida_label.add_theme_color_override("font_color", Color("d08ae8"))
@@ -255,7 +263,7 @@ func _build_log() -> void:
 
 func _build_help() -> void:
 	var l := Label.new()
-	l.text = "WASD: andar (Shift: correr)  ·  Clic: ir / interactuar  ·  I: inventario  ·  L: libreta  ·  R: rebuscar  ·  Z: dormir aquí  ·  Q/E: girar cámara  ·  Rueda: zoom"
+	l.text = "WASD: andar (Shift: correr)  ·  Clic: ir / interactuar  ·  I: inventario  ·  L: libreta  ·  R: rebuscar  ·  Z: dormir aquí  ·  V: conos de visión  ·  Q/E: girar cámara  ·  Rueda: zoom"
 	l.add_theme_font_size_override("font_size", 15)
 	l.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -327,6 +335,9 @@ func refresh() -> void:
 	if gs.debt > 0:
 		money_text += "   Debes: %d €" % gs.debt
 	_money_label.text = money_text
+	_wanted_label.visible = gs.is_wanted()
+	if _wanted_label.visible:
+		_wanted_label.text = "FICHADO (hasta %s)" % gs.time_text(gs.wanted_until)
 	_caida_label.text = "CAÍDA: %d" % int(gs.caida)
 	_title_label.text = Defs.title_for(gs.caida)
 	# refresh() se llama cada frame; reconstruir los botones siempre impediría pulsarlos

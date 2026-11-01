@@ -13,6 +13,46 @@ const HEAT_DECAY := 0.08  ## lo rápido que la policía se olvida de ti
 ## Tope de lo que llamas la atención solo por tu aspecto: se queda por debajo
 ## del umbral de persecución (40) para que sea la gota que colma el vaso.
 const MAX_EXPOSURE := 35.0
+## A partir de esta búsqueda (heat), la policía va a por ti... si te ve.
+const CHASE_HEAT := 40.0
+
+## Visión de los personajes, en cono como en *Commandos*: largo en casillas (2 m) y apertura
+## en grados. La tapan los edificios. De noche se ve menos (NIGHT_SIGHT) y, con la discreción
+## vacía (heat >= 90), te ven desde más lejos (EXPOSED_SIGHT). A NEAR_SIGHT casillas te notan
+## aunque estés a su espalda.
+const VISION := {
+	"policia": {"range": 14.0, "angle": 70.0},
+	"_": {"range": 10.0, "angle": 90.0},
+}
+const NIGHT_SIGHT := 0.72
+const EXPOSED_SIGHT := 1.5
+const NEAR_SIGHT := 2.0
+## Segundos que tienen que verte (en el borde del cono) para darse cuenta; de cerca, la
+## tercera parte. Sin verte, la sospecha baja a ALERT_DECAY por segundo.
+const ALERT_TIME := 1.4
+const ALERT_DECAY := 0.35
+## Persecución: segundos sin verte antes de ir al último sitio donde te vieron, y lo que
+## buscan allí antes de rendirse.
+const LOSE_SIGHT_TIME := 2.5
+const SEARCH_TIME := 8.0
+## Si te escapas de la policía, o nadie de uniforme oye el escándalo, quedas fichado: el
+## agente que te vea en este tiempo (minutos de juego) te persigue aunque no hagas nada.
+const WANTED_MINUTES := 24.0 * 60.0
+## Escándalo al robar: quién oye el grito (casillas) y lo lejos que llega una llamada a la policía.
+const SCANDAL_HEAR := 20
+const SCANDAL_CALL := 60
+## Carácter de los transeúntes ante un escándalo (tirada fija por nombre): intentan pararte,
+## llaman a la policía o pasan. Los que viven de la calle nunca se meten.
+const BRAVE_CHANCE := 0.2
+const CALLER_CHANCE := 0.45
+const NEVER_INTERVENE := ["yonki", "camello", "mantero", "latero", "trilero", "carterista", "chaval"]
+## Turistas (y despedidas) robados que te reconocen: probabilidad de que vayan a por ti en vez
+## de buscar a un policía, según su género (fija por nombre).
+const AVENGER_CHANCE := {"m": 0.6, "f": 0.3}
+## Veces que le tienes que pedir a alguien para que se aparte al verte.
+const BEG_ANNOY := 2
+## Horas que te da un camello para pagar lo fiado antes de venir a por ti.
+const DEBT_GRACE_HOURS := 12.0
 
 ## look: colores y rasgos del muñeco (ver Actor.look).
 const PROFILES := [
