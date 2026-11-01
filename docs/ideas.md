@@ -305,6 +305,24 @@ de ruta:
     a salir con el mismo nombre. Peleas de verdad (minijuego `Fight`): hecho para la pelea
     con un yonki y las palizas del camello y del de la esquina (rama `feat/minijuegos`).
 
+**Más gente y más variada** (rama `feat/mas-gente`)
+- [x] Niños (en las plazas, de 9 a 21), abuelos y abuelas (con bastón, lentos), perros que van
+  con su dueño (vecinos, abuelos, yonkis y pijos), repartidores y gente con pasta. Cada uno con
+  sus acciones: jugar a la pelota (si tienes mala pinta, una madre se los lleva), ayudar con la
+  compra, robarle el monedero a una abuela (minijuego), acariciar o dar de comer a un perro,
+  pedirle un pedido cancelado a un repartidor o robárselo, pedirle a un pijo o robarle
+  (minijuego, más difícil que a un guiri). Los pijos compran farlopa y porros (trapicheo).
+  Gracias a la optimización (rama `feat/optimiza-bots`), unos 225 bots a mediodía a 60 FPS.
+  Fuentes:
+  - Repartidores que alquilan la cuenta de otro, a menudo sin papeles: [Ara](https://es.ara.cat/economia/tecnologia/gran-problema-riders-papeles_1_5220622.html),
+    [Qué!](https://www.que.es/2024/02/05/glovo-inmigrantes-ilegales/), [El Salto](https://www.elsaltodiario.com/repartidores/ley-rider-no-funcionando-repartidores-organizan-huelgas-critican-irregularidades-glovo).
+  - Fondos que compran bloques del Raval y vecinos mayores que resisten: [El Salto, Hospital 99](https://www.elsaltodiario.com/barcelona/el-raval-planta-cara-a-blackstone-para-defender-el-bloque-hospital-99),
+    [Ara](https://es.ara.cat/economia/inmobiliario/veintena-vecinos-seis-fincas-barcelona-pie-guerra-fondo-quiere-colojamientos_1_5410764.html).
+  - Residentes temporales, expats y alquiler de temporada en el Raval: [Papers (UAB)](https://ddd.uab.cat/pub/papers/papers_a2024v109n3/papers_a2024v109n3ae2353.info),
+    [Ara](https://es.ara.cat/economia/efecto-expat-vivienda-alquileres-caros-temporales_1_4809421.amp.html).
+  - [ ] Pendiente: que los niños vayan con un adulto; repartidores en bici; que los perros
+    ladren al que les cae mal; jugarlo y ajustar cuántos hay de cada.
+
 **Trapicheo (punto 8)**
 - [x] Un sistema de tráfico: comprar y vender a más personajes (yonkis, fiesteros, turistas,
   vecinos...), con precios, riesgo y clientes que se acuerdan de ti. Hecho (rama

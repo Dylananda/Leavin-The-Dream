@@ -81,7 +81,11 @@ trae temblores, viñeta roja y tropiezos.
 
 Cada tipo de bot sale a sus horas y en su zona: de día, trileros y carteristas (vestidos
 de guiri) en la Rambla; por la tarde y la noche, chavales que esnifan cola por la Rambla
-del Raval y Sant Pau; de noche, despedidas de soltero y lateros junto a los bares. Los
+del Raval y Sant Pau; de noche, despedidas de soltero y lateros junto a los bares. De día
+también hay niños jugando en las plazas, gente mayor con bastón (y algunos con perro),
+repartidores con la mochila cúbica a toda prisa y gente con pasta que viene al Liceu, al MACBA
+o a ver un piso que comprar. Algunos vecinos, abuelos, yonkis y pijos sacan al perro, que va
+detrás de ellos y se va cuando se van. Los
 personajes nuevos tienen nombre e historia propia; las fuentes están en `docs/ideas.md`.
 
 ### Cosas por la calle

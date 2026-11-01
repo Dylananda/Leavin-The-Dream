@@ -73,6 +73,11 @@ func for_npc(npc: Npc) -> Array:
 		"trilero": acts = _trilero(npc)
 		"carterista": acts = _carterista(npc)
 		"chaval": acts = _chaval(npc)
+		"nino": acts = _nino(npc)
+		"anciano": acts = _anciano(npc)
+		"perro": acts = _perro(npc)
+		"mensajero": acts = _mensajero(npc)
+		"pudiente": acts = _pudiente(npc)
 	acts.append_array(world.trade.offers_for(npc))
 	acts.append_array(world.errands.offers_for(npc))
 	if npc.bio() != "":
@@ -629,6 +634,168 @@ func _chaval(npc: Npc) -> Array:
 			gs.change_sanity(5)
 			gs.change_dignity(4, "Hacer algo bien por alguien")
 			world.remove_npc_later(npc, 4.0)))
+	return acts
+
+
+func _nino(npc: Npc) -> Array:
+	var gs := GameState
+	return [
+		_act("Jugar a la pelota con ellos (20 min)", func():
+			gs.advance(20)
+			# con mala pinta, una madre se los lleva
+			if gs.dignity < 30 or gs.high > 50.0 or gs.mono > 50.0:
+				npc.say("¡Mamá!", 2.0)
+				_heat(5)
+				gs.change_dignity(-4, "Que una madre aparte a su hijo de ti")
+				gs.log_msg("Una madre se lleva a %s de la mano sin quitarte el ojo de encima." % npc.display_name, G.C_BAD)
+				world.remove_npc_later(npc, 2.0)
+			else:
+				npc.remember("ayudado")
+				npc.say(["¡Gooool!", "¡Otra, otra!", "¡Eres malísimo!"].pick_random())
+				gs.change_sanity(4)
+				gs.change_dignity(2, "Un rato de pelota en la plaza")
+				gs.log_msg("Durante veinte minutos eres otra persona.", G.C_GOOD)),
+	]
+
+
+func _anciano(npc: Npc) -> Array:
+	var gs := GameState
+	var acts := [
+		_act("Ayudarle con la compra (30 min)", func():
+			gs.advance(30)
+			npc.remember("ayudado")
+			npc.say("Qué majo eres, hijo")
+			gs.change_dignity(3, "Ayudar a alguien mayor")
+			gs.change_sanity(2)
+			if _chance(0.35):
+				var n := randi_range(2, 5)
+				gs.add_money(n)
+				gs.log_msg("Te da %d € para un café. No hay forma de decirle que no." % n, G.C_GOOD)),
+		_act("Darle conversación (30 min)", func():
+			gs.advance(30)
+			npc.say(["En mis tiempos...", "Aquí había una lechería", "¿Tú de quién eres?"].pick_random(), 4.0)
+			gs.change_sanity(4)
+			gs.ease_mono(3.0)),
+		_act("Pedirle una moneda", func():
+			gs.advance(5)
+			npc.remember("pedido")
+			if _chance(0.3 + _beg_bonus()):
+				gs.add_money(randi_range(1, 2))
+				npc.say("Toma, y come algo")
+			else:
+				npc.say("Ay, hijo, si no llego a fin de mes")
+			gs.change_dignity(-3, "Pedirle a un jubilado")),
+	]
+	if not npc.robbed and not npc.has_meta("receloso"):
+		acts.append(_act("Robarle el monedero", func():
+			gs.advance(5)
+			_pickpocket(npc, "cartera", _pickpocket_chance(0.75), func():
+				_heat(20)
+				gs.log_msg("Le sacas el monedero. Lleva la pensión del mes.", G.C_GOOD)
+				gs.change_dignity(-10, "Robarle a alguien mayor"),
+			func():
+				_heat(60)
+				_caught_stealing(npc, "¡Al ladrón! ¡Socorro!")
+				gs.log_msg("Se agarra al bolso y grita. Todo el mundo te mira.", G.C_BAD)
+				gs.change_dignity(-8, "Que te pillen robándole a alguien mayor"))))
+	return acts
+
+
+func _perro(npc: Npc) -> Array:
+	var gs := GameState
+	var acts := [
+		_act("Acariciarlo", func():
+			gs.advance(2)
+			npc.say("*mueve la cola*")
+			gs.change_sanity(3)
+			if gs.mono > 50.0:
+				gs.log_msg("Por un momento se te olvida el mono.", G.C_GOOD)
+				gs.ease_mono(2.0)),
+	]
+	for id in ["sobras", "bocadillo"]:
+		if gs.has_item(id):
+			acts.append(_act("Darle tus %s" % Defs.item_name(id).to_lower(), func():
+				gs.remove_item(id)
+				npc.remember("ayudado")
+				if npc.amo != null and is_instance_valid(npc.amo):
+					npc.amo.remember("ayudado")
+					npc.amo.say("Mira, le has caído bien")
+				npc.say("*se lo zampa*")
+				gs.change_dignity(2, "Compartir la comida con un perro")))
+			break
+	return acts
+
+
+func _mensajero(npc: Npc) -> Array:
+	var gs := GameState
+	var acts := [
+		_act("Pedirle algo de comer", func():
+			gs.advance(5)
+			npc.remember("pedido")
+			if npc.last_interaction_day != gs.day and _chance(0.3):
+				npc.last_interaction_day = gs.day
+				gs.add_item("bocadillo")
+				npc.say("Un pedido cancelado. Tómalo, que lo iba a tirar")
+			else:
+				npc.say("Lo siento, hermano, llego tarde")
+			gs.change_dignity(-2)),
+	]
+	if not npc.robbed:
+		acts.append(_act("Robarle el pedido", func():
+			gs.advance(5)
+			npc.robbed = true
+			if _chance(0.55 - 0.2 * world.police_watching()):
+				gs.add_item("bocadillo")
+				_heat(15)
+				gs.log_msg("Le abres la mochila mientras mira el móvil. Hoy le descuentan el pedido a él.", G.C_GOOD)
+				_after_theft(npc)
+			else:
+				_heat(35)
+				_caught_stealing(npc, "¡Eh! ¡Que es mi trabajo!")
+				gs.log_msg("Se da la vuelta justo a tiempo.", G.C_BAD)
+			gs.change_dignity(-5, "Robarle la cena a un currante")))
+	return acts
+
+
+func _pudiente(npc: Npc) -> Array:
+	var gs := GameState
+	var acts := [
+		_act("Pedirle una moneda", func():
+			gs.advance(5)
+			npc.remember("pedido")
+			if not npc.robbed and _chance(0.15 + _beg_bonus()):
+				var n := randi_range(5, 20)
+				gs.add_money(n)
+				npc.say("Toma... y no te lo gastes en eso")
+				gs.log_msg("Te da %d € sin mirarte a la cara." % n, G.C_GOOD)
+			else:
+				npc.say(["No llevo suelto", "Ahora no", "*hace como que no te oye*"].pick_random())
+			gs.change_dignity(-3, "Que te miren como a un mueble")),
+		_act("Contarle tu drama", func():
+			gs.advance(20)
+			npc.remember("pedido")
+			if _chance(0.1 + _beg_bonus()):
+				var n := randi_range(20, 50)
+				gs.add_money(n)
+				gs.log_msg("Le remueves algo por dentro: %d €. Mañana lo contará en una cena." % n, G.C_GOOD)
+			else:
+				npc.say("Hay servicios sociales para eso")
+			gs.change_dignity(-4, "Llorarle a alguien con pasta")),
+	]
+	if not npc.robbed and not npc.has_meta("receloso"):
+		acts.append(_act("Robarle la cartera", func():
+			gs.advance(5)
+			var loot := "movil" if randf() < 0.5 else "cartera"
+			# va con el bolso cruzado y mirando a todos lados: más difícil que un guiri
+			_pickpocket(npc, loot, _pickpocket_chance(0.45), func():
+				_heat(25)
+				gs.log_msg("Dentro hay más de lo que ganas en un mes.", G.C_GOOD)
+				gs.change_dignity(-2),
+			func():
+				_heat(75)
+				_caught_stealing(npc, "¡Policía! ¡Me roban!")
+				gs.log_msg("Te ha visto. Ya está llamando al 112.", G.C_BAD)
+				gs.change_dignity(-2))))
 	return acts
 
 

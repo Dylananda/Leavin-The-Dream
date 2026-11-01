@@ -360,6 +360,41 @@ func _build_body() -> void:
 	_body = Node3D.new()
 	_body.scale = Vector3.ONE * SCALE * body_size
 	add_child(_body)
+	if look.get("species", "") == "perro":
+		_build_dog()
+	else:
+		_build_person()
+	_merge_parts()
+
+	_bubble = Label3D.new()
+	_bubble.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_bubble.position = Vector3(0, 3.4 * SCALE, 0)
+	_bubble.font_size = 44
+	_bubble.pixel_size = 0.018
+	_bubble.outline_size = 14
+	_bubble.modulate = Color("fffbe8")
+	_bubble.outline_modulate = Color(0.08, 0.06, 0.06)
+	_bubble.no_depth_test = true
+	_bubble.render_priority = 3
+	_bubble.outline_render_priority = 2
+	_bubble.visible = false
+	add_child(_bubble)
+
+	_marker = Label3D.new()
+	_marker.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_marker.position = Vector3(0, MARKER_Y * body_size, 0)
+	_marker.font_size = 150
+	_marker.pixel_size = 0.02
+	_marker.outline_size = 40
+	_marker.no_depth_test = true
+	_marker.render_priority = 5
+	_marker.outline_render_priority = 4
+	_marker.visible = false
+	add_child(_marker)
+
+
+## Una persona: cuerpo según el género, brazos y piernas, cabezón, pelo, cara y accesorio.
+func _build_person() -> void:
 	var female: bool = look.get("gender", "m") == "f"
 	var shirt: Color = look["shirt"]
 	var jacket: Color = look.get("jacket", Color.TRANSPARENT)
@@ -426,33 +461,40 @@ func _build_body() -> void:
 			# gorra del revés
 			_part(_body, CityProps.cylinder(0.36, 0.38, 0.16), shirt.lightened(0.3), Vector3(0, 2.1, 0))
 			_part(_body, CityProps.box(Vector3(0.4, 0.04, 0.26)), shirt.lightened(0.2), Vector3(0, 2.04, -0.32))
-	_merge_parts()
+		"baston":
+			# bastón en la mano, apoyado en el suelo
+			_part(_body, CityProps.cylinder(0.035, 0.035, 1.0), Color("4a3020"), Vector3(arm_x + 0.1, 0.5, 0.12))
+		"reparto":
+			# la mochila cúbica del reparto, del color de la camiseta
+			_part(_body, CityProps.box(Vector3(0.62, 0.62, 0.5)), shirt.darkened(0.1), Vector3(0, 1.3, -0.45))
 
-	_bubble = Label3D.new()
-	_bubble.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	_bubble.position = Vector3(0, 3.4 * SCALE, 0)
-	_bubble.font_size = 44
-	_bubble.pixel_size = 0.018
-	_bubble.outline_size = 14
-	_bubble.modulate = Color("fffbe8")
-	_bubble.outline_modulate = Color(0.08, 0.06, 0.06)
-	_bubble.no_depth_test = true
-	_bubble.render_priority = 3
-	_bubble.outline_render_priority = 2
-	_bubble.visible = false
-	add_child(_bubble)
 
-	_marker = Label3D.new()
-	_marker.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	_marker.position = Vector3(0, MARKER_Y * body_size, 0)
-	_marker.font_size = 150
-	_marker.pixel_size = 0.02
-	_marker.outline_size = 40
-	_marker.no_depth_test = true
-	_marker.render_priority = 5
-	_marker.outline_render_priority = 4
-	_marker.visible = false
-	add_child(_marker)
+
+## Un perro: cuerpo, cabeza con hocico y orejas, cola y cuatro patas (las de delante hacen
+## de brazos y las de atrás de piernas, para que ande con el mismo balanceo).
+func _build_dog() -> void:
+	var fur: Color = look.get("fur", Color("6b4426"))
+	_legs = [
+		_limb(_body, Vector3(0.11, 0.42, 0.11), fur.darkened(0.1), Vector3(-0.12, 0.42, -0.26)),
+		_limb(_body, Vector3(0.11, 0.42, 0.11), fur.darkened(0.1), Vector3(0.12, 0.42, -0.26)),
+	]
+	_arms = [
+		_limb(_body, Vector3(0.11, 0.42, 0.11), fur.darkened(0.1), Vector3(-0.12, 0.42, 0.26)),
+		_limb(_body, Vector3(0.11, 0.42, 0.11), fur.darkened(0.1), Vector3(0.12, 0.42, 0.26)),
+	]
+	_part(_body, CityProps.box(Vector3(0.36, 0.32, 0.8)), fur, Vector3(0, 0.56, 0))
+	_part(_body, CityProps.sphere(0.21), fur, Vector3(0, 0.84, 0.46))
+	_part(_body, CityProps.box(Vector3(0.16, 0.13, 0.2)), fur.lightened(0.15), Vector3(0, 0.78, 0.66))
+	_part(_body, CityProps.sphere(0.045), Color.BLACK, Vector3(0, 0.82, 0.77))
+	_part(_body, CityProps.sphere(0.035), Color.BLACK, Vector3(-0.08, 0.9, 0.63))
+	_part(_body, CityProps.sphere(0.035), Color.BLACK, Vector3(0.08, 0.9, 0.63))
+	for x in [-0.13, 0.13]:
+		var ear := _part(_body, CityProps.box(Vector3(0.08, 0.16, 0.06)), fur.darkened(0.3), Vector3(x, 1.0, 0.42))
+		ear.rotation.z = deg_to_rad(25.0 * signf(x))
+	var tail := _part(_body, CityProps.box(Vector3(0.06, 0.06, 0.32)), fur, Vector3(0, 0.74, -0.5))
+	tail.rotation.x = deg_to_rad(-35.0)
+	# collar
+	_part(_body, CityProps.cylinder(0.15, 0.17, 0.05), Color("c03030"), Vector3(0, 0.74, 0.36))
 
 
 ## Pelo según el peinado. Con gorra o sombrero (`hat`) no se pinta lo que asomaría por encima.
