@@ -274,10 +274,19 @@ de ruta:
   pararte y otros no; varios llaman a la policía. Si lo oye un agente cercano, te persigue;
   si no, quedas fichado y te buscan más tarde. Pero solo te persiguen si te ven: estar cerca
   ya no basta (ahora sí).
+- [ ] **Camellos a los que debes dinero**: si te ven, te persiguen y te roban o se pelean
+  contigo.
+- [ ] **Turistas robados que te reconocen**: algunos (sobre todo hombres, por ejemplo) van a
+  por ti para recuperar lo suyo; otros buscan a un policía.
 
 **Trapicheo (punto 8)**
 - [ ] Un sistema de tráfico: comprar y vender a más personajes (yonkis, fiesteros, turistas,
   vecinos...), con precios, riesgo y clientes que se acuerdan de ti.
+- [ ] **Trapichear con otros yonkis** para conseguir sustancias: cambiar objetos, favores o
+  dinero.
+- [ ] **Objetos por la calle** con los que trapichear (cables, móviles, bicis, cosas tiradas).
+  Se ven poco y, si vas colocado o borracho, se confunden: lo que parecía un móvil es una
+  piedra, o pasas de largo de algo que valía la pena.
 
 **Minijuegos (punto 9)**
 - [ ] Las acciones de habilidad pasan a un minijuego con otra vista (primer plano del
