@@ -14,6 +14,7 @@ const HEAT_DECAY := 0.08  ## lo rápido que la policía se olvida de ti
 ## del umbral de persecución (40) para que sea la gota que colma el vaso.
 const MAX_EXPOSURE := 35.0
 
+## look: colores y rasgos del muñeco (ver Actor.look).
 const PROFILES := [
 	{
 		"id": "sin_papeles",
@@ -25,7 +26,8 @@ const PROFILES := [
 		"income": {},
 		"perk": "Sabe ganarse la vida en la calle: los manteros le dan curro. Pero tres detenciones y lo deportan.",
 		"items": {"movil_roto": 1},
-		"look": {"skin": Color("8d5a3b"), "shirt": Color("2f6b4f"), "pants": Color("3a3a48"), "hair": Color("1b1410")},
+		"look": {"skin": Color("8d5a3b"), "shirt": Color("2f6b4f"), "pants": Color("3a3a48"), "hair": Color("1b1410"),
+			"gender": "m", "hair_style": "rapado", "facial": "barba"},
 	},
 	{
 		"id": "parado",
@@ -37,7 +39,8 @@ const PROFILES := [
 		"income": {"amount": 150, "every_days": 3, "label": "el paro"},
 		"perk": "Cobra el paro cada 3 días en el cajero.",
 		"items": {"litrona": 1},
-		"look": {"skin": Color("d9a77c"), "shirt": Color("8a8f5a"), "pants": Color("4a3f35"), "hair": Color("6b6b6b")},
+		"look": {"skin": Color("d9a77c"), "shirt": Color("8a8f5a"), "pants": Color("4a3f35"), "hair": Color("6b6b6b"),
+			"gender": "m", "hair_style": "calvo", "facial": "bigote", "jacket": Color("2e3e6e")},  # chaqueta de chándal
 	},
 	{
 		"id": "jubilado",
@@ -49,7 +52,8 @@ const PROFILES := [
 		"income": {"amount": 220, "every_days": 4, "label": "la pensión"},
 		"perk": "La policía no sospecha de un abuelo. Da mucha pena pidiendo.",
 		"items": {"bocadillo": 1},
-		"look": {"skin": Color("e8bfa0"), "shirt": Color("5b4a3a"), "pants": Color("6e6658"), "hair": Color("e8e8e8")},
+		"look": {"skin": Color("e8bfa0"), "shirt": Color("5b4a3a"), "pants": Color("6e6658"), "hair": Color("e8e8e8"),
+			"gender": "m", "hair_style": "calvo", "glasses": true, "jacket": Color("4a3a2a")},  # americana de los domingos
 	},
 	{
 		"id": "divorciado",
@@ -61,7 +65,8 @@ const PROFILES := [
 		"income": {"amount": -80, "every_days": 4, "label": "la pensión alimenticia"},
 		"perk": "Empieza con ahorros y un anillo de boda que vender. Cada 4 días le cobran la pensión alimenticia.",
 		"items": {"anillo": 1, "movil": 1},
-		"look": {"skin": Color("e0b08a"), "shirt": Color("3d5a8a"), "pants": Color("2b2b33"), "hair": Color("4a3020")},
+		"look": {"skin": Color("e0b08a"), "shirt": Color("3d5a8a"), "pants": Color("2b2b33"), "hair": Color("4a3020"),
+			"gender": "m", "hair_style": "corto", "facial": "barba"},  # barba de tres semanas
 	},
 	{
 		"id": "psiquiatrico",
@@ -73,7 +78,8 @@ const PROFILES := [
 		"income": {},
 		"perk": "Recoge pastillas gratis en la farmacia cada 2 días. Oye voces.",
 		"items": {"pastillas": 2},
-		"look": {"skin": Color("efc7a8"), "shirt": Color("a04a7a"), "pants": Color("5a4a6a"), "hair": Color("c45a2a")},
+		"look": {"skin": Color("efc7a8"), "shirt": Color("a04a7a"), "pants": Color("5a4a6a"), "hair": Color("c45a2a"),
+			"gender": "f", "hair_style": "rizos", "skirt": true},
 	},
 	{
 		"id": "nino_bien",
@@ -85,7 +91,8 @@ const PROFILES := [
 		"income": {"amount": 200, "every_days": 3, "label": "la paga de papá"},
 		"perk": "Papá le ingresa dinero... hasta que su dignidad baje de 40 y alguien se lo cuente.",
 		"items": {"movil": 1},
-		"look": {"skin": Color("f0cfb0"), "shirt": Color("e8e2d0"), "pants": Color("2a3a5a"), "hair": Color("d8b060")},
+		"look": {"skin": Color("f0cfb0"), "shirt": Color("e8e2d0"), "pants": Color("2a3a5a"), "hair": Color("d8b060"),
+			"gender": "m", "hair_style": "tupe"},
 	},
 ]
 

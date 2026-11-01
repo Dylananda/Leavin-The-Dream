@@ -27,6 +27,9 @@ const BARS := [
 const DANGER := 75.0  ## a partir de aquí (en el lado malo) la etiqueta se pone roja
 const C_DANGER := Color("ff6a5a")
 const MAX_LOG := 9
+const POINTER_MARGIN := 36.0  ## distancia al borde de las flechas de los encargos
+const POINTER_SIZE := 26.0
+const POINTER_FONT := 18
 
 var _bars := {}
 var _bar_labels := {}
@@ -53,6 +56,8 @@ var _notebook_shown := ""
 var _errands: Errands
 var _game_over: PanelContainer
 var _hover: Label
+var _pointers: Control  ## Flechas hacia los encargos (set_pointers)
+var _pointer_list: Array = []
 var _vignette: ColorRect
 var _street: PanelContainer
 var _street_label: Label
@@ -85,6 +90,12 @@ func _ready() -> void:
 	_build_inventory()
 	_build_notebook()
 	_build_chat()
+	_pointers = Control.new()
+	_pointers.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_pointers.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_pointers.draw.connect(_draw_pointers)
+	add_child(_pointers)
+	move_child(_pointers, 1)  # sobre la viñeta, bajo los paneles
 	_hover = Label.new()
 	_hover.add_theme_color_override("font_outline_color", Color.BLACK)
 	_hover.add_theme_constant_override("outline_size", 4)
@@ -382,6 +393,44 @@ func add_message(text: String, color: Color) -> void:
 func set_hover(text: String, screen_pos: Vector2) -> void:
 	_hover.text = text
 	_hover.position = screen_pos + Vector2(14, 8)
+
+
+## Sitios a los que apuntar: [{"pos": Vector2 en pantalla, "label": String, "color": Color}].
+## Dentro de la pantalla se marcan con un triángulo encima; fuera, con una flecha en el borde.
+func set_pointers(list: Array) -> void:
+	_pointer_list = list
+	_pointers.queue_redraw()
+
+
+func _draw_pointers() -> void:
+	var font := _pointers.get_theme_default_font()
+	var rect := _pointers.get_rect().grow(-POINTER_MARGIN)
+	var center := rect.get_center()
+	for p in _pointer_list:
+		var pos: Vector2 = p["pos"]
+		var color: Color = p["color"]
+		var text: String = p["label"]
+		var tip: Vector2
+		var dir: Vector2
+		if rect.has_point(pos):
+			tip = pos
+			dir = Vector2.DOWN
+		else:
+			# el punto del borde en la línea que va del centro de la pantalla al sitio
+			dir = (pos - center).normalized()
+			var t := minf(absf((rect.size.x / 2.0) / dir.x) if dir.x != 0.0 else INF,
+				absf((rect.size.y / 2.0) / dir.y) if dir.y != 0.0 else INF)
+			tip = center + dir * t
+		var side := dir.orthogonal() * POINTER_SIZE * 0.6
+		var back := tip - dir * POINTER_SIZE
+		var tri := PackedVector2Array([tip, back + side, back - side])
+		_pointers.draw_colored_polygon(tri, color)
+		_pointers.draw_polyline(PackedVector2Array([tip, back + side, back - side, tip]), Color.BLACK, 2.0)
+		var size := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, POINTER_FONT)
+		var at := back - dir * (size.y * 0.6 + size.x * 0.5 * absf(dir.x)) - Vector2(size.x / 2.0, -size.y / 3.0)
+		at = at.clamp(Vector2(4, size.y), _pointers.size - Vector2(size.x + 4, 4))
+		_pointers.draw_string_outline(font, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, POINTER_FONT, 6, Color.BLACK)
+		_pointers.draw_string(font, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, POINTER_FONT, color)
 
 
 func is_menu_open() -> bool:

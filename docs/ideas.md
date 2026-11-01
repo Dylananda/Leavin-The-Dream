@@ -46,7 +46,7 @@ sí y una memoria poco fiable**, que puede ir creciendo hacia misiones de rol en
 6. **Ver y moverse bien** (lo que salió de la primera partida de verdad, ver «7. Lo que sale de
    jugar»): encontrar a los personajes aunque estén tras los edificios, que cada uno se
    distinga (género, rasgos) y que el muñeco se maneje bien por calles que no siguen la
-   cuadrícula. Va primero porque sin esto lo demás no se puede jugar.
+   cuadrícula. Va primero porque sin esto lo demás no se puede jugar. — hecho (rama `feat/ver-y-moverse`)
 7. **Personajes que recuerdan y ven**: memoria de lo que has hecho con cada uno, visión en
    cono tapada por los edificios, escándalos al robar y una policía que solo te persigue si
    te ve.
@@ -232,19 +232,37 @@ Primera partida de verdad con los encargos. Problemas y propuestas, en el orden 
 de ruta:
 
 **Ver y moverse (punto 6 de la hoja de ruta)**
-- [ ] **Encontrar a los personajes** es muy difícil: casi todos se parecen y quedan tapados
-  por los edificios en la vista isométrica. Ideas: siluetas que se ven a través de las paredes
-  (como el jugador con los rayos X de `building.gdshader`), un icono flotante sobre quien tiene
-  un encargo para ti, y flechas en el borde de la pantalla hacia los encargos activos.
-- [ ] **Género y rasgos**: ahora Mari Loli es un señor calvo. Cada personaje necesita género
-  (cuerpo, pelo, ropa) y algún rasgo propio que lo distinga de los demás: peinado, gorra,
-  barba, chaqueta, color fijo, forma de andar. Los perfiles del jugador también.
-- [ ] **Moverse con WASD** choca con las paredes porque las calles no siguen las direcciones
-  de las teclas y no se ven bien. Ideas: que el movimiento se ajuste a la calle por la que vas
-  (deslizar por las paredes, seguir la dirección de la calle más parecida), girar la cámara
-  para alinearla con la calle, bajar o transparentar los edificios cercanos. Lo difícil de
-  llevar al yonki tiene que venir de las eses y los tropiezos de las sustancias, no del
-  control.
+- [x] **Encontrar a los personajes** es muy difícil: casi todos se parecen y quedan tapados
+  por los edificios en la vista isométrica. Hecho:
+  - Siluetas a través de las paredes (`shaders/silhouette.gdshader`): las piezas de cada
+    personaje marcan el stencil y una pasada sin prueba de profundidad pinta su silueta solo
+    donde algo lo tapa. Tú en amarillo, quien tiene un encargo para ti en su color, la policía
+    en azul y el resto en blanco tenue.
+  - Icono flotante: «!» sobre quien te puede dar un encargo ahora (los carteristas
+    disfrazados no se delatan hasta que les hablas) y «★» sobre quien te dio uno en marcha.
+  - Flechas en el borde de la pantalla (o un triángulo encima, si se ve) hacia el sitio de cada
+    encargo en marcha, con su nombre y la distancia. Llevan al sitio **apuntado en la libreta**:
+    si lo apuntaste mal, te llevan al sitio equivocado; si se borró, no hay flecha.
+- [x] **Género y rasgos**: ahora Mari Loli es un señor calvo. Hecho: el género sale del nombre
+  (`women` y `either` en `Npc.KINDS`; los nombres que no lo dicen, como «Agente Puig», «Pecas»
+  o «La Sombra», se echan a suertes, pero siempre igual para ese nombre). Las mujeres tienen
+  otro talle, pelo largo más a menudo y a veces falda; todos tienen peinado (corto, rapado,
+  calvo, tupé, rizos, coleta, melena, moño, media melena), barba o bigote, gafas y chaqueta
+  según tiradas que dependen del nombre: el mismo personaje sale siempre igual, para que lo
+  reconozcas. Algunos tienen rasgos fijos por su historia (`looks`: la peluca rosa de Dani, la
+  americana de Don Ramón...). Etiquetas en femenino (Vecina, Educadora social, Trilera).
+  Los perfiles del jugador también (`look` en `Defs.PROFILES`). `tests/retratos.gd` saca a
+  todos en fila para revisarlos.
+  - [ ] Pendiente: forma de andar propia; más variedad de cuerpos (edad, altura, gordura).
+- [x] **Moverse con WASD** choca con las paredes porque las calles no siguen las direcciones
+  de las teclas y no se ven bien. Hecho: si de frente hay pared, el muñeco sigue la dirección
+  libre más parecida a la pedida (hasta 70° a cada lado; `Actor._steer`), así que toma la
+  calle en vez de pararse; si aun así roza, se desliza por la pared. Los rayos X se agrandan al
+  andar con WASD. La cámara no gira sola (decidido: las teclas siempre significan lo mismo en
+  pantalla; Q/E para girarla). Las eses del alcohol desvían la dirección *antes* de buscar la
+  calle, así que siguen notándose. En 120 recorridos al azar, el muñeco se atasca en 3 (antes,
+  15) y anda de media 28 m en 2 s (antes, 20).
+  - [ ] Pendiente: jugarlo y ver si hace falta bajar los edificios cercanos además de los rayos X.
 
 **Personajes que recuerdan y ven (punto 7)**
 - [ ] **Memoria por personaje** de lo que ha pasado contigo: si le has pedido, se aparta al
@@ -256,10 +274,19 @@ de ruta:
   pararte y otros no; varios llaman a la policía. Si lo oye un agente cercano, te persigue;
   si no, quedas fichado y te buscan más tarde. Pero solo te persiguen si te ven: estar cerca
   ya no basta (ahora sí).
+- [ ] **Camellos a los que debes dinero**: si te ven, te persiguen y te roban o se pelean
+  contigo.
+- [ ] **Turistas robados que te reconocen**: algunos (sobre todo hombres, por ejemplo) van a
+  por ti para recuperar lo suyo; otros buscan a un policía.
 
 **Trapicheo (punto 8)**
 - [ ] Un sistema de tráfico: comprar y vender a más personajes (yonkis, fiesteros, turistas,
   vecinos...), con precios, riesgo y clientes que se acuerdan de ti.
+- [ ] **Trapichear con otros yonkis** para conseguir sustancias: cambiar objetos, favores o
+  dinero.
+- [ ] **Objetos por la calle** con los que trapichear (cables, móviles, bicis, cosas tiradas).
+  Se ven poco y, si vas colocado o borracho, se confunden: lo que parecía un móvil es una
+  piedra, o pasas de largo de algo que valía la pena.
 
 **Minijuegos (punto 9)**
 - [ ] Las acciones de habilidad pasan a un minijuego con otra vista (primer plano del

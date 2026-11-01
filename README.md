@@ -12,6 +12,12 @@ Abre `game/project.godot` con Godot 4.7 y pulsa F5.
 - I: inventario · L: libreta · R: rebuscar en la basura · Z: dormir donde estés
 - Q/E: girar la cámara · Rueda: zoom
 
+Con WASD el muñeco sigue la calle aunque no vaya en la dirección de la tecla, y se desliza
+por las paredes. Los personajes tapados por un edificio se ven como silueta: tú en amarillo,
+la policía en azul y quien tiene un encargo para ti en su color, con un «!» si te puede dar
+uno o una «★» si ya te lo dio. Las flechas del borde de la pantalla llevan a los sitios de los
+encargos en marcha... según lo que apuntaste en la libreta.
+
 ### El estado del personaje
 
 Arriba a la izquierda, las barras del cuerpo (pasa el ratón por encima para ver qué las mueve):
@@ -120,13 +126,17 @@ python tools/make_textures.py
 - `game/scripts/city/` — mapa 3D: suelo, edificios extruidos (`building_mesher.gd`), monumentos, placas de calle y árboles (`city_props.gd`), carteles
 - `game/shaders/building.gdshader` — fachadas caricaturizadas, ventanas encendidas de noche y rayos X
 - Los monumentos con modelo propio se configuran en `LANDMARKS` (`tools/build_map.py`) y `CityProps.building_extra`
-- `game/scripts/actors/` — personajes (jugador y bots comparten `Actor`); en `Npc.KINDS`,
-  cada tipo de bot con su horario, zona, disfraz e historias
+- `game/scripts/actors/` — personajes (jugador y bots comparten `Actor`: modelo con género y
+  rasgos, silueta, icono flotante y el andar con WASD que sigue la calle); en `Npc.KINDS`,
+  cada tipo de bot con su horario, zona, disfraz, historias y el género de cada nombre
+- `game/shaders/silhouette.gdshader` — silueta de los personajes a través de los edificios (stencil)
 - `game/tests/smoke.gd` — ejecuta todas las acciones con los 6 perfiles, cada sustancia,
-  los extremos de hambre, sueño y salud mental, y los encargos con la libreta; termina con `OK` o el número de fallos:
+  los extremos de hambre, sueño y salud mental, y los encargos con la libreta, el género de los personajes y los iconos de encargo; termina con `OK` o el número de fallos:
   `godot --headless --path game --script res://tests/smoke.gd`
 - `game/tests/charla.gd` — conversación real con la IA sin abrir el juego (necesita Ollama):
   `godot --headless --path game --script res://tests/charla.gd -- latero "Hola" "¿Viene la Urbana?"`
+- `game/tests/retratos.gd` — captura de los perfiles (o de los bots de un tipo, o `todos`) en fila
+  y de cerca, para revisar género y rasgos: `godot --path game --script res://tests/retratos.gd -- out.png todos`
 - `game/tests/screenshot.gd` — capturas sin abrir el editor; el sexto argumento consume
   sustancias antes (p. ej. `... -- res://scenes/world.tscn shot.png parado "" 12 caballo,litrona`)
 
