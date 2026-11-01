@@ -48,6 +48,7 @@ func for_npc(npc: Npc) -> Array:
 		"trilero": acts = _trilero(npc)
 		"carterista": acts = _carterista(npc)
 		"chaval": acts = _chaval(npc)
+	acts.append_array(world.errands.offers_for(npc))
 	if npc.bio() != "":
 		acts.append(_act("Escuchar su historia", func():
 			GameState.advance(15)
@@ -436,6 +437,9 @@ func _trilero(npc: Npc) -> Array:
 
 func _carterista(npc: Npc) -> Array:
 	var gs := GameState
+	if npc.has_meta("enemigo"):
+		npc.say("Por tu culpa casi me pillan. Piérdete.")
+		return []
 	npc.say("Shhh. Tú no me has visto")
 	var acts := [
 		_act("Hacerle de pantalla (1 h)", func():
@@ -517,7 +521,7 @@ const POI_LABELS := {
 
 func for_poi(poi: Dictionary) -> Array:
 	var gs := GameState
-	var acts := []
+	var acts := world.errands.actions_for_poi(poi)
 	match poi["kind"]:
 		"super":
 			acts.append(_buy("Comprar una litrona", 2, "litrona"))

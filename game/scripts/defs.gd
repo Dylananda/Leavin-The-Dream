@@ -159,7 +159,35 @@ const ITEMS := {
 	"bocadillo": {"name": "Bocadillo", "sell": 0, "food": 35},
 	"durum": {"name": "Dürüm", "sell": 0, "food": 50},
 	"sobras": {"name": "Sobras", "sell": 0, "food": 20},
+	# de los encargos (scripts/errands.gd)
+	"paquete": {"name": "Paquete del camello", "sell": 0},
+	"cartera_caliente": {"name": "Cartera caliente", "sell": 0},
 }
+
+## Encargos de los personajes (scripts/errands.gd). `giver` = tipo de bot que lo ofrece;
+## `place` = tipo de lugar del mapa al que hay que ir; `window` = [desde, hasta] en horas desde
+## que lo aceptas (desde 0: vale en cuanto llegues); `at` = cita a horas fijas del día siguiente.
+## Una hora de juego son 30 s reales: los plazos son cortos para que se pisen.
+const ERRANDS := {
+	"paquete": {"giver": "camello", "place": "bar", "window": [0.0, 1.5],
+		"money": 25, "debt": 40, "debt_opened": 60, "heat": 20},
+	"cartera": {"giver": "carterista", "place": "compraventa", "window": [0.0, 1.0],
+		"money": 20, "heat": 40},
+	"juerga": {"giver": "fiestero", "place": "bar", "window": [1.0, 2.0], "money": 40},
+	"cita": {"giver": "educador", "place": "cas", "at": [10, 11],
+		"dignity": 8, "sanity": 10, "mono": 15, "dignity_fail": -3, "sanity_fail": -5},
+}
+const ERRAND_MIN_DISTANCE := 60  ## casillas: el sitio del encargo no está a la vuelta de la esquina
+const ERRAND_MAX_DISTANCE := 300  ## ... ni más lejos de lo que se anda en hora y media
+
+## Memoria poco fiable (libreta y reloj del HUD). Casi siempre es fiable: los fallos dependen
+## de lo ido que vas (GameState.befuddlement(), de 0 sobrio y descansado a 1 del todo ido).
+const SLIP_BASE := 0.03  ## probabilidad de apuntar mal un encargo estando sereno
+const SLIP_PER_BEFUDDLEMENT := 0.45  ## lo que suma a esa probabilidad ir del todo ido
+const FORGET_PER_HOUR := 0.04  ## probabilidad por hora y entrada (del todo ido) de que se borre un dato
+const BLUR_FROM := 0.25  ## por debajo, la libreta se lee bien
+const BLUR_MAX := 0.4  ## proporción máxima de palabras que no se leen
+const CLOCK_LIE_PER_HOUR := 0.3  ## probabilidad por hora (del todo ido) de que el reloj mienta un rato
 
 ## Títulos finales según la caída acumulada.
 const TITLES := [
@@ -192,6 +220,7 @@ const MILESTONES := {
 	"trile": ["Picar en el trile", 5],
 	"aprendiz": ["Aprender el oficio de carterista", 10],
 	"despedida": ["Colarte en una despedida de soltero", 5],
+	"paquete": ["Meterte la mercancía de un camello", 10],
 	# conocer una sustancia nueva (las que ya conoce el perfil no cuentan)
 	"probar_litrona": ["Empezar a beber en la calle", 3],
 	"probar_porro": ["Probar los porros", 3],
@@ -220,7 +249,7 @@ static func item_name(id: String) -> String:
 
 ## Si un objeto del inventario se puede usar (meterse, comer, vaciar).
 static func usable(id: String) -> bool:
-	return SUBSTANCES.has(id) or ITEMS.get(id, {}).has("food") or id == "cartera"
+	return SUBSTANCES.has(id) or ITEMS.get(id, {}).has("food") or id in ["cartera", "paquete"]
 
 
 static func title_for(caida: float) -> String:

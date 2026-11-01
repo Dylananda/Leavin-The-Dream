@@ -36,6 +36,14 @@ var arrests := 0
 var admissions := 0  ## Ingresos en el psiquiátrico
 ## Sustancias que conoces: id -> {"high": colocón, "mono": mono, "addiction": enganche, "crash": minutos de bajón}
 var subs: Dictionary = {}
+## Encargos aceptados y lo que apuntaste de ellos en la libreta (ver scripts/errands.gd).
+## Cada nota guarda lo que crees que te dijeron, que no siempre coincide con el encargo.
+var errands: Array = []
+var notes: Array = []
+## Minutos que adelanta (o retrasa) el reloj del HUD mientras miente; ver _update_clock_lie().
+var clock_skew := 0.0
+var _clock_lie_left := 0.0  ## minutos que le quedan a la mentira del reloj
+var _clock_blank := false  ## el reloj no se lee en absoluto
 
 var day := 1
 var minute_of_day := 9.0 * 60.0  ## Se empieza a las 9:00
@@ -95,6 +103,11 @@ func new_game(profile_id: String) -> void:
 	_next_income_day = 1 + int(profile["income"].get("every_days", 0)) if profile["income"] else 0
 	_last_meds_day = -99
 	_last_methadone_day = -99
+	errands = []
+	notes = []
+	clock_skew = 0.0
+	_clock_lie_left = 0.0
+	_clock_blank = false
 	changed.emit()
 
 
@@ -104,6 +117,60 @@ func hour() -> int:
 
 func clock_text() -> String:
 	return "Día %d · %02d:%02d" % [day, hour(), int(minute_of_day) % 60]
+
+
+## Minutos de juego desde el comienzo de la partida (para los plazos de los encargos).
+func now() -> float:
+	return (day - 1) * 1440.0 + minute_of_day
+
+
+## Hora de un instante de now(): «14:30», o «10:00 del día 3» si no es hoy.
+func time_text(t: float) -> String:
+	var d := int(t / 1440.0) + 1
+	var m := int(fposmod(t, 1440.0))
+	var hm := "%02d:%02d" % [int(m / 60.0), m % 60]
+	return hm if d == day else "%s del día %d" % [hm, d]
+
+
+## Lo que enseña el reloj del HUD: casi siempre la verdad; ido, a ratos miente (_update_clock_lie).
+func shown_clock_text() -> String:
+	if _clock_blank:
+		return "Día ? · --:--"
+	var t := maxf(0.0, now() + clock_skew)
+	var m := int(fposmod(t, 1440.0))
+	return "Día %d · %02d:%02d" % [int(t / 1440.0) + 1, int(m / 60.0), m % 60]
+
+
+## Lo ida que tienes la cabeza (0..1): colocón, mono, sueño y salud mental baja.
+## Decide cuánto fallan la libreta y el reloj; sobrio, descansado y entero es 0.
+func befuddlement() -> float:
+	var b := maxf(0.0, (high - 20.0) / 100.0)
+	b += maxf(0.0, (mono - 50.0) / 100.0)
+	b += maxf(0.0, (fatigue - 70.0) / 60.0)
+	b += maxf(0.0, (40.0 - sanity) / 80.0)
+	return clampf(b, 0.0, 1.0)
+
+
+## De vez en cuando, ido, el reloj del HUD se adelanta o se atrasa un rato (con el porro se
+## atrasa; con farlopa o base, se adelanta). Con mono o sueño fuertes, a veces ni lo lees.
+func _update_clock_lie(m: float) -> void:
+	if _clock_lie_left > 0.0:
+		_clock_lie_left -= m
+		if _clock_lie_left <= 0.0:
+			clock_skew = 0.0
+			_clock_blank = false
+		return
+	var b := befuddlement()
+	if b <= 0.0 or randf() >= Defs.CLOCK_LIE_PER_HOUR * b * m / 60.0:
+		return
+	_clock_lie_left = randf_range(30.0, 90.0)
+	_clock_blank = (mono > 80.0 or fatigue > 90.0) and randf() < 0.5
+	var dir := 1.0 if randf() < 0.5 else -1.0
+	if intensity("porro") > 0.3:
+		dir = -1.0
+	elif intensity("farlopa") + intensity("base") > 0.3:
+		dir = 1.0
+	clock_skew = dir * snappedf(randf_range(20.0, 60.0) * (0.5 + b), 5.0)
 
 
 func is_night() -> bool:
@@ -118,6 +185,7 @@ func advance(minutes: float) -> void:
 	_update_subs(m)
 	_update_body(m)
 	heat = maxf(heat - Defs.HEAT_DECAY * m, exposure())
+	_update_clock_lie(m)
 
 	var prev_hour := hour()
 	minute_of_day += m
@@ -607,7 +675,7 @@ func arrest() -> void:
 	arrests += 1
 	var lost: Array = []
 	for id in inventory.keys():
-		if Defs.SUBSTANCES.has(id) or id in ["movil", "cartera", "cobre"]:
+		if Defs.SUBSTANCES.has(id) or id in ["movil", "cartera", "cobre", "paquete", "cartera_caliente"]:
 			lost.append(id)
 	for id in lost:
 		inventory.erase(id)
