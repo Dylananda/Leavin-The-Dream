@@ -65,6 +65,14 @@ y te lo llevas, y luego se vende en el compraventa. Llevarse una bici con un vec
 delante sube la búsqueda. Ido, no te fíes de tus ojos: la basura puede parecerte un móvil (y
 no lo descubres hasta que intentas venderlo o se te pasa) o un móvil puede parecerte basura.
 
+### Trapicheo
+
+Lo que compras al camello se puede revender («Venderle...» en el menú de cada uno): las
+despedidas pagan el doble, los guiris un dineral por un porro (cuidado: alguno es secreta) y
+los yonkis poco. Los clientes que repiten pagan más y te buscan; si se la vendes cortada, sacas
+más pero no se les olvida. Que no te vea un agente, ni un camello: vender en su esquina se paga.
+Con los otros yonkis también se hace trueque: te cambian lo que llevan encima por tus objetos.
+
 ### Encargos y libreta
 
 Algunos personajes te hacen encargos con plazo («Encargo: ...» en su menú): el camello, que
@@ -141,6 +149,8 @@ python tools/make_textures.py
 - `game/scripts/street_items.gd` — objetos tirados por la calle (móviles, carteras, cable, bicis,
   basura...) que se recogen con un clic y se confunden cuanto más ido vas; cada uno se dibuja
   con `scripts/city/street_item.gd` según lo que *te parece* que es (equilibrio en `Defs.STREET_ITEMS`)
+- `game/scripts/trade.gd` — trapicheo: revender a despedidas, guiris y yonkis (clientes que se
+  acuerdan, mercancía cortada, secretas, la esquina del camello) y trueque con otros yonkis
 - `game/scripts/errands.gd` — encargos con plazo (ofrecer, cumplir, fallar) y la libreta que
   se apunta y se lee peor cuanto más ido vas (equilibrio en `Defs.ERRANDS`)
 - `game/scripts/world.gd` — escena de juego, entrada, eventos del barrio y cómo los efectos

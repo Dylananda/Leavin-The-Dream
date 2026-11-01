@@ -73,6 +73,7 @@ func for_npc(npc: Npc) -> Array:
 		"trilero": acts = _trilero(npc)
 		"carterista": acts = _carterista(npc)
 		"chaval": acts = _chaval(npc)
+	acts.append_array(world.trade.offers_for(npc))
 	acts.append_array(world.errands.offers_for(npc))
 	if npc.bio() != "":
 		acts.append(_act("Escuchar su historia", func():

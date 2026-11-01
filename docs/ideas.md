@@ -305,10 +305,24 @@ de ruta:
     a salir con el mismo nombre; peleas de verdad (minijuego) en vez de una tirada.
 
 **Trapicheo (punto 8)**
-- [ ] Un sistema de tráfico: comprar y vender a más personajes (yonkis, fiesteros, turistas,
-  vecinos...), con precios, riesgo y clientes que se acuerdan de ti.
-- [ ] **Trapichear con otros yonkis** para conseguir sustancias: cambiar objetos, favores o
-  dinero.
+- [x] Un sistema de tráfico: comprar y vender a más personajes (yonkis, fiesteros, turistas,
+  vecinos...), con precios, riesgo y clientes que se acuerdan de ti. Hecho (rama
+  `feat/trapicheo`, `scripts/trade.gd`; equilibrio en `Defs.CLIENTS` y lo que le sigue): lo que
+  compras al camello se revende en el menú de cada cliente. Las despedidas pagan el doble por
+  farlopa, porros o pastillas; los guiris, el triple por un porro, pero alguno (un 7 %, fijo por
+  nombre) es un secreta y acabas en el calabozo; los yonkis, poco y solo por lo barato. Solo
+  compra quien lleva bastante dinero. Los clientes se acuerdan: pagan un 10 % más por cada
+  compra (hasta un 30 %) y se te acercan al verte («¿Tienes algo?»). **Cortarla** da más de media
+  (la mitad de las veces no gastas la dosis), pero el cliente lo nota: no te vuelve a comprar y
+  las despedidas van a por ti. Vender a la vista de un agente sube mucho la búsqueda; de un
+  vecino o un guiri, un poco; y si te ve un camello, le has pisado la esquina: te persigue y
+  se queda con tu mercancía (o con tu dinero, o te pega).
+- [x] **Trapichear con otros yonkis** para conseguir sustancias: cambiar objetos, favores o
+  dinero. Hecho: cada yonki lleva encima una o dos dosis de algo (siempre lo mismo para el mismo
+  nombre, se repone cada día) y te lo cambia por tus objetos, que valora un 50 % por encima de lo
+  que paga el compraventa. Si le cuelas una piedra, se da cuenta y no te lo perdona.
+  - [ ] Pendiente: favores (vigilar mientras pilla, guardarte algo), que los yonkis también te
+    vendan fiado y que los vecinos (algunos) también compren; jugarlo y ajustar precios.
 - [x] **Objetos por la calle** con los que trapichear (cables, móviles, bicis, cosas tiradas).
   Se ven poco y, si vas colocado o borracho, se confunden: lo que parecía un móvil es una
   piedra, o pasas de largo de algo que valía la pena. Hecho (rama `feat/objetos-calle`,

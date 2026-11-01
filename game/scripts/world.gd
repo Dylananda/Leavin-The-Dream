@@ -58,6 +58,7 @@ var hud: Hud
 var interactions: Interactions
 var errands: Errands  ## Encargos con plazo y libreta
 var street_items: StreetItems  ## Objetos tirados por la calle
+var trade: Trade  ## Trapicheo: revender y cambiar cosas con otros yonkis
 var conversation: Conversation  ## Conversación libre con IA (scripts/ai/)
 var npcs: Array[Npc] = []
 var markers: Array[PoiMarker] = []
@@ -124,6 +125,7 @@ func _ready() -> void:
 	interactions = Interactions.new(self)
 	errands = Errands.new(self)
 	street_items = StreetItems.new(self)
+	trade = Trade.new(self)
 	street_items.populate()
 	conversation = Conversation.new(self)
 	add_child(conversation)
@@ -842,6 +844,7 @@ func _on_caught(npc: Npc) -> void:
 			npc.debt_due = gs.now() + Defs.DEBT_GRACE_HOURS * 60.0
 		"venganza":
 			npc.memory.erase("robado")
+			npc.memory.erase("timado")
 			var loot := ""
 			for id in ["cartera", "movil"]:
 				if gs.has_item(id):
@@ -860,6 +863,24 @@ func _on_caught(npc: Npc) -> void:
 				npc.say("Asshole!", 3.0)
 				gs.change_health(-8, "El puño de alguien a quien robaste")
 				gs.log_msg("No llevas nada que devolverle. %s te suelta un puñetazo." % npc.display_name, GameState.C_BAD)
+			gs.change_dignity(-3)
+		"territorio":
+			npc.memory.erase("pisado")
+			var taken := gs.inventory.keys().filter(func(id): return id in Defs.DEALER_STOCK)
+			if not taken.is_empty():
+				for id in taken:
+					gs.remove_item(id, gs.inventory[id])
+				npc.say("Esto se queda aquí. Y tú, a otra esquina.", 3.0)
+				gs.log_msg("%s te alcanza y se queda con toda tu mercancía." % npc.display_name, GameState.C_BAD)
+			elif gs.money > 0:
+				var n := mini(gs.money, 30)
+				gs.add_money(-n)
+				npc.say("El impuesto de la esquina.", 3.0)
+				gs.log_msg("%s te alcanza y se cobra %d € por vender en su esquina." % [npc.display_name, n], GameState.C_BAD)
+			else:
+				npc.say("Que no te vuelva a ver por aquí.", 3.0)
+				gs.change_health(-12, "Vender en la esquina de otro")
+				gs.log_msg("%s te alcanza y te da una paliza por vender en su esquina." % npc.display_name, GameState.C_BAD)
 			gs.change_dignity(-3)
 		"parar":
 			player.stop()

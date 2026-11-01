@@ -55,6 +55,7 @@ func _initialize() -> void:
 		if profile == Defs.PROFILES[0]:
 			_test_vision(gs, world)
 		_test_street_items(gs, world)
+		_test_trade(gs, world)
 		world._rummage()
 		world._sleep_here()
 		if gs.alive:
@@ -208,6 +209,9 @@ func _test_errands(gs, world) -> void:
 	gs.notes = []
 	gs.heat = 0.0
 	gs.debt = 0
+	# lo que te dieron los encargos que aceptó el bucle de acciones de antes
+	for id in ["paquete", "cartera_caliente"]:
+		gs.inventory.erase(id)
 	_check(gs.befuddlement() == 0.0, "sereno y descansado, la cabeza no está entera")
 	var givers := {}
 	for id in Defs.ERRANDS:
@@ -628,6 +632,85 @@ func _test_street_items(gs, world) -> void:
 	_check(not gs.fakes.has("cartera") and gs.inventory.get("cartera", 0) == carteras + 1, "sereno, no descubres la cartera falsa")
 	world._update_hover()
 	print("  objetos de la calle: OK (%d en el suelo)" % si.items.size())
+
+
+## Trapicheo: vender a clientes (que pagan más si repiten), cortarla (y que no te vuelvan a
+## comprar), el guiri secreta, el camello al que le pisas la esquina y el trueque con yonkis.
+func _test_trade(gs, world) -> void:
+	var trade = world.trade
+	_steady(gs)
+	gs.alive = true
+	var client = _npc_of(world, "fiestero")
+	client.memory = {}
+	client.money = 1000
+	gs.add_item("farlopa", 3)
+	var p0: int = trade.price_for(client, "farlopa")
+	_check(p0 > Defs.SUBSTANCES["farlopa"]["price"], "la despedida no paga más que el camello")
+	var sell = world.interactions.for_npc(client).filter(func(a): return a["label"].begins_with("Venderle farlopa ("))
+	_check(sell.size() == 1, "no se le puede vender farlopa a una despedida")
+	var money: int = gs.money
+	var coke: int = gs.inventory.get("farlopa", 0)
+	trade.sell(client, "farlopa", false)
+	_check(gs.money == money + p0 and gs.inventory.get("farlopa", 0) == coke - 1, "vender no paga o no gasta la dosis")
+	_check(client.remembers("cliente") == 1 and client.grudge() == "acerca", "el cliente no se acuerda de ti")
+	_check(trade.price_for(client, "farlopa") > p0, "el cliente que repite no paga más")
+	trade.sell(client, "farlopa", true)
+	_check(client.remembers("timado") == 1 and client.grudge() in ["venganza", "aparta"], "cortarla no tiene consecuencias")
+	_check(trade.offers_for(client).is_empty(), "el timado te sigue comprando")
+	# el camello que te ha visto vender en su esquina
+	var dealer = _npc_of(world, "camello")
+	dealer.memory = {}
+	dealer.debt = 0
+	dealer.remember("pisado")
+	_check(dealer.grudge() == "territorio", "el camello no se toma a mal que vendas en su esquina")
+	gs.add_item("porro", 2)
+	dealer.chase_reason = "territorio"
+	world._on_caught(dealer)
+	_check(not gs.has_item("porro") and dealer.remembers("pisado") == 0, "el camello no se cobra la esquina")
+	# trueque con un yonki: un móvil por lo que lleve encima; una piedra, no
+	var yonki = _npc_of(world, "yonki")
+	yonki.memory = {}
+	var s: Dictionary = trade.stash(yonki)
+	s["n"] = 2
+	gs.fakes = {}
+	gs.add_item("movil")
+	var swaps = trade.offers_for(yonki).filter(func(a): return a["label"].begins_with("Cambiarle tu móvil"))
+	_check(swaps.size() == 1, "el yonki no te cambia el móvil")
+	var had: int = gs.inventory.get(s["id"], 0)
+	var moviles: int = gs.inventory.get("movil", 0)
+	if not swaps.is_empty():
+		swaps[0]["do"].call()
+	_check(gs.inventory.get(s["id"], 0) > had and gs.inventory.get("movil", 0) == moviles - 1, "el trueque no cambia nada")
+	s["n"] = 2
+	for id in gs.inventory.keys():
+		if id == "movil":
+			gs.remove_item(id, gs.inventory[id])
+	gs.add_item("movil")
+	gs.fakes["movil"] = 1
+	trade.swap(yonki, "movil")
+	_check(yonki.remembers("timado") == 1 and not gs.has_item("movil"), "al yonki se le cuela una piedra")
+	# un guiri secreta: venderle es acabar detenido
+	var guiri = _npc_of(world, "turista")
+	var i := 0
+	while not trade.undercover(guiri) and i < 2000:
+		i += 1
+		guiri.display_name = "Prueba %d" % i
+	_check(trade.undercover(guiri), "no hay guiris secretas")
+	guiri.memory = {}
+	guiri.money = 1000
+	gs.add_item("porro")
+	var arrests: int = gs.arrests
+	trade.sell(guiri, "porro", false)
+	_check(gs.arrests == arrests + 1 and "secreta" in gs.milestones, "venderle a un secreta no acaba en detención")
+	print("  trapicheo: OK (farlopa a %d €, el yonki lleva %s)" % [p0, s["id"]])
+
+
+func _npc_of(world, kind: String):
+	var of_kind = world.npcs.filter(func(n): return n.kind == kind and is_instance_valid(n))
+	if of_kind.is_empty():
+		world._spawn_npc(kind)
+		return world.npcs[-1]
+	return of_kind[0]
 
 
 ## Deja el cuerpo en calma para que una prueba no dispare otra consecuencia por el camino.
