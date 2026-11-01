@@ -9,7 +9,7 @@ Abre `game/project.godot` con Godot 4.7 y pulsa F5.
 
 - WASD o flechas: andar (Shift: correr)
 - Clic: ir a un sitio, o hablar con un bot / entrar en un lugar
-- I: inventario · R: rebuscar en la basura · Z: dormir donde estés
+- I: inventario · L: libreta · R: rebuscar en la basura · Z: dormir donde estés
 - Q/E: girar la cámara · Rueda: zoom
 
 ### El estado del personaje
@@ -35,6 +35,21 @@ Cada tipo de bot sale a sus horas y en su zona: de día, trileros y carteristas 
 de guiri) en la Rambla; por la tarde y la noche, chavales que esnifan cola por la Rambla
 del Raval y Sant Pau; de noche, despedidas de soltero y lateros junto a los bares. Los
 personajes nuevos tienen nombre e historia propia; las fuentes están en `docs/ideas.md`.
+
+### Encargos y libreta
+
+Algunos personajes te hacen encargos con plazo («Encargo: ...» en su menú): el camello, que
+lleves un paquete a un bar; la carterista, que dejes una cartera caliente en un compraventa;
+la despedida, que los lleves de fiesta; la educadora, una cita al día siguiente en el CAS
+Baluard. Se cumplen en el menú del sitio, que es un lugar real del mapa. Los sitios están
+lejos unos de otros y los plazos se pisan, así que no llegas a todo. Si fallas, hay
+consecuencias: deudas, la Urbana detrás o alguien que deja de fiarse de ti.
+
+Cada encargo se apunta en la **libreta** (L), con un botón para marcar el sitio en el mapa.
+Casi siempre es fiable, pero cuanto más ido vas (colocón, mono, sueño, mente baja) más fácil
+es que hayas apuntado mal la hora o el sitio, que se te borre un dato o que no entiendas tu
+propia letra. El reloj de arriba también miente a ratos: con porro se atrasa, con farlopa se
+adelanta.
 
 ### Hablar con ellos (IA local)
 
@@ -93,9 +108,11 @@ python tools/make_textures.py
 - `game/scripts/game_state.gd` — estadísticas, sustancias (colocón, mono, enganche), consecuencias
   de los extremos, efectos activos (`effects()`), tiempo y puntuación de caída (autoload)
 - `game/scripts/interactions.gd` — qué se puede hacer con cada bot y en cada lugar
+- `game/scripts/errands.gd` — encargos con plazo (ofrecer, cumplir, fallar) y la libreta que
+  se apunta y se lee peor cuanto más ido vas (equilibrio en `Defs.ERRANDS`)
 - `game/scripts/world.gd` — escena de juego, entrada, eventos del barrio y cómo los efectos
   cambian la cámara y el movimiento
-- `game/scripts/ui/hud.gd` — barras, panel de sustancias y efectos, registro, menús, conversación
+- `game/scripts/ui/hud.gd` — barras, panel de sustancias y efectos, registro, menús, libreta, conversación
 - `game/scripts/ai/` — conversación con IA: cliente HTTP (`llm_client.gd`, Ollama o API tipo
   OpenAI), fichas de los personajes (`fichas.gd`) y contexto, memoria y acciones de juego
   (`conversation.gd`)
@@ -105,8 +122,8 @@ python tools/make_textures.py
 - Los monumentos con modelo propio se configuran en `LANDMARKS` (`tools/build_map.py`) y `CityProps.building_extra`
 - `game/scripts/actors/` — personajes (jugador y bots comparten `Actor`); en `Npc.KINDS`,
   cada tipo de bot con su horario, zona, disfraz e historias
-- `game/tests/smoke.gd` — ejecuta todas las acciones con los 6 perfiles, cada sustancia y
-  los extremos de hambre, sueño y salud mental; termina con `OK` o el número de fallos:
+- `game/tests/smoke.gd` — ejecuta todas las acciones con los 6 perfiles, cada sustancia,
+  los extremos de hambre, sueño y salud mental, y los encargos con la libreta; termina con `OK` o el número de fallos:
   `godot --headless --path game --script res://tests/smoke.gd`
 - `game/tests/charla.gd` — conversación real con la IA sin abrir el juego (necesita Ollama):
   `godot --headless --path game --script res://tests/charla.gd -- latero "Hola" "¿Viene la Urbana?"`

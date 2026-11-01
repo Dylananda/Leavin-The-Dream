@@ -42,7 +42,7 @@ sí y una memoria poco fiable**, que puede ir creciendo hacia misiones de rol en
 2. **Estado del personaje** (barras y efectos de las sustancias) — hecho lo básico (rama `feat/estado-personaje`)
 3. **Personajes nuevos** basados en lo que se documenta del barrio, según hora y zona — hecho lo básico (rama `feat/personajes-nuevos`)
 4. **Prototipo de conversación con IA local** (Ollama, 3–4 personajes) — hecho el prototipo (rama `feat/conversacion-ia`)
-5. **Compromisos con plazo y memoria poco fiable** → base de las misiones
+5. **Compromisos con plazo y memoria poco fiable** → base de las misiones — hecha la primera prueba jugable (rama `feat/encargos`)
 6. **Ciudad más grande y metro**
 
 ## 2. Estado del personaje
@@ -172,18 +172,41 @@ nombre, historia y motivos, no estereotipos por nacionalidad.
 - [ ] Pendiente: que lo que se cuentan entre ellos circule (si te chivas de uno, los demás lo saben).
 - [ ] Entre todos los personajes van tejiendo una historia.
 
-## 5. Compromisos con plazo y memoria poco fiable (siguiente paso)
+## 5. Compromisos con plazo y memoria poco fiable
 
-Primer paso propuesto: una prueba jugable con tres o cuatro encargos de personajes que ya
-existen, con plazos que se pisan, y una libreta que se emborrona según lo que te metes.
+Primera prueba jugable hecha (rama `feat/encargos`, `game/scripts/errands.gd`; el equilibrio
+está en `Defs.ERRANDS` y en las constantes de memoria de `defs.gd`):
 
-- Situaciones que compiten entre sí: llevarle un pedido a un camello a cambio de una parte
-  *y a la vez* las fiestas de otro barrio a las que va a ir una yonki que te gusta. Hay que elegir.
-- Muchas a la vez, y no te acuerdas bien de todas.
-- **Log de conversaciones** además del inventario, pero según lo que te hayas metido algunas
-  entradas se difuminan, desaparecen o se alteran.
-- **El HUD también miente** según el estado: hora, fecha, nombres de calles y otros datos
-  se vuelven borrosos o engañosos. Vida de yonki que no sabe ni en qué día vive.
+- [x] **Cuatro encargos de personajes que ya existen**, que se aceptan en su menú («Encargo: ...»)
+  y se cumplen en el menú de un lugar real del mapa. El sitio se elige lejos de los otros
+  encargos en marcha, así que los plazos (una hora de juego son 30 s) se pisan:
+  - Camello: llevar un paquete a un bar antes de 1 h 30 → 25 € y una raya. Si no llegas, le
+    debes 40 €. Si lo abres, te quedas dos rayas y le debes 60 €.
+  - Carterista: dejar una cartera caliente en un compraventa antes de 1 h → 20 €. Si no, da tu
+    descripción a la Urbana (−40 de discreción) y ya no trata contigo.
+  - Despedida: llevarlos de fiesta a un bar de 1 h a 2 h más tarde → 40 € y una lata (si llegas
+    pronto, puedes esperar). Si no apareces, solo pierdes la ocasión.
+  - Educadora: cita al día siguiente de 10 a 11 en el CAS Baluard → dignidad, salud mental,
+    menos mono y un bocadillo. Choca con dormir y con la resaca; plantarla duele.
+- [x] **Libreta** (tecla L): una entrada por encargo, con quién, qué, dónde y cuándo, y un botón
+  para marcar en el mapa el sitio *apuntado*. Es fiable casi siempre: los fallos son
+  ocasionales y su probabilidad crece con lo ido que vas (`GameState.befuddlement()`:
+  colocón, mono, sueño y salud mental baja). Puede fallar de tres maneras:
+  - Al apuntar (3 % sereno, hasta un 48 % del todo ido): con caballo, pastillas o sueño se te
+    escapa la hora o el sitio («¿?»); con farlopa, base o la cabeza mal lo apuntas cambiado
+    (otra hora u otro sitio del mismo tipo) sin ninguna marca de duda.
+  - Con las horas, ido, se borra a veces algún dato de lo que llevas apuntado.
+  - Al leer, muy ido, algunas palabras no se distinguen (borrosas o, con mono, temblando).
+- [x] **El reloj del HUD miente** a ratos cuando vas ido: con porro se atrasa, con farlopa o base
+  se adelanta, y con mono o sueño fuertes a veces ni lo lees («Día ? · --:--»).
+- [ ] Pendiente: que el **log de conversaciones** se apunte también en la libreta (pistas de
+  los personajes, tratos) y se degrade igual.
+- [ ] Pendiente: que mientan también los nombres de calles y otros datos del HUD.
+- [ ] Pendiente: más encargos, también encadenados (misiones de rol), y otras situaciones que
+  compitan entre sí: las fiestas de otro barrio a las que va a ir una yonki que te gusta.
+- [ ] Pendiente: que los encargos a medias, las deudas y las enemistades pasen al siguiente
+  yonki (legado).
+- [ ] Pendiente: jugarlo y ajustar plazos, premios y probabilidades.
 
 ## 6. Ciudad más grande y metro
 

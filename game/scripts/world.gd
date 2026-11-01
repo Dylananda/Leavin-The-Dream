@@ -39,6 +39,7 @@ var player: Actor
 var camera: Camera3D
 var hud: Hud
 var interactions: Interactions
+var errands: Errands  ## Encargos con plazo y libreta
 var conversation: Conversation  ## Conversación libre con IA (scripts/ai/)
 var npcs: Array[Npc] = []
 var markers: Array[PoiMarker] = []
@@ -98,6 +99,7 @@ func _ready() -> void:
 	_update_camera(1.0)
 
 	interactions = Interactions.new(self)
+	errands = Errands.new(self)
 	conversation = Conversation.new(self)
 	add_child(conversation)
 	_place_markers()
@@ -114,6 +116,7 @@ func _ready() -> void:
 		get_tree().paused = false
 		get_tree().change_scene_to_file("res://scenes/main_menu.tscn"))
 	hud.use_item_requested.connect(use_item)
+	hud.find_place_requested.connect(highlight_poi)
 	GameState.game_over.connect(_on_game_over)
 	GameState.relocated.connect(_on_relocated)
 
@@ -248,6 +251,7 @@ func _process(delta: float) -> void:
 	_time += delta
 	if GameState.alive:
 		GameState.advance(delta * Defs.GAME_MINUTES_PER_SECOND)
+		errands.update()
 	_fx = GameState.effects()
 	hud.show_effects(_fx)
 	_update_player_state(delta)
@@ -444,6 +448,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				_camera_yaw_target += 90.0
 			KEY_I:
 				hud.toggle_inventory()
+			KEY_L:
+				hud.toggle_notebook(errands)
 			KEY_R:
 				_rummage()
 			KEY_Z:
@@ -517,6 +523,9 @@ func _open_pending() -> void:
 
 func use_item(id: String) -> void:
 	if not Defs.usable(id):
+		return
+	if id == "paquete":
+		errands.open_package()
 		return
 	if id == "cartera":
 		GameState.remove_item("cartera")

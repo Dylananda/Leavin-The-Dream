@@ -1,12 +1,13 @@
 class_name Hud
 extends CanvasLayer
 ## Interfaz de la partida: barras, reloj, caída, registro de mensajes, sustancias con su
-## colocón y su mono, efectos activos, menú de acciones, inventario y pantalla final.
+## colocón y su mono, efectos activos, menú de acciones, inventario, libreta y pantalla final.
 ## Se construye por código.
 
 signal menu_closed
 signal restart_requested
 signal use_item_requested(id: String)
+signal find_place_requested(poi: Dictionary)
 
 ## [variable de GameState, etiqueta, color, si es mala cuando sube, explicación]
 const BARS := [
@@ -46,6 +47,10 @@ var _menu_box: VBoxContainer
 var _inventory: PanelContainer
 var _inventory_box: VBoxContainer
 var _inventory_shown := ""  ## Inventario que muestra ahora el panel, para no reconstruirlo sin cambios
+var _notebook: PanelContainer  ## Libreta de encargos (Errands), que se lee peor cuanto más ido vas
+var _notebook_box: VBoxContainer
+var _notebook_shown := ""
+var _errands: Errands
 var _game_over: PanelContainer
 var _hover: Label
 var _vignette: ColorRect
@@ -78,6 +83,7 @@ func _ready() -> void:
 	_build_street()
 	_build_menu()
 	_build_inventory()
+	_build_notebook()
 	_build_chat()
 	_hover = Label.new()
 	_hover.add_theme_color_override("font_outline_color", Color.BLACK)
@@ -238,7 +244,7 @@ func _build_log() -> void:
 
 func _build_help() -> void:
 	var l := Label.new()
-	l.text = "WASD: andar (Shift: correr)  ·  Clic: ir / interactuar  ·  I: inventario  ·  R: rebuscar  ·  Z: dormir aquí  ·  Q/E: girar cámara  ·  Rueda: zoom"
+	l.text = "WASD: andar (Shift: correr)  ·  Clic: ir / interactuar  ·  I: inventario  ·  L: libreta  ·  R: rebuscar  ·  Z: dormir aquí  ·  Q/E: girar cámara  ·  Rueda: zoom"
 	l.add_theme_font_size_override("font_size", 15)
 	l.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -299,7 +305,7 @@ func refresh() -> void:
 	if gs.profile.is_empty():
 		return
 	_name_label.text = "%s · %s" % [gs.profile["name"], gs.profile["title"]]
-	_clock_label.text = gs.clock_text() + ("  (noche)" if gs.is_night() else "")
+	_clock_label.text = gs.shown_clock_text() + ("  (noche)" if gs.is_night() else "")
 	for b in BARS:
 		var value: float = gs.get(b[0])
 		_bars[b[0]].value = value
@@ -315,6 +321,8 @@ func refresh() -> void:
 	# refresh() se llama cada frame; reconstruir los botones siempre impediría pulsarlos
 	if _inventory.visible and str(gs.inventory) != _inventory_shown:
 		_fill_inventory()
+	if _notebook.visible:
+		_fill_notebook()
 
 
 func _refresh_subs() -> void:
@@ -596,6 +604,77 @@ func _fill_inventory() -> void:
 	_inventory.reset_size()
 	var screen := get_viewport().get_visible_rect().size
 	_inventory.position = Vector2(screen.x - _inventory.size.x - 10, 60)
+
+
+# ------------------------------------------------------------------- libreta
+
+func _build_notebook() -> void:
+	_notebook = _panel(Vector2(480, 0))
+	var sb := _notebook.get_theme_stylebox("panel").duplicate() as StyleBoxFlat
+	sb.bg_color = Color(0.16, 0.14, 0.11, 0.92)  # papel sucio
+	_notebook.add_theme_stylebox_override("panel", sb)
+	_notebook.position = Vector2(280, 70)
+	_notebook.visible = false
+	add_child(_notebook)
+	_notebook_box = VBoxContainer.new()
+	_notebook_box.add_theme_constant_override("separation", 6)
+	_notebook.add_child(_notebook_box)
+
+
+## Abre o cierra la libreta. No pausa: los plazos siguen corriendo mientras la lees.
+func toggle_notebook(errands: Errands) -> void:
+	_errands = errands
+	_notebook.visible = not _notebook.visible
+	_notebook_shown = ""
+	if _notebook.visible:
+		_fill_notebook()
+
+
+func is_notebook_open() -> bool:
+	return _notebook.visible
+
+
+## Rehace la libreta solo si ha cambiado lo que se lee (se llama en cada frame).
+func _fill_notebook() -> void:
+	var entries: Array = _errands.notebook_entries() if _errands else []
+	var key := "|".join(entries.map(func(e): return e["text"] + str(not e["poi"].is_empty())))
+	if key == _notebook_shown:
+		return
+	_notebook_shown = key
+	for c in _notebook_box.get_children():
+		c.queue_free()
+	var t := Label.new()
+	t.text = "Libreta (L para cerrar)"
+	t.add_theme_font_size_override("font_size", 15)
+	_notebook_box.add_child(t)
+	if entries.is_empty():
+		var e := Label.new()
+		e.text = "Nada apuntado. Aquí apuntas los encargos que te hace la gente."
+		e.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
+		_notebook_box.add_child(e)
+	for entry in entries.slice(0, 8):
+		var row := HBoxContainer.new()
+		var l := RichTextLabel.new()
+		l.bbcode_enabled = true
+		l.fit_content = true
+		l.scroll_active = false
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		l.custom_minimum_size = Vector2(380, 0)
+		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		l.add_theme_font_size_override("normal_font_size", 15)
+		l.add_theme_color_override("default_color", Color("f0e6c8"))
+		l.text = entry["text"]
+		row.add_child(l)
+		if not entry["poi"].is_empty():
+			var b := Button.new()
+			b.text = "Buscar"
+			b.tooltip_text = "Marca en el mapa el sitio que tienes apuntado (si lo apuntaste bien)."
+			b.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			var poi: Dictionary = entry["poi"]
+			b.pressed.connect(func(): find_place_requested.emit(poi))
+			row.add_child(b)
+		_notebook_box.add_child(row)
+	_notebook.reset_size()
 
 
 func show_game_over(reason: String) -> void:

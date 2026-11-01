@@ -50,6 +50,7 @@ func _initialize() -> void:
 				world.use_item(id)
 		if profile == Defs.PROFILES[0]:
 			await _test_conversation(gs, world)
+		await _test_errands(gs, world)
 		world._rummage()
 		world._sleep_here()
 		if gs.alive:
@@ -170,6 +171,112 @@ func _test_conversation(gs, world) -> void:
 	_check(no_key[0].contains("clave"), "sin clave no avisa")
 	client.proveedor = "ollama"
 	print("  conversación: OK sin IA (%d mensajes en el registro)" % logged.size())
+
+
+## Encargos con plazo y libreta: aceptar los cuatro, cumplir dos (uno esperando), fallar dos por
+## el plazo, abrir el paquete, cada forma de apuntar mal, la lectura emborronada, el reloj que
+## miente y la libreta en el HUD.
+func _test_errands(gs, world) -> void:
+	var errands = world.errands
+	_steady(gs)
+	for id in gs.subs:
+		gs.subs[id]["high"] = 0.0
+	gs.errands = []
+	gs.notes = []
+	gs.heat = 0.0
+	gs.debt = 0
+	_check(gs.befuddlement() == 0.0, "sereno y descansado, la cabeza no está entera")
+	var givers := {}
+	for id in Defs.ERRANDS:
+		var kind: String = Defs.ERRANDS[id]["giver"]
+		var npc = world.npcs.filter(func(n): return n.kind == kind and is_instance_valid(n))
+		if npc.is_empty():
+			world._spawn_npc(kind)
+			npc = [world.npcs[-1]]
+		npc = npc[0]
+		npc.remove_meta("encargo_dia")
+		npc.remove_meta("enemigo")
+		givers[id] = npc
+		var offer = world.interactions.for_npc(npc).filter(func(a): return a["label"].begins_with("Encargo:"))
+		_check(offer.size() == 1, "%s: no ofrece su encargo" % kind)
+		if offer.is_empty():
+			return
+		offer[0]["do"].call()
+		_check(not errands.active(id).is_empty(), "%s: el encargo no queda en marcha" % id)
+		_check(world.interactions.for_npc(npc).all(func(a): return not a["label"].begins_with("Encargo:")), "%s: ofrece el encargo dos veces" % id)
+	_check(gs.notes.size() == 4 and gs.has_item("paquete") and gs.has_item("cartera_caliente"), "no se apuntan los encargos o no te dan lo que hay que llevar")
+	_check(errands.active("paquete")["poi"] != errands.active("juerga")["poi"], "dos encargos en el mismo bar")
+	print("  encargos: %s" % " | ".join(gs.notes.map(func(n): return errands.note_text(n))))
+	# cumplir: el paquete en su bar, la despedida esperando a que llegue la hora
+	var money: int = gs.money
+	var e: Dictionary = errands.active("paquete")
+	var acts = world.interactions.for_poi(e["poi"]).filter(func(a): return a["label"].begins_with("Entregar"))
+	_check(acts.size() == 1, "no se puede entregar el paquete en su bar")
+	if not acts.is_empty():
+		acts[0]["do"].call()
+	_check(e["state"] == "hecho" and gs.money == money + 25 and not gs.has_item("paquete"), "entregar el paquete no paga")
+	e = errands.active("juerga")
+	acts = world.interactions.for_poi(e["poi"]).filter(func(a): return a["label"].begins_with("Esperar"))
+	_check(acts.size() == 1, "llegar pronto a la cita de la despedida no deja esperar")
+	if not acts.is_empty():
+		acts[0]["do"].call()
+	_check(e["state"] == "hecho", "esperar a la despedida no cumple el encargo")
+	# fallar por el plazo: la cartera y la cita con la educadora
+	gs.alive = true
+	for id in ["cartera", "cita"]:
+		errands.active(id)["until"] = gs.now() - 1.0
+	errands.update()
+	_check(gs.errands.all(func(x): return x["state"] != "activo"), "los plazos vencidos no fallan el encargo")
+	_check(givers["cartera"].has_meta("enemigo") and gs.heat >= 40.0, "fallarle a la carterista no tiene consecuencias")
+	_check(world.interactions.for_npc(givers["cartera"]).is_empty() or world.interactions.for_npc(givers["cartera"]).all(func(a): return not a["label"].begins_with("Hacerle")), "la carterista enfadada sigue tratando contigo")
+	# abrir el paquete: dos rayas y una deuda más gorda
+	givers["paquete"].remove_meta("encargo_dia")
+	world.interactions.for_npc(givers["paquete"]).filter(func(a): return a["label"].begins_with("Encargo:"))[0]["do"].call()
+	var coke: int = gs.inventory.get("farlopa", 0)
+	world.use_item("paquete")
+	_check(gs.inventory.get("farlopa", 0) == coke + 2 and gs.debt >= 60 and gs.errands[-1]["state"] == "fallado", "abrir el paquete no lo falla ni da la farlopa")
+	# cada forma de apuntar mal cambia lo que se lee
+	var note: Dictionary = gs.notes[-1]
+	var truth: String = errands.note_text(note)
+	for kind in errands.SLIPS:
+		var bad: Dictionary = note.duplicate()
+		errands.slip(bad, kind)
+		_check(errands.note_text(bad) != truth, "apuntar mal (%s) no cambia la nota" % kind)
+		if kind.begins_with("sin_"):
+			_check(errands.note_text(bad).contains("¿?"), "un dato perdido no sale como ¿?")
+	# leer: sobrio se lee tal cual; ido, algunas palabras no
+	_check(errands.garble(truth, 0.0, 0.0, 1) == truth.replace("[", "[lb]"), "sobrio, la libreta no se lee tal cual")
+	_check(errands.garble(truth, 1.0, 0.0, 1).contains("[color"), "ido, la libreta no se emborrona")
+	_check(errands.garble(truth, 1.0, 1.0, 1).contains("[shake"), "con mono, la libreta no tiembla")
+	_check(errands.garble(truth, 0.4, 0.5, 7) == errands.garble(truth, 0.4, 0.5, 7), "la lectura cambia sin motivo (parpadea)")
+	_check(not errands.notebook_entries().is_empty(), "la libreta no tiene entradas")
+	# el reloj: sobrio dice la verdad; mientras miente, no
+	gs._clock_lie_left = 0.0
+	gs.clock_skew = 0.0
+	gs._clock_blank = false
+	_check(gs.shown_clock_text() == gs.clock_text(), "sobrio, el reloj miente")
+	gs.clock_skew = 45.0
+	gs._clock_lie_left = 30.0
+	_check(gs.shown_clock_text() != gs.clock_text(), "el reloj no miente cuando toca")
+	gs.advance(31.0)
+	_check(gs.shown_clock_text() == gs.clock_text(), "el reloj no vuelve a la verdad")
+	# muy ido, el reloj acaba mintiendo y la libreta se lee mal
+	gs.subs[gs.subs.keys()[0]]["high"] = 120.0
+	gs.fatigue = 95.0
+	_check(gs.befuddlement() > 0.9, "muy ido, la cabeza sigue entera")
+	var lied := false
+	for i in 200:
+		gs._update_clock_lie(30.0)
+		lied = lied or gs.shown_clock_text() != gs.clock_text()
+	_check(lied, "muy ido, el reloj nunca miente")
+	_check(errands.notebook_entries().any(func(x): return x["text"].contains("[color=#ffffff22]") or x["text"].contains("[shake")), "muy ido, la libreta se lee perfecta")
+	# la libreta en el HUD
+	_steady(gs)
+	world.hud.toggle_notebook(errands)
+	await process_frame
+	_check(world.hud.is_notebook_open(), "la libreta no se abre")
+	world.hud.toggle_notebook(errands)
+	print("  encargos y libreta: OK (deuda %d €, %d notas)" % [gs.debt, gs.notes.size()])
 
 
 ## Deja el cuerpo en calma para que una prueba no dispare otra consecuencia por el camino.
