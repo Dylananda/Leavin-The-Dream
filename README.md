@@ -51,6 +51,12 @@ oficio de carterista) ahora sube o baja la dificultad. Esc: dejarlo.
   tocan el pinganillo, como un cliente que se para a ver el género (pero sin pinganillo).
   Cada falsa alarma resta paga, cada cliente suma, y un agente sin avisar es redada.
 
+- **Pelear** (con otro yonki, o cuando te alcanza el camello al que debes o el de la esquina
+  y no llevas nada): cara a cara. Cuando levanta un brazo («!»), esquiva con A o D hacia el
+  otro lado; si falla se queda abierto («¡Ahora!») y es cuando más daño le hace tu clic. Pegarle
+  a la guardia apenas sirve; cortarle mientras carga, algo. A los que vienen a darte una
+  paliza cuesta mucho quitárselos de encima, pero se puede.
+
 El mono y la farlopa hacen temblar las manos, el alcohol retrasa la mano de WASD, el sueño
 cierra los párpados y, con paranoia, cualquiera parece que se toca la oreja.
 
@@ -179,7 +185,7 @@ python tools/make_textures.py
 - `game/scripts/ui/hud.gd` — barras, panel de sustancias y efectos, registro, menús, libreta, conversación
 - `game/scripts/minigames/` — minijuegos de habilidad: la base (`minigame.gd`: vista 3D propia
   con marionetas de los personajes y capa 2D encima), robar al descuido (`pickpocket.gd`) y
-  hacer de vigía (`lookout.gd`). Se lanzan con `World.play_minigame`; sin pantalla (test de
+  hacer de vigía (`lookout.gd`) y pelear (`fight.gd`). Se lanzan con `World.play_minigame`; sin pantalla (test de
   humo) se resuelven con la probabilidad de siempre. Medidas en `Defs` (`PICK_*`, `LOOKOUT_*`)
 - `game/scripts/ai/` — conversación con IA: cliente HTTP (`llm_client.gd`, Ollama o API tipo
   OpenAI), fichas de los personajes (`fichas.gd`) y contexto, memoria y acciones de juego
@@ -206,7 +212,7 @@ python tools/make_textures.py
 - `game/tests/conos.gd` — captura de los conos de visión y de un escándalo:
   `godot --path game --resolution 1600x900 --script res://tests/conos.gd -- out.png [hora]`
 - `game/tests/minijuego.gd` — captura de un minijuego a medias:
-  `godot --path game --resolution 1600x900 --script res://tests/minijuego.gd -- out.png robo|movil|vigia|aguador [hora] [sustancias]`
+  `godot --path game --resolution 1600x900 --script res://tests/minijuego.gd -- out.png robo|movil|vigia|aguador|pelea [hora] [sustancias]`
 - `game/tests/screenshot.gd` — capturas sin abrir el editor; el sexto argumento consume
   sustancias antes (p. ej. `... -- res://scenes/world.tscn shot.png parado "" 12 caballo,litrona`)
 

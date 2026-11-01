@@ -315,9 +315,20 @@ func _fight(npc: Npc) -> void:
 	gs.advance(10)
 	_heat(30)
 	npc.remember("pegado")
-	var me := gs.health + gs.high * 0.3 - gs.mono * 0.3 + randf_range(-20, 20)
-	var him := randf_range(30.0, 70.0)
-	if me > him:
+	world.play_minigame(Fight.new(npc), _fight_chance(), func(result: String, _stats: Dictionary):
+		_fight_done(npc, result == "ok"))
+
+
+## Probabilidad de ganar una pelea a un yonki: la salud y el colocón ayudan, el mono no.
+## (La tirada de antes: tú, salud + colocón·0,3 − mono·0,3 ± 20, contra él, entre 30 y 70.)
+func _fight_chance() -> float:
+	var gs := GameState
+	return clampf(0.5 + (gs.health + gs.high * 0.3 - gs.mono * 0.3 - 50.0) / 80.0, 0.05, 0.95)
+
+
+func _fight_done(npc: Npc, won: bool) -> void:
+	var gs := GameState
+	if won:
 		var loot := npc.money + randi_range(0, 5)
 		npc.money = 0
 		gs.add_money(loot)

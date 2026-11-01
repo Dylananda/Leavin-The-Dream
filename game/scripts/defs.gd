@@ -317,6 +317,9 @@ const LOOKOUT_UNDERCOVER := 0.5  ## de los agentes, los que van de paisano (más
 const LOOKOUT_CLIENTS := 0.25  ## proporción de clientes
 const LOOKOUT_FALSE_PENALTY := 0.25  ## lo que se descuenta de la paga cada falsa alarma
 const LOOKOUT_CLIENT_TIP := 2  ## euros por cada cliente que atraes
+## Pelea (Fight): cara a cara, esquivar con A/D hacia el lado contrario del puño y pegar con el
+## clic cuando falla. Las medidas de los golpes están en fight.gd.
+const BEATING_FIGHT_CHANCE := 0.25  ## quitarte de encima a quien te viene a dar una paliza
 
 ## Títulos finales según la caída acumulada.
 const TITLES := [

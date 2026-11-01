@@ -302,7 +302,8 @@ de ruta:
   el móvil, o dinero, o te dan un puñetazo. Los demás van hasta el agente más cercano, se lo
   cuentan y quedas fichado.
   - [ ] Pendiente: jugarlo y ajustar medidas y tiempos; que la memoria pase a los que vuelven
-    a salir con el mismo nombre; peleas de verdad (minijuego) en vez de una tirada.
+    a salir con el mismo nombre. Peleas de verdad (minijuego `Fight`): hecho para la pelea
+    con un yonki y las palizas del camello y del de la esquina (rama `feat/minijuegos`).
 
 **Trapicheo (punto 8)**
 - [x] Un sistema de tráfico: comprar y vender a más personajes (yonkis, fiesteros, turistas,
@@ -348,8 +349,10 @@ de ruta:
   camellos, vecinos y posibles compradores. Hecho como el trabajo de vigía (`Lookout`) del
   mantero, el trilero y el camello: clic izquierdo a los agentes, derecho a los clientes;
   las secretas se delatan por el pinganillo.
-  - [ ] Pendiente: jugarlos y ajustar tiempos y dificultad; peleas como minijuego; más
-    acciones (robar la litrona, el platito de propinas, el alijo del latero).
+- [x] Peleas como minijuego (`Fight`): esquivar con A/D el puño que se ve venir y pegar
+    cuando se queda abierto. Con un yonki y cuando te alcanzan para darte una paliza.
+  - [ ] Pendiente: jugarlos y ajustar tiempos y dificultad; más acciones (robar la litrona,
+    el platito de propinas, el alijo del latero; el puñetazo del turista robado).
 
 ## Más adelante
 
