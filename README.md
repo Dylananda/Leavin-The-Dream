@@ -33,6 +33,27 @@ se monta un escándalo: la víctima grita, algún valiente intenta pararte, otro
 policía. Si no viene ningún agente, o si te escapas, quedas fichado un día (lo dice el HUD).
 Escapar es salir de su vista: tras una esquina te buscan un rato donde te vieron por última vez.
 
+### Minijuegos
+
+Algunas acciones ya no son una tirada de dados: se juegan en otra vista, con el barrio en
+pausa. Lo que antes subía o bajaba la probabilidad (agentes mirando, la noche, el colocón, el
+oficio de carterista) ahora sube o baja la dificultad. Esc: dejarlo.
+
+- **Robar al descuido** (la cartera a un guiri, el móvil a una despedida): la víctima en
+  primer plano y tus dos manos. Con WASD, una le distrae con un plano o un mechero y le hace
+  mirar hacia ella; con el ratón, la otra va al bolsillo y, con el botón pulsado, saca el
+  botín. Si te ve la mano metida sospecha («?») y te pilla («!»). Mira a su aire: a los lados,
+  a ti, o se palpa el bolsillo; la cartera de la mochila solo se alcanza si se gira del todo.
+  Si se va sin que haya ocasión, se queda mosca y no se deja intentar otra vez.
+- **Hacer de vigía** (del mantero, del trilero o de aguador del camello): pasa gente por la
+  calle. Clic izquierdo («¡Agua!») a la policía antes de que llegue a la manta; clic derecho
+  para llamar a un cliente. Las secretas van de paisano, más despacio, se paran a mirar y se
+  tocan el pinganillo, como un cliente que se para a ver el género (pero sin pinganillo).
+  Cada falsa alarma resta paga, cada cliente suma, y un agente sin avisar es redada.
+
+El mono y la farlopa hacen temblar las manos, el alcohol retrasa la mano de WASD, el sueño
+cierra los párpados y, con paranoia, cualquiera parece que se toca la oreja.
+
 ### El estado del personaje
 
 Arriba a la izquierda, las barras del cuerpo (pasa el ratón por encima para ver qué las mueve):
@@ -156,6 +177,10 @@ python tools/make_textures.py
 - `game/scripts/world.gd` — escena de juego, entrada, eventos del barrio y cómo los efectos
   cambian la cámara y el movimiento
 - `game/scripts/ui/hud.gd` — barras, panel de sustancias y efectos, registro, menús, libreta, conversación
+- `game/scripts/minigames/` — minijuegos de habilidad: la base (`minigame.gd`: vista 3D propia
+  con marionetas de los personajes y capa 2D encima), robar al descuido (`pickpocket.gd`) y
+  hacer de vigía (`lookout.gd`). Se lanzan con `World.play_minigame`; sin pantalla (test de
+  humo) se resuelven con la probabilidad de siempre. Medidas en `Defs` (`PICK_*`, `LOOKOUT_*`)
 - `game/scripts/ai/` — conversación con IA: cliente HTTP (`llm_client.gd`, Ollama o API tipo
   OpenAI), fichas de los personajes (`fichas.gd`) y contexto, memoria y acciones de juego
   (`conversation.gd`)
@@ -180,6 +205,8 @@ python tools/make_textures.py
   y de cerca, para revisar género y rasgos: `godot --path game --script res://tests/retratos.gd -- out.png todos`
 - `game/tests/conos.gd` — captura de los conos de visión y de un escándalo:
   `godot --path game --resolution 1600x900 --script res://tests/conos.gd -- out.png [hora]`
+- `game/tests/minijuego.gd` — captura de un minijuego a medias:
+  `godot --path game --resolution 1600x900 --script res://tests/minijuego.gd -- out.png robo|movil|vigia|aguador [hora] [sustancias]`
 - `game/tests/screenshot.gd` — capturas sin abrir el editor; el sexto argumento consume
   sustancias antes (p. ej. `... -- res://scenes/world.tscn shot.png parado "" 12 caballo,litrona`)
 

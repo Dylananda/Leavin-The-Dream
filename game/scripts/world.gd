@@ -917,6 +917,32 @@ func remove_npc_later(npc: Npc, seconds: float) -> void:
 
 
 ## Conversación libre (IA) con un bot que tiene ficha.
+## Juega `game` (un Minigame) en vez de tirar los dados; `done` recibe el resultado y las
+## cuentas del minijuego (result, stats). El barrio se queda en pausa mientras tanto. Sin
+## pantalla (tests --headless) se decide al momento con la probabilidad `chance`.
+func play_minigame(game: Minigame, chance: float, done: Callable) -> void:
+	chance = clampf(chance, 0.0, 1.0)
+	game.difficulty = 1.0 - chance
+	if DisplayServer.get_name() == "headless":
+		var result := game.auto_result(chance)
+		var stats := game.stats
+		game.free()
+		done.call(result, stats)
+		return
+	game.fx = _fx.get("fx", {})
+	_pending = null
+	player.stop()
+	player.input_dir = Vector3.ZERO
+	_input_smooth = Vector3.ZERO
+	get_tree().paused = true
+	game.finished.connect(func(result: String):
+		get_tree().paused = false
+		var stats := game.stats
+		game.queue_free()
+		done.call(result, stats))
+	hud.open_minigame(game)
+
+
 func open_chat(npc: Npc) -> void:
 	npc.stop()
 	hud.open_chat(npc, conversation)

@@ -299,6 +299,25 @@ const BLUR_FROM := 0.25  ## por debajo, la libreta se lee bien
 const BLUR_MAX := 0.4  ## proporción máxima de palabras que no se leen
 const CLOCK_LIE_PER_HOUR := 0.3  ## probabilidad por hora (del todo ido) de que el reloj mienta un rato
 
+## Minijuegos de habilidad (scripts/minigames/). La dificultad (0..1) sale de la probabilidad
+## que tenía la acción (1 - p): lo que antes era una tirada ahora se juega, con las mismas
+## circunstancias a favor y en contra (agentes mirando, la noche, el colocón, el oficio).
+## Robar al descuido (Pickpocket): una mano (WASD) le distrae, la otra (ratón) le saca el botín.
+const PICK_SECONDS := 15.0  ## lo que tarda en irse la víctima
+const PICK_EXTRACT := 1.6  ## segundos con el botón pulsado en el bolsillo para sacarlo (más si es difícil)
+const PICK_SUSPICION := 0.9  ## sospecha por segundo si te ve de lleno la mano en su bolsillo
+const PICK_INTEREST := 0.004  ## interés por píxel que mueves la mano que distrae (llena = te mira a ella)
+const PICK_BORED := 0.4  ## interés que pierde por segundo (se aburre de la misma mano)
+## Hacer de vigía (Lookout): pasa gente por la calle; clic izquierdo a la policía (¡agua!) y
+## clic derecho a los clientes. Las secretas van de paisano: se tocan el pinganillo y miran.
+const LOOKOUT_SECONDS := 40.0
+const LOOKOUT_SPAWN := Vector2(1.4, 2.8)  ## segundos entre uno que pasa y el siguiente
+const LOOKOUT_THREATS := 0.22  ## proporción de agentes entre los que pasan (más con dificultad)
+const LOOKOUT_UNDERCOVER := 0.5  ## de los agentes, los que van de paisano (más con dificultad)
+const LOOKOUT_CLIENTS := 0.25  ## proporción de clientes
+const LOOKOUT_FALSE_PENALTY := 0.25  ## lo que se descuenta de la paga cada falsa alarma
+const LOOKOUT_CLIENT_TIP := 2  ## euros por cada cliente que atraes
+
 ## Títulos finales según la caída acumulada.
 const TITLES := [
 	[0, "Turista accidental"],

@@ -41,6 +41,9 @@ var run_factor := 1.0  ## > 1 al correr (Shift)
 var wobble := 0.0  ## 0..1: eses al seguir un camino (alcohol)
 ## Movimiento directo (WASD) en el plano, de longitud 0..1. Mientras no es cero manda sobre `path`.
 var input_dir := Vector3.ZERO
+## Marionetas de los minijuegos, que no andan por el mapa: las mueve quien las usa.
+var puppet_walk := false  ## anda en el sitio (piernas y brazos), aunque no tenga camino
+var arm_pose: Array[float] = [0.0, 0.0]  ## giro extra de cada brazo (negativo: hacia delante y arriba)
 
 var _body: Node3D
 var _legs: Array[Node3D] = []
@@ -136,7 +139,7 @@ func _process(delta: float) -> void:
 		_animate(delta, true)
 		return
 	if path.is_empty():
-		_animate(delta, false)
+		_animate(delta, puppet_walk)
 		return
 	var target := city.cell_to_world(path[0])
 	var to := target - position
@@ -220,8 +223,8 @@ func _animate(delta: float, moving: bool) -> void:
 	var swing := sin(_walk_phase) * 0.7
 	_legs[0].rotation.x = swing
 	_legs[1].rotation.x = -swing
-	_arms[0].rotation.x = -swing * 0.8
-	_arms[1].rotation.x = swing * 0.8
+	_arms[0].rotation.x = -swing * 0.8 + arm_pose[0]
+	_arms[1].rotation.x = swing * 0.8 + arm_pose[1]
 	_body.position.y = absf(sin(_walk_phase)) * 0.08 if moving else 0.0
 
 

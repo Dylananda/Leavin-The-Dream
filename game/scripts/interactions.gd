@@ -109,37 +109,91 @@ func _turista(npc: Npc) -> Array:
 				gs.log_msg("Le das tanta pena que te suelta %d €." % n, G.C_GOOD)
 			gs.change_dignity(-4, "Llorarle a un desconocido")),
 	]
-	if not npc.robbed:
+	if not npc.robbed and not npc.has_meta("receloso"):
 		acts.append(_act("Robarle la cartera", func(): _rob_tourist(npc)))
 	return acts
+
+
+## Probabilidad de que salga bien un robo al descuido con `base` de partida: la bajan los
+## agentes que te ven y el colocón, la suben la noche y el oficio. En el minijuego es su
+## dificultad; sin pantalla, la tirada.
+func _pickpocket_chance(base: float) -> float:
+	var gs := GameState
+	var p := base - 0.2 * world.police_watching() + (0.1 if gs.is_night() else 0.0)
+	if "aprendiz" in gs.milestones:
+		p += 0.15  # un carterista te ha enseñado el oficio
+	if gs.high > 60.0:
+		p -= 0.15
+	return clampf(p, 0.02, 0.95)
+
+
+## Robo al descuido (minijuego Pickpocket). `on_ok` y `on_caught` hacen lo de cada víctima;
+## si no hay ocasión, se queda mosca y no se deja intentar otra vez.
+func _pickpocket(npc: Npc, loot: String, chance: float, on_ok: Callable, on_caught: Callable) -> void:
+	world.play_minigame(Pickpocket.new(npc, loot), chance, func(result: String, _stats: Dictionary):
+		_pickpocket_done(result, npc, loot, on_ok, on_caught))
+
+
+func _pickpocket_done(result: String, npc: Npc, loot: String, on_ok: Callable, on_caught: Callable) -> void:
+	match result:
+		"ok":
+			npc.robbed = true
+			GameState.add_item(loot)
+			on_ok.call()
+			GameState.milestone("primer_robo")
+			_after_theft(npc)
+		"pillado":
+			npc.robbed = true
+			on_caught.call()
+		_:
+			npc.set_meta("receloso", true)
+			npc.say(["Hm?", "What...?", "¿Qué pasa?"].pick_random())
+			GameState.log_msg("%s se aleja mirándote raro." % npc.display_name)
+
+
+## Hacer de vigía para `npc` durante `minutes` (minijuego Lookout). `chance` = que no haya
+## redada. `on_ok(share, tips)` cobra: `share` (0..1) es la parte de la paga que queda tras
+## las falsas alarmas y `tips`, los euros de los clientes que atraes. `on_raid` es la redada.
+func _lookout(npc: Npc, minutes: float, chance: float, on_ok: Callable, on_raid: Callable) -> void:
+	world.play_minigame(Lookout.new(npc), chance, func(result: String, stats: Dictionary):
+		_lookout_done(result, stats, npc, minutes, on_ok, on_raid))
+
+
+func _lookout_done(result: String, stats: Dictionary, npc: Npc, minutes: float, on_ok: Callable, on_raid: Callable) -> void:
+	var gs := GameState
+	match result:
+		"ok":
+			gs.advance(minutes)
+			var falsas: int = stats.get("falsas", 0)
+			if falsas > 0:
+				gs.log_msg("%d falsas alarmas: cada vez que recoge pierde ventas." % falsas, G.C_BAD)
+			on_ok.call(maxf(0.0, 1.0 - Defs.LOOKOUT_FALSE_PENALTY * falsas),
+				int(stats.get("clientes", 0)) * Defs.LOOKOUT_CLIENT_TIP)
+		"redada":
+			gs.advance(minutes * 0.5)
+			on_raid.call()
+		_:
+			gs.advance(15)
+			npc.say("¿Ya te vas? Pues no cobras")
+			gs.log_msg("Lo dejas a medias y %s no te paga." % npc.display_name)
 
 
 func _rob_tourist(npc: Npc) -> void:
 	var gs := GameState
 	gs.advance(5)
-	var p := 0.6 - 0.2 * world.police_watching() + (0.1 if gs.is_night() else 0.0)
-	if "aprendiz" in gs.milestones:
-		p += 0.15  # un carterista te ha enseñado el oficio
-	if gs.high > 60.0:
-		p -= 0.15
-	if _chance(p):
-		npc.robbed = true
-		if _chance(0.4):
-			gs.add_item("movil")
+	var loot := "movil" if randf() < 0.4 else "cartera"
+	_pickpocket(npc, loot, _pickpocket_chance(0.6), func():
+		if loot == "movil":
 			gs.log_msg("Le sacas el móvil del bolsillo sin que se entere.", G.C_GOOD)
 		else:
-			gs.add_item("cartera")
 			gs.log_msg("¡Cartera! Ábrela en el inventario.", G.C_GOOD)
 		_heat(20)
-		gs.milestone("primer_robo")
-		gs.change_dignity(-3)
-		_after_theft(npc)
-	else:
-		npc.robbed = true
+		gs.change_dignity(-3),
+	func():
 		_heat(70)
 		_caught_stealing(npc, "THIEF! ¡Al ladrón!")
 		gs.log_msg("Te ha pillado. Ahora la policía te busca.", G.C_BAD)
-		gs.change_dignity(-2)
+		gs.change_dignity(-2))
 
 
 func _camello(npc: Npc) -> Array:
@@ -155,12 +209,17 @@ func _camello(npc: Npc) -> Array:
 				gs.debt = maxi(0, gs.debt - paid)
 				gs.log_msg("Le pagas %d €. Debes %d €." % [paid, npc.debt])))
 		acts.append(_act("Hacerle de aguador (2 h) para saldar", func():
-			gs.advance(120)
-			npc.debt = maxi(0, npc.debt - 15)
-			gs.debt = maxi(0, gs.debt - 15)
-			_heat(15)
-			gs.log_msg("Dos horas vigilando la esquina. Te descuenta 15 €.")
-			gs.change_dignity(-2)))
+			_lookout(npc, 120, 0.85, func(share: float, tips: int):
+				var off := roundi(15 * share) + tips
+				npc.debt = maxi(0, npc.debt - off)
+				gs.debt = maxi(0, gs.debt - off)
+				_heat(15)
+				gs.log_msg("Dos horas vigilando la esquina. Te descuenta %d €." % off)
+				gs.change_dignity(-2),
+			func():
+				_heat(60)
+				gs.log_msg("¡Redada! Sales corriendo con la policía detrás. Y sigues debiéndole.", G.C_BAD)
+				gs.change_dignity(-2))))
 		return acts
 	for id in Defs.DEALER_STOCK:
 		var s: Dictionary = Defs.SUBSTANCES[id]
@@ -183,16 +242,17 @@ func _camello(npc: Npc) -> Array:
 					npc.say("Sin pasta no hay fiesta")
 				gs.change_dignity(-2)))
 	acts.append(_act("Hacerle de aguador (2 h)", func():
-		gs.advance(120)
-		_heat(15)
-		if _chance(0.15):
-			_heat(60)
-			gs.log_msg("¡Redada! Sales corriendo con la policía detrás.", G.C_BAD)
-		else:
-			gs.add_money(15)
+		_lookout(npc, 120, 0.85, func(share: float, tips: int):
+			var got := roundi(15 * share) + tips
+			_heat(15)
+			gs.add_money(got)
 			gs.add_item("porro")
-			gs.log_msg("Te paga 15 € y un porro por vigilar.", G.C_GOOD)
-		gs.change_dignity(-2)))
+			gs.log_msg("Te paga %d € y un porro por vigilar." % got, G.C_GOOD)
+			gs.change_dignity(-2),
+		func():
+			_heat(75)
+			gs.log_msg("¡Redada! Sales corriendo con la policía detrás.", G.C_BAD)
+			gs.change_dignity(-2))))
 	return acts
 
 
@@ -334,13 +394,18 @@ func _mantero(npc: Npc) -> Array:
 	var gs := GameState
 	var acts := [
 		_act("Hacerle de vigía (2 h)", func():
-			gs.advance(120)
 			var pay := 20 if gs.profile.get("id") == "sin_papeles" else 8
-			gs.add_money(pay)
-			_heat(10)
-			npc.remember("ayudado")
-			npc.say("Gracias, hermano")
-			gs.log_msg("Vigilas por si viene la policía. Te da %d €." % pay, G.C_GOOD)),
+			_lookout(npc, 120, 0.9 - 0.1 * world.police_near(npc.cell, 30), func(share: float, tips: int):
+				var got := roundi(pay * share) + tips
+				gs.add_money(got)
+				_heat(10)
+				npc.remember("ayudado")
+				npc.say("Gracias, hermano")
+				gs.log_msg("Vigilas por si viene la policía. Te da %d €." % got, G.C_GOOD),
+			func():
+				_heat(25)
+				npc.say("¡Corre, corre!", 3.0)
+				gs.log_msg("La Urbana se lleva la manta de %s. Hoy no cobra nadie." % npc.display_name, G.C_BAD))),
 	]
 	if gs.money >= 5:
 		acts.append(_act("Comprarle unas gafas (5 €)", func():
@@ -381,22 +446,20 @@ func _fiestero(npc: Npc) -> Array:
 			gs.add_money(10)
 			npc.say("Ray-Ban! Originals!")
 			gs.log_msg("Les vendes las gafas por el doble de lo que te costaron.", G.C_GOOD)))
-	if not npc.robbed:
+	if not npc.robbed and not npc.has_meta("receloso"):
 		acts.append(_act("Robarle el móvil", func():
 			gs.advance(5)
-			npc.robbed = true
-			if _chance(0.75 - 0.2 * world.police_watching()):
-				gs.add_item("movil")
+			# va tan ciego que es más fácil (y la noche ni la nota)
+			_pickpocket(npc, "movil", clampf(0.75 - 0.2 * world.police_watching(), 0.02, 0.95), func():
 				_heat(15)
 				gs.log_msg("Va tan ciego que ni se entera.", G.C_GOOD)
-				gs.milestone("primer_robo")
-				_after_theft(npc)
-			else:
+				gs.change_dignity(-3),
+			func():
 				_heat(40)
 				_caught_stealing(npc, "OI! ¡Chicos, a por él!")
 				gs.change_health(-15, "Una paliza de despedida")
 				gs.log_msg("Sus colegas te rodean. Te llevas una buena.", G.C_BAD)
-			gs.change_dignity(-3)))
+				gs.change_dignity(-3))))
 	return acts
 
 
@@ -465,15 +528,15 @@ func _trilero(npc: Npc) -> Array:
 		gs.log_msg("Finges ganar una y otra vez para que piquen los guiris. %d €." % pay, G.C_GOOD)
 		gs.change_dignity(-3, "Engañar a los turistas")))
 	acts.append(_act("Hacerle de vigía (1 h)", func():
-		gs.advance(60)
-		if world.police_near(npc.cell, 30) > 0 and _chance(0.4):
+		_lookout(npc, 60, 0.6 if world.police_near(npc.cell, 30) > 0 else 0.95, func(share: float, tips: int):
+			var got := roundi(6 * share) + tips
+			gs.add_money(got)
+			_heat(5)
+			gs.log_msg("Una hora mirando a los dos lados de la Rambla. %d €." % got, G.C_GOOD),
+		func():
 			_heat(30)
 			npc.say("¡Agua! ¡Recoge!", 3.0)
-			gs.log_msg("No has visto venir a la Urbana. %s recoge la caja y se larga sin pagarte." % npc.display_name, G.C_BAD)
-		else:
-			gs.add_money(6)
-			_heat(5)
-			gs.log_msg("Una hora mirando a los dos lados de la Rambla. 6 €.", G.C_GOOD)))
+			gs.log_msg("No has visto venir a la Urbana. %s recoge la caja y se larga sin pagarte." % npc.display_name, G.C_BAD))))
 	return acts
 
 

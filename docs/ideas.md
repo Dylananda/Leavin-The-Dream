@@ -338,11 +338,18 @@ de ruta:
     las reconozcan; que la bici sirva para moverse más rápido.
 
 **Minijuegos (punto 9)**
-- [ ] Las acciones de habilidad pasan a un minijuego con otra vista (primer plano del
+- [x] Las acciones de habilidad pasan a un minijuego con otra vista (primer plano del
   personaje en plano medio) y otros controles. Robar a un turista: una mano con WASD le
-  distrae y la otra, con el ratón, le saca la cartera mientras no mira.
-- [ ] Tiro de feria: pasan personajes variados y hay que distinguir a policías, secretas,
-  camellos, vecinos y posibles compradores.
+  distrae y la otra, con el ratón, le saca la cartera mientras no mira. Hecho
+  (`Pickpocket`, rama `feat/minijuegos`) para la cartera del guiri y el móvil de la
+  despedida: la víctima es una marioneta con su mismo aspecto en una vista 3D propia; la
+  probabilidad de antes es ahora la dificultad (y, sin pantalla, la tirada de siempre).
+- [x] Tiro de feria: pasan personajes variados y hay que distinguir a policías, secretas,
+  camellos, vecinos y posibles compradores. Hecho como el trabajo de vigía (`Lookout`) del
+  mantero, el trilero y el camello: clic izquierdo a los agentes, derecho a los clientes;
+  las secretas se delatan por el pinganillo.
+  - [ ] Pendiente: jugarlos y ajustar tiempos y dificultad; peleas como minijuego; más
+    acciones (robar la litrona, el platito de propinas, el alijo del latero).
 
 ## Más adelante
 
