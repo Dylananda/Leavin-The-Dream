@@ -43,7 +43,16 @@ sí y una memoria poco fiable**, que puede ir creciendo hacia misiones de rol en
 3. **Personajes nuevos** basados en lo que se documenta del barrio, según hora y zona — hecho lo básico (rama `feat/personajes-nuevos`)
 4. **Prototipo de conversación con IA local** (Ollama, 3–4 personajes) — hecho el prototipo (rama `feat/conversacion-ia`)
 5. **Compromisos con plazo y memoria poco fiable** → base de las misiones — hecha la primera prueba jugable (rama `feat/encargos`)
-6. **Ciudad más grande y metro**
+6. **Ver y moverse bien** (lo que salió de la primera partida de verdad, ver «7. Lo que sale de
+   jugar»): encontrar a los personajes aunque estén tras los edificios, que cada uno se
+   distinga (género, rasgos) y que el muñeco se maneje bien por calles que no siguen la
+   cuadrícula. Va primero porque sin esto lo demás no se puede jugar.
+7. **Personajes que recuerdan y ven**: memoria de lo que has hecho con cada uno, visión en
+   cono tapada por los edificios, escándalos al robar y una policía que solo te persigue si
+   te ve.
+8. **Trapicheo**: comprar y vender a más personajes, no solo a los camellos.
+9. **Minijuegos de habilidad** para las acciones (robar, distinguir a la gente).
+10. **Ciudad más grande y metro**
 
 ## 2. Estado del personaje
 
@@ -216,6 +225,48 @@ está en `Defs.ERRANDS` y en las constantes de memoria de `defs.gd`):
   es el viaje entre zonas (estaciones reales de OSM, el viaje cuesta tiempo y dinero o
   colarse, con eventos dentro: revisores, carteristas, gente durmiendo). Evita cargar la
   ciudad entera a la vez y da sentido a los plazos.
+
+## 7. Lo que sale de jugar (1 de noviembre de 2026)
+
+Primera partida de verdad con los encargos. Problemas y propuestas, en el orden de la hoja
+de ruta:
+
+**Ver y moverse (punto 6 de la hoja de ruta)**
+- [ ] **Encontrar a los personajes** es muy difícil: casi todos se parecen y quedan tapados
+  por los edificios en la vista isométrica. Ideas: siluetas que se ven a través de las paredes
+  (como el jugador con los rayos X de `building.gdshader`), un icono flotante sobre quien tiene
+  un encargo para ti, y flechas en el borde de la pantalla hacia los encargos activos.
+- [ ] **Género y rasgos**: ahora Mari Loli es un señor calvo. Cada personaje necesita género
+  (cuerpo, pelo, ropa) y algún rasgo propio que lo distinga de los demás: peinado, gorra,
+  barba, chaqueta, color fijo, forma de andar. Los perfiles del jugador también.
+- [ ] **Moverse con WASD** choca con las paredes porque las calles no siguen las direcciones
+  de las teclas y no se ven bien. Ideas: que el movimiento se ajuste a la calle por la que vas
+  (deslizar por las paredes, seguir la dirección de la calle más parecida), girar la cámara
+  para alinearla con la calle, bajar o transparentar los edificios cercanos. Lo difícil de
+  llevar al yonki tiene que venir de las eses y los tropiezos de las sustancias, no del
+  control.
+
+**Personajes que recuerdan y ven (punto 7)**
+- [ ] **Memoria por personaje** de lo que ha pasado contigo: si le has pedido, se aparta al
+  verte; si le has robado, busca a un policía; si le has ayudado, se acerca.
+- [ ] **Visión en cono** para los personajes y la policía, de un largo y un ancho dados y
+  tapada por los edificios, como en *Commandos*. Todos reaccionan a lo que ven, no solo a lo
+  cerca que estás.
+- [ ] **Escándalo al robar**: si te pillan, la víctima grita; algunos transeúntes intentan
+  pararte y otros no; varios llaman a la policía. Si lo oye un agente cercano, te persigue;
+  si no, quedas fichado y te buscan más tarde. Pero solo te persiguen si te ven: estar cerca
+  ya no basta (ahora sí).
+
+**Trapicheo (punto 8)**
+- [ ] Un sistema de tráfico: comprar y vender a más personajes (yonkis, fiesteros, turistas,
+  vecinos...), con precios, riesgo y clientes que se acuerdan de ti.
+
+**Minijuegos (punto 9)**
+- [ ] Las acciones de habilidad pasan a un minijuego con otra vista (primer plano del
+  personaje en plano medio) y otros controles. Robar a un turista: una mano con WASD le
+  distrae y la otra, con el ratón, le saca la cartera mientras no mira.
+- [ ] Tiro de feria: pasan personajes variados y hay que distinguir a policías, secretas,
+  camellos, vecinos y posibles compradores.
 
 ## Más adelante
 
