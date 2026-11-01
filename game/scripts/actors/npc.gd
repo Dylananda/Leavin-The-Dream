@@ -158,7 +158,9 @@ var world: World
 var robbed := false  ## Ya le han robado (turistas), tú o un carterista
 var last_interaction_day := -1
 var known := false  ## Ya has hablado con él (los disfrazados dejan de parecer lo que no son)
-## Lo que ha pasado contigo: "pedido", "robado", "ayudado", "pegado" -> veces. Decide cómo
+## Lo que ha pasado contigo: "pedido", "robado", "ayudado", "pegado", y del trapicheo
+## (scripts/trade.gd) "cliente", "timado" (le vendiste cortado o una piedra) y "pisado" (un
+## camello que te vio vender en su esquina) -> veces. Decide cómo
 ## reacciona al verte (ver grudge()).
 var memory := {}
 ## Lo que está haciendo por ti: "" (su vida), "persigue", "busca" (donde te vio por última
@@ -309,13 +311,19 @@ func add_debt(amount: int, hours: float) -> void:
 ## Lo que le toca hacer si te ve, según quién es y lo que recuerda de ti; "" si le da igual.
 ## "persigue" (la policía, si estás fichado o muy buscado), "cobrar" (un camello al que
 ## debes), "venganza" (le robaste y va a por lo suyo), "denuncia" (le robaste y busca a un
-## agente), "aparta" (le has pedido demasiado o le pegaste) o "acerca" (le ayudaste).
+## agente), "territorio" (un camello en cuya esquina vendiste), "aparta" (le has pedido
+## demasiado, le pegaste o le timaste) o "acerca" (le ayudaste o te compra).
 func grudge() -> String:
 	var gs := GameState
 	if kind == "policia":
 		return "persigue" if gs.is_wanted() or gs.heat > Defs.CHASE_HEAT else ""
 	if kind == "camello" and debt > 0 and gs.now() >= debt_due:
 		return "cobrar"
+	if kind == "camello" and remembers("pisado") > 0:
+		return "territorio"
+	if remembers("timado") > 0:
+		# a la policía no le vas a contar que te vendieron yeso
+		return "venganza" if avenger() else "aparta"
 	if remembers("robado") > 0:
 		if avenger():
 			return "venganza"
@@ -323,7 +331,7 @@ func grudge() -> String:
 		return "aparta" if kind in Defs.NEVER_INTERVENE else "denuncia"
 	if remembers("pegado") > 0 or remembers("pedido") >= Defs.BEG_ANNOY:
 		return "aparta"
-	if remembers("ayudado") > 0:
+	if remembers("ayudado") > 0 or remembers("cliente") > 0:
 		return "acerca"
 	return ""
 
@@ -423,6 +431,9 @@ func react(why: String) -> void:
 		"cobrar":
 			say("¡Eh, tú! ¡Mi dinero!", 3.0)
 			start_chase("deuda")
+		"territorio":
+			say("¡Eh! ¡Esta esquina es mía!", 3.0)
+			start_chase("territorio")
 		"venganza":
 			say("You! ¡Tú! ¡Devuélvemelo!" if kind in ["turista", "fiestero"] else "¡Tú! ¡Ladrón!", 3.0)
 			start_chase("venganza")
@@ -555,7 +566,10 @@ func _follow_mode(dt: float) -> void:
 		"acerca":
 			if distance_to_cell(player.cell) <= 3:
 				stop()
-				say(["¡Eh, colega!", "¡Hombre! ¿Qué tal?", "Gracias por lo del otro día"].pick_random(), 3.0)
+				if remembers("cliente") > 0:
+					say(["¿Tienes algo?", "Hey, my friend! Same as yesterday?", "¿Me pasas lo de siempre?"].pick_random(), 3.0)
+				else:
+					say(["¡Eh, colega!", "¡Hombre! ¿Qué tal?", "Gracias por lo del otro día"].pick_random(), 3.0)
 				calm_down()
 			elif not is_moving():
 				calm_down()

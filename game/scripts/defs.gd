@@ -252,6 +252,28 @@ const MISSEE_PER_BEFUDDLEMENT := 0.6
 ## Por debajo de esta cabeza ida, miras bien lo que llevas y descubres las piedras.
 const FAKE_REVEAL_BELOW := 0.12
 
+## Trapicheo (scripts/trade.gd): revender a otros lo que compras al camello. Por tipo de
+## cliente: `wants` = lo que te compra; `markup` = cuánto paga sobre el precio del camello.
+## Solo compra si lleva bastante dinero encima (los yonkis, para poco más que unas pastillas).
+const CLIENTS := {
+	"fiestero": {"wants": ["farlopa", "porro", "pastillas"], "markup": 2.0},
+	"turista": {"wants": ["porro"], "markup": 3.0},
+	"yonki": {"wants": ["pastillas", "porro", "litrona"], "markup": 1.5},
+}
+const REGULAR_BONUS := 0.1  ## lo que paga de más un cliente por cada vez que ya te compró...
+const REGULAR_MAX := 3  ## ... hasta este número de veces
+## Cortarla: vendes al mismo precio, pero solo gastas tu dosis con esta probabilidad (de media
+## sacas más). El cliente se da cuenta y no se le olvida.
+const CUT_KEEPS := 0.5
+## Guiris que en realidad son secretas (tirada fija por nombre): venderles es acabar detenido.
+const UNDERCOVER_CHANCE := 0.07
+## Vender delante de un camello (casillas, y que te vea) es pisarle el terreno: viene a cobrárselo.
+const TURF_CELLS := 25
+## Trueque con otros yonkis: lo que llevan encima (una sustancia, fija por nombre, 1-2 dosis al
+## día) y cuánto valoran tus objetos respecto a lo que te da el compraventa (los revenden ellos).
+const YONKI_STASH := ["caballo", "base", "pastillas", "porro", "litrona"]
+const YONKI_ITEM_VALUE := 1.5
+
 ## Encargos de los personajes (scripts/errands.gd). `giver` = tipo de bot que lo ofrece;
 ## `place` = tipo de lugar del mapa al que hay que ir; `window` = [desde, hasta] en horas desde
 ## que lo aceptas (desde 0: vale en cuanto llegues); `at` = cita a horas fijas del día siguiente.
@@ -311,6 +333,9 @@ const MILESTONES := {
 	"paquete": ["Meterte la mercancía de un camello", 10],
 	"bici": ["Llevarte una bici ajena", 5],
 	"piedra": ["Intentar vender una piedra", 5],
+	"camello": ["Pasar tu primera papela", 10],
+	"cortar": ["Vender mercancía cortada", 5],
+	"secreta": ["Venderle un porro a un secreta", 15],
 	# conocer una sustancia nueva (las que ya conoce el perfil no cuentan)
 	"probar_litrona": ["Empezar a beber en la calle", 3],
 	"probar_porro": ["Probar los porros", 3],
