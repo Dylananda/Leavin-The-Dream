@@ -6,8 +6,8 @@ extends Node3D
 ## Bots por tipo en un barrio "mediano"; se multiplican por el índice de criminalidad.
 ## Solo salen a la calle en sus horas (Npc.KINDS[...]["hours"]).
 const BASE_NPCS := {
-	"turista": [40, ""],
-	"vecino": [25, ""],
+	"turista": [55, ""],
+	"vecino": [35, ""],
 	"policia": [6, "total"],
 	"yonki": [10, "vulnerables"],
 	"camello": [4, "vulnerables"],
@@ -18,6 +18,10 @@ const BASE_NPCS := {
 	"trilero": [2, ""],
 	"carterista": [4, ""],
 	"chaval": [4, ""],
+	"nino": [14, ""],
+	"anciano": [14, ""],
+	"mensajero": [10, ""],
+	"pudiente": [12, ""],
 }
 ## Calles de cada zona de Npc.KINDS (nombres de OpenStreetMap).
 const ZONE_STREETS := {
@@ -32,7 +36,7 @@ const CAMERA_PITCH := -40.0  ## grados; vista isométrica algo más cenital que 
 const CAMERA_DISTANCE := 160.0
 const ZOOM_RANGE := Vector2(10.0, 110.0)  ## tamaño ortográfico (metros de alto en pantalla)
 const PICK_RADIUS_PX := 28.0
-const WITNESS_KINDS := ["vecino", "turista"]  ## gente que se escandaliza si te ve consumiendo
+const WITNESS_KINDS := ["vecino", "turista", "anciano", "nino", "pudiente"]  ## gente que se escandaliza si te ve consumiendo
 ## Para encontrar a la gente tras los edificios: color de la silueta (con su opacidad) y del
 ## icono flotante de cada caso. El resto de bots usan Actor.SILHOUETTE, más tenue.
 const C_PLAYER_SILHOUETTE := Color(1.0, 0.85, 0.2, 0.85)
@@ -226,10 +230,24 @@ func _spawn_npc(kind: String) -> void:
 	npc.setup(city, city.random_walkable_near(home, 8))
 	npc.caught_player.connect(_on_caught)
 	npcs.append(npc)
+	# algunos sacan al perro (Npc.DOG_OWNERS)
+	if randf() < Npc.DOG_OWNERS.get(kind, 0.0):
+		var dog := Npc.new()
+		dog.init_kind("perro")
+		dog.player = player
+		dog.world = self
+		dog.amo = npc
+		dog.home = npc.cell
+		city.entities.add_child(dog)
+		dog.setup(city, city.random_walkable_near(npc.cell, 2))
+		dog.caught_player.connect(_on_caught)
+		npcs.append(dog)
 
 
 ## Casilla al azar de una zona: sus calles, o cerca de los bares para la noche.
 func _zone_cell(zone: String) -> Vector2i:
+	if zone == "plazas":
+		return _random_cell_of(CityMap.Cell.PLAZA)
 	if zone == "bares":
 		var bars := city.pois_of_kind("bar")
 		if not bars.is_empty():
@@ -979,6 +997,11 @@ func highlight_poi(poi: Dictionary) -> void:
 func _respawn() -> void:
 	var h := GameState.hour()
 	for npc in npcs.duplicate():
+		# el perro se va con su dueño
+		if npc.kind == "perro" and (npc.amo == null or not is_instance_valid(npc.amo) or npc.amo not in npcs):
+			npcs.erase(npc)
+			npc.queue_free()
+			continue
 		if not Npc.active_at(npc.kind, h) and npc.distance_to_cell(player.cell) > DESPAWN_DISTANCE and npc.mode == "":
 			npcs.erase(npc)
 			npc.queue_free()

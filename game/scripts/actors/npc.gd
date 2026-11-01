@@ -127,7 +127,69 @@ const KINDS := {
 			"Omar": "Dieciséis años. Quiere ser mecánico. Cuando habla de motos se le olvida la bolsa.",
 		},
 	},
+	"nino": {
+		"label": "Niño", "label_f": "Niña", "speed": 9.0, "wander": 10, "accessory": "", "size": 0.62,
+		"hours": [9, 21], "zone": "plazas",
+		"names": ["Aisha", "Pau", "Adam", "Rania", "Joel", "Marina", "Kiko", "Mei"],
+		"women": ["Aisha", "Rania", "Marina", "Mei"],
+		"lines": ["¡Pásala!", "¡Gooool!", "¡Eso es mano!", "Mi madre dice que no hable contigo", "¿Por qué hueles raro?"],
+		"bios": {
+			"Aisha": "Nueve años. Le hace de traductora a su madre en el CAP y en las reuniones del colegio. Habla cuatro idiomas y medio.",
+			"Pau": "Juega a la pelota en la plaza entre los skaters del MACBA. Ya sabe qué jeringuillas no se tocan.",
+			"Rania": "Vive con sus padres y sus dos hermanos en un piso de una habitación. Hace los deberes en la biblioteca hasta que cierra.",
+			"Mei": "Sus padres tienen un colmado que abre hasta las doce. Ella baja a jugar mientras ellos atienden.",
+		},
+	},
+	"anciano": {
+		"label": "Abuelo", "label_f": "Abuela", "speed": 5.5, "wander": 14, "accessory": "baston",
+		"hours": [8, 21],
+		"names": ["Sra. Remei", "Sr. Joan", "Sra. Carmen", "Sr. Paco", "Sra. Lola", "Sr. Ginés"],
+		"women": ["Sra. Remei", "Sra. Carmen", "Sra. Lola"],
+		"lines": ["Esto antes era otra cosa", "¡Ay, mis rodillas!", "¿Has visto a mi nieto?", "Aquí ya no queda nadie de antes", "Voy a la farmacia"],
+		"bios": {
+			"Sra. Remei": "Ochenta y cuatro años en el mismo piso de la calle de la Cera, un cuarto sin ascensor. El fondo que compró el edificio le ofrece dinero por irse. Dice que de ahí la sacan con los pies por delante.",
+			"Sr. Joan": "Fue estibador en el puerto. Baja cada mañana a la plaza a leer el periódico en el banco y a contar quién se ha ido del barrio.",
+			"Sra. Carmen": "Llegó de Jaén en el 62 y cosió en un taller del barrio cuarenta años. Vive sola; la llama una voluntaria los martes.",
+			"Sr. Ginés": "Viudo desde hace seis años. Come en el menú del bar de abajo y le dejan pagar a final de mes.",
+		},
+	},
+	"perro": {
+		"label": "Perro", "label_f": "Perra", "speed": 11.0, "wander": 3, "accessory": "",
+		"names": ["Bobby", "Lola", "Rocky", "Canela", "Thor", "Kira", "Chispa", "Negro"],
+		"women": ["Lola", "Canela", "Kira", "Chispa"],
+		"lines": ["¡Guau!", "*olfatea*", "*mueve la cola*", "¡Grrr!"],
+	},
+	"mensajero": {
+		"label": "Repartidor", "label_f": "Repartidora", "speed": 17.0, "wander": 120, "accessory": "reparto",
+		"hours": [11, 24],
+		"names": ["Karim", "Ana Lucía", "Jhon", "Arif", "Mamadou", "Yeison"],
+		"women": ["Ana Lucía"],
+		"lines": ["¡Paso, paso!", "Llego tarde, llego tarde", "¿El portal 14?", "*mira el móvil*"],
+		"bios": {
+			"Karim": "Reparte con la cuenta de otro, que se queda un tercio de lo que saca. Sin papeles no puede tener la suya.",
+			"Ana Lucía": "Era ingeniera en Venezuela. Aquí hace doce horas en bici y cobra por pedido, unos pocos euros cada uno.",
+			"Jhon": "Se cayó de la bici en la Ronda y nadie le cubrió la baja: para la aplicación era autónomo.",
+			"Mamadou": "Comparte la bici y la cuenta con su primo: él de día, el primo de noche.",
+		},
+	},
+	"pudiente": {
+		"label": "Pijo", "label_f": "Pija", "speed": 10.0, "wander": 60, "accessory": "",
+		"hours": [10, 2],
+		"names": ["Borja", "Cayetana", "Tobias", "Olivia", "Jean-Baptiste", "Marc"],
+		"women": ["Cayetana", "Olivia"],
+		"lines": ["Qué barrio tan auténtico", "¿Dónde era el restaurante?", "Uf, qué olor", "Agarra bien el bolso"],
+		"bios": {
+			"Tobias": "Nómada digital de Berlín. Paga 1.900 € al mes por un estudio en la Riera Alta y dice que el barrio tiene «mucha vida».",
+			"Cayetana": "Va al Liceu los jueves y aparca en la Rambla. Del Raval solo conoce el tramo hasta la puerta.",
+			"Marc": "Compra pisos enteros para convertirlos en alquiler de temporada. Hoy viene a ver uno en la calle de la Cera.",
+			"Olivia": "Diseñadora en un estudio junto al MACBA. Le encanta el barrio, pero lleva el bolso cruzado.",
+			"Jean-Baptiste": "Coleccionista de arte. Viene a una inauguración en el MACBA; su chófer le espera en la Rambla.",
+		},
+	},
 }
+## Tipos de bot que pasean un perro a veces (World lo saca con ellos) y con qué probabilidad.
+const DOG_OWNERS := {"vecino": 0.3, "anciano": 0.35, "yonki": 0.3, "pudiente": 0.2}
+const DOG_FURS := [Color("6b4426"), Color("1c1a18"), Color("e8e0d0"), Color("c8963c"), Color("8a8a8a")]
 
 const SKINS := [Color("f0cfb0"), Color("e0b08a"), Color("c68c5e"), Color("8d5a3b"), Color("5a3a26")]
 const HAIR_COLORS := [Color("1b1410"), Color("3a2418"), Color("5a3a20"), Color("8a5a30"), Color("c8a060"), Color("7a7a7a")]
@@ -173,6 +235,7 @@ var last_seen := Vector2i.ZERO  ## casilla donde te vio por última vez
 var debt_due := 0.0  ## now() a partir del cual el camello viene a cobrar lo fiado
 ## Si se dibuja su cono de visión en el suelo (lo decide World según la distancia y la tecla V).
 var cone_visible := false
+var amo: Npc  ## (perros) a quién siguen; World los retira cuando se va su dueño
 var on_screen := true  ## lo pone World: fuera de la pantalla se actualiza menos (ver _process)
 var _offscreen_dt := 0.0
 var _offscreen_frame := randi()  ## desfasado para que no les toque a todos en el mismo frame
@@ -244,6 +307,33 @@ func init_kind(p_kind: String, p_name := "") -> void:
 			money = randi_range(0, 3)
 			look["shirt"] = look["shirt"].darkened(0.3)
 			look["facial"] = ""
+		"nino":
+			money = randi_range(0, 2)
+			look["shirt"] = Color.from_hsv(rng.randf(), 0.65, 0.95)
+			look["hair"] = HAIR_COLORS[rng.randi_range(0, 4)]  # sin canas
+			look["facial"] = ""
+			look["glasses"] = false
+			look.erase("jacket")
+		"anciano":
+			money = randi_range(10, 40)
+			look["hair"] = [Color("d8d8d8"), Color("b8b8b8"), Color("f0f0f0")][rng.randi_range(0, 2)]
+			look["shirt"] = [Color("8a7a5a"), Color("6a6a70"), Color("2a3450"), Color("5a3a2a"), Color("6a2430"), Color("c8bca0")][rng.randi_range(0, 5)]
+			if gender == "m":
+				look["hair_style"] = "calvo" if rng.randf() < 0.5 else "corto"
+			else:
+				look["hair_style"] = ["moño", "rizos"][rng.randi_range(0, 1)]
+		"mensajero":
+			money = randi_range(5, 25)
+			look["shirt"] = [Color("ffc81e"), Color("00c8b4")][rng.randi_range(0, 1)]
+			look.erase("jacket")
+		"pudiente":
+			money = randi_range(100, 400)
+			look["jacket"] = [Color("1e2430"), Color("3a2e26"), Color("e8e2d4")][rng.randi_range(0, 2)]
+			look["shirt"] = Color("f4f4f0")
+			look["pants"] = Color("2a2a30")
+		"perro":
+			look["species"] = "perro"
+			look["fur"] = DOG_FURS[rng.randi_range(0, DOG_FURS.size() - 1)]
 	look.merge(k.get("looks", {}).get(display_name, {}), true)
 	_idle = randf_range(0.0, 3.0)
 
@@ -266,6 +356,8 @@ func _roll_traits(rng: RandomNumberGenerator) -> void:
 
 func label() -> String:
 	var k: Dictionary = KINDS[kind]
+	if kind == "perro" and amo != null and is_instance_valid(amo):
+		return "%s (%s de %s)" % [display_name, kind_label(kind, gender).to_lower(), amo.display_name]
 	if not known and k.has("disguise"):
 		return "%s (%s)" % [display_name, kind_label(k["disguise"], gender)]
 	return "%s (%s)" % [display_name, kind_label(kind, gender)]
@@ -492,6 +584,9 @@ func _process(delta: float) -> void:
 		if mode == "busca" and not is_moving():
 			_look_around(delta, 2.5)
 		return
+	if kind == "perro":
+		_follow_owner(delta)
+		return
 	if not is_moving():
 		_look_around(delta, 1.0)
 		_idle -= delta
@@ -588,6 +683,19 @@ func _follow_mode(dt: float) -> void:
 
 
 ## Parado, gira la cabeza a un lado y a otro (para que el cono barra la calle).
+## (perros) Va detrás de su dueño, a dos o tres casillas, y husmea cuando se para.
+func _follow_owner(delta: float) -> void:
+	if amo == null or not is_instance_valid(amo):
+		return
+	_idle -= delta
+	if _idle <= 0.0:
+		_idle = 0.4
+		if distance_to_cell(amo.cell) > 2:
+			walk_to(city.random_walkable_near(amo.cell, 1))
+	if not is_moving():
+		_look_around(delta, 2.0)
+
+
 func _look_around(delta: float, pace: float) -> void:
 	_look_timer -= delta * pace
 	if _look_timer <= 0.0:

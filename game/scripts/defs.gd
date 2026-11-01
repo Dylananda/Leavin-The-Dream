@@ -45,7 +45,7 @@ const SCANDAL_CALL := 60
 ## llaman a la policía o pasan. Los que viven de la calle nunca se meten.
 const BRAVE_CHANCE := 0.2
 const CALLER_CHANCE := 0.45
-const NEVER_INTERVENE := ["yonki", "camello", "mantero", "latero", "trilero", "carterista", "chaval"]
+const NEVER_INTERVENE := ["yonki", "camello", "mantero", "latero", "trilero", "carterista", "chaval", "nino", "perro"]
 ## Turistas (y despedidas) robados que te reconocen: probabilidad de que vayan a por ti en vez
 ## de buscar a un policía, según su género (fija por nombre).
 const AVENGER_CHANCE := {"m": 0.6, "f": 0.3}
@@ -259,6 +259,7 @@ const CLIENTS := {
 	"fiestero": {"wants": ["farlopa", "porro", "pastillas"], "markup": 2.0},
 	"turista": {"wants": ["porro"], "markup": 3.0},
 	"yonki": {"wants": ["pastillas", "porro", "litrona"], "markup": 1.5},
+	"pudiente": {"wants": ["farlopa", "porro"], "markup": 2.5},
 }
 const REGULAR_BONUS := 0.1  ## lo que paga de más un cliente por cada vez que ya te compró...
 const REGULAR_MAX := 3  ## ... hasta este número de veces
