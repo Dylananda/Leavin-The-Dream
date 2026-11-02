@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "kai",
+	"nombre": "Kai",
+	"apodo": "",
+	"edad": 22,
+	"genero": "m",
+	"tipo": "skater",
+	"historia": "Vino de Melbourne a patinar el MACBA y se quedó. Trabaja de camarero en un hostal y patina hasta que llega la Urbana a las diez.",
+	"fuentes": "https://beteve.cat/societat/placa-macba-meca-skaters-arreu-mon-no-volem-perdre/",
+	"aspecto": {
+		"skin": "5a3a26",
+		"shirt": "4e446d",
+		"pants": "5c624e",
+		"hair": "7a7a7a",
+		"jacket": "",
+		"hair_style": "rizos",
+		"facial": "barba",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "skate",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "macba",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		12,
+		22
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 30,
+		"velocidad": 16.0,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"Sick!",
+		"¿Me grabas?",
+		"Diez de la noche, se acabó."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Te pide que le grabes un truco (con el móvil). Ver Sra. Rosario (se queja del ruido)."
+}

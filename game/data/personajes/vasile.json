@@ -1,0 +1,77 @@
+{
+	"version": 1,
+	"id": "vasile",
+	"nombre": "Vasile",
+	"apodo": "",
+	"edad": 58,
+	"genero": "m",
+	"tipo": "musico",
+	"historia": "Tocaba el acordeón en una orquesta de bodas. Ahora toca en el metro y en la plaza del Pi. Le robaron el acordeón y toca una flauta que no le gusta.",
+	"fuentes": "https://www.barcelona.cat/barcelonacultura/en/recomanem/call-proposals-musica-carrer",
+	"aspecto": {
+		"skin": "f0cfb0",
+		"shirt": "6c3e92",
+		"pants": "44363f",
+		"hair": "c8a060",
+		"jacket": "3d3328",
+		"hair_style": "tupe",
+		"facial": "",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "guitarra",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "musica",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		10,
+		23
+	],
+	"lugares": [
+		{
+			"tipo": "tocar",
+			"x": 482,
+			"y": 208,
+			"desde": 11,
+			"hasta": 14,
+			"nota": "boca del metro de Liceu"
+		},
+		{
+			"tipo": "tocar",
+			"x": 151,
+			"y": 175,
+			"desde": 17,
+			"hasta": 21,
+			"nota": "plaza del CCCB"
+		}
+	],
+	"stats": {
+		"dinero": 15,
+		"velocidad": 9.0,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"Sin acordeón no soy nadie.",
+		"*toca la flauta, mal*",
+		"¿Has visto mi acordeón?"
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Misión: recuperar su acordeón (lo tiene El Mudo o está en la compraventa de la calle Hospital). Recompensa: te presenta a los músicos que saben de todo."
+}

@@ -1,0 +1,74 @@
+{
+	"version": 1,
+	"id": "grzegorz",
+	"nombre": "Grzegorz",
+	"apodo": "",
+	"edad": 48,
+	"genero": "m",
+	"tipo": "mendigo",
+	"historia": "Vino a trabajar en la construcción antes de 2008. Con la crisis lo perdió todo y ya no sabe cómo volver. Habla poco castellano y mucha física: arregla bicis a cambio de comida.",
+	"fuentes": "https://es.ara.cat/sociedad/emergencia-social/cuatro-horas-peinando-calles-barcelona-personas-duermen-raso_130_5582284.html",
+	"aspecto": {
+		"skin": "8d5a3b",
+		"shirt": "804e85",
+		"pants": "646e58",
+		"hair": "7a7a7a",
+		"jacket": "",
+		"hair_style": "tupe",
+		"facial": "",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "carton",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "barrio",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [],
+	"lugares": [
+		{
+			"tipo": "dormir",
+			"x": 211,
+			"y": 171,
+			"desde": 0,
+			"hasta": 8,
+			"nota": "albergue"
+		},
+		{
+			"tipo": "trabajar",
+			"x": 186,
+			"y": 203,
+			"desde": 10,
+			"hasta": 18,
+			"nota": "arregla bicis en la plaza"
+		}
+	],
+	"stats": {
+		"dinero": 2,
+		"velocidad": 6.5,
+		"fuerza": 6,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"Bici... yo arreglo.",
+		"Dziękuję.",
+		"Sin papeles no hay trabajo."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Le robaron la cartera con el pasaporte (Vera, carterista). Sin papeles no puede volver a casa ni cobrar ayudas. Misión: recuperar el pasaporte."
+}

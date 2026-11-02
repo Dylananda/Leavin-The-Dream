@@ -1,0 +1,63 @@
+{
+	"version": 1,
+	"id": "sra_encarna",
+	"nombre": "Sra. Encarna",
+	"apodo": "",
+	"edad": 72,
+	"genero": "f",
+	"tipo": "vecino",
+	"historia": "Presidenta de la asociación de vecinos de su calle. Cuelga pancartas en el balcón y llama a la policía cada vez que ve a alguien entrar en el piso de enfrente.",
+	"fuentes": "Movilizaciones vecinales del Raval contra los narcopisos y por la vivienda. Fuente concreta pendiente.",
+	"aspecto": {
+		"skin": "e0b08a",
+		"shirt": "59cb3d",
+		"pants": "36443e",
+		"hair": "d8d8d8",
+		"jacket": "262a16",
+		"hair_style": "moño",
+		"facial": "",
+		"glasses": false,
+		"skirt": true,
+		"accesorio": "",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "barrio",
+		"poligono": [],
+		"casa": [
+			509,
+			340
+		]
+	},
+	"horario": [
+		7,
+		23
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 30,
+		"velocidad": 9.6,
+		"fuerza": 5,
+		"valor": 8,
+		"agresividad": 3,
+		"llama_policia": true,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "Eres vecina mayor y activista contra los narcopisos. Valiente, cansada y desconfiada de los yonkis, pero con buen corazón.",
+		"habla": "Castellano de barrio, exclamaciones, «hijo mío».",
+		"sabe": "Quién entra en el piso de Quique y a qué hora. La historia de cada portal.",
+		"no_sabe": "Cómo funciona de verdad la droga.",
+		"quiere": "Pruebas para que cierren el piso de enfrente (fotos, horarios)."
+	},
+	"frases": [
+		"¡Esto es un narcopiso!",
+		"Ya he llamado a los Mossos.",
+		"Antes aquí se vivía bien."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Misión: conseguirle pruebas del piso de Quique el Nano. Ver Agent Serra. Si te descubre Quique, venganza."
+}

@@ -1,0 +1,59 @@
+{
+	"version": 1,
+	"id": "babacar",
+	"nombre": "Babacar",
+	"apodo": "",
+	"edad": 32,
+	"genero": "m",
+	"tipo": "mantero",
+	"historia": "Del Sindicat de Manters. Vende zapatillas en la manta y por las tardes cose en el taller de la cooperativa. Quiere papeles para trabajar ahí a jornada completa.",
+	"fuentes": "Venta ambulante y Sindicat de Manters (Top Manta). Fuente concreta pendiente.",
+	"aspecto": {
+		"skin": "c68c5e",
+		"shirt": "d58b8f",
+		"pants": "3c4134",
+		"hair": "c8a060",
+		"jacket": "",
+		"hair_style": "corto",
+		"facial": "",
+		"glasses": true,
+		"skirt": false,
+		"accesorio": "",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "rambla",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [],
+	"lugares": [],
+	"stats": {
+		"dinero": 20,
+		"velocidad": 12.8,
+		"fuerza": 6,
+		"valor": 7,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {
+			"gafas": 3
+		}
+	},
+	"ficha": {
+		"quien": "Eres mantero y activista del Sindicat de Manters. Orgulloso, organizado, cansado de que os persigan.",
+		"habla": "Castellano claro, alguna palabra en wolof o francés.",
+		"sabe": "Cuándo pasa la Urbana, cómo recoger la manta en cinco segundos, dónde está el taller de la cooperativa.",
+		"no_sabe": "Drogas: no quieres saber nada.",
+		"quiere": "Papeles, que no le requisen la mercancía, gente que avise."
+	},
+	"frases": [
+		"¡Zapatillas, barato!",
+		"Somos trabajadores, no delincuentes.",
+		"¡Agua, agua!"
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Ver Agent Bosch. Misión: hacer de vigía mientras vende (minijuego existente)."
+}

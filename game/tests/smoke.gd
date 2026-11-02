@@ -56,6 +56,8 @@ func _initialize() -> void:
 			_test_vision(gs, world)
 		_test_street_items(gs, world)
 		_test_trade(gs, world)
+		if profile == Defs.PROFILES[0]:
+			_test_police_and_fauna(gs, world)
 		world._rummage()
 		world._sleep_here()
 		if gs.alive:
@@ -333,7 +335,7 @@ func _test_vision(gs, world) -> void:
 	if line.size() < 2 or wall.size() < 2:
 		return
 	_check(city.line_of_sight(line[0], line[1]) and not city.line_of_sight(wall[0], wall[1]), "la línea de visión no ve la calle o atraviesa edificios")
-	var cop = world.npcs.filter(func(n): return n.kind == "policia")[0]
+	var cop = world.npcs.filter(func(n): return n.kind == "urbano")[0]
 	# delante y en la calle: lo ve; a la espalda o tras la pared, no
 	_place(cop, line[0], line[1])
 	player.setup(city, line[1])
@@ -484,7 +486,7 @@ func _test_vision(gs, world) -> void:
 		_check(brave.mode == "persigue" and brave.chase_reason == "parar", "el valiente no intenta pararte")
 		world._on_caught(brave)
 		_check(world._grabbed > 0.0, "el valiente que te alcanza no te agarra")
-	var police: Array = world.npcs.filter(func(n): return n.kind == "policia")
+	var police: Array = world.npcs.filter(func(n): return n.is_police())
 	for p in police:
 		world.npcs.erase(p)
 	for b in [victim, brave, caller]:
@@ -515,11 +517,110 @@ func _test_vision(gs, world) -> void:
 
 ## Un bot nuevo del tipo `kind`, sin pasado contigo.
 func _fresh(world, kind: String):
-	world._spawn_npc(kind)
-	# el último de ese tipo: detrás puede haber salido su perro
-	var npc = world.npcs.filter(func(n): return n.kind == kind)[-1]
+	var npc = world._spawn_npc(kind)  # (el último de npcs puede ser su perro o su grupo)
 	npc.known = true
 	return npc
+
+
+## Los dos cuerpos de policía con sus competencias, la Urbana que te despierta si duermes a la
+## vista, las secretas y la fauna nueva (estatuas, el grupo del guía, los que tienen cama).
+func _test_police_and_fauna(gs, world) -> void:
+	var city = world.city
+	var player = world.player
+	_steady(gs)
+	gs.heat = 0.0
+	gs.wanted_until = -1.0
+	for npc in world.npcs:
+		npc.calm_down()
+	var line := _find_line(city, 7)
+	if line.size() < 2:
+		return
+	var urbano = _fresh(world, "urbano")
+	var mosso = _fresh(world, "mosso")
+	# fichado por drogas: te persiguen los Mossos, no la Urbana; por civismo, al revés
+	gs.mark_wanted("prueba", "drogas")
+	_check(mosso.grudge() == "persigue" and urbano.grudge() == "", "fichado por drogas, persigue la Urbana o no los Mossos")
+	gs.wanted_until = -1.0
+	gs.mark_wanted("prueba", "civismo")
+	_check(urbano.grudge() == "persigue" and mosso.grudge() == "", "fichado por civismo, persiguen los Mossos o no la Urbana")
+	# si te alcanza la Urbana por la ordenanza, multa; si te alcanzan los Mossos, comisaría
+	var arrests: int = gs.arrests
+	var fines: int = gs.fines
+	world.police_caught(urbano)
+	_check(gs.fines == fines + 1 and gs.arrests == arrests and not gs.is_wanted(), "la Urbana no multa (o detiene) por la ordenanza")
+	world.police_caught(mosso)
+	_check(gs.arrests == arrests + 1, "los Mossos no te detienen")
+	_steady(gs)
+	# dormir a la vista de la Urbana: te despierta y te echa
+	_place(urbano, line[0], line[1])
+	player.setup(city, line[1])
+	var woken := 0
+	for i in 40:
+		if world.urbana_wakes("calle"):
+			woken += 1
+	_check(woken > 25, "un agente de la Urbana que te ve dormir no te despierta")
+	urbano.setup(city, line[0])
+	_place(urbano, line[0] + Vector2i(3, 0), line[1])  # de espaldas
+	var hidden := Vector2i(-1, -1)
+	for i in 4000:
+		var c = city.random_walkable()
+		if world.hidden_spot(c):
+			hidden = c
+			break
+	_check(hidden.x >= 0, "no hay rincones escondidos para dormir")
+	gs.advance(1)
+	var milestones: int = gs.milestones.size()
+	world.sleep(60, 0.0, 0.0, 0.5, "calle")
+	world.sleep(60, 0.0, 0.0, 0.5, "")
+	_check(gs.alive, "dormir con la Urbana cerca mata")
+	# beber a la vista de la Urbana: multa
+	_place(urbano, line[0], line[1])
+	player.setup(city, line[1])
+	fines = gs.fines
+	gs.add_item("litrona")
+	world.use_item("litrona")
+	_check(gs.fines == fines + 1, "beber delante de la Urbana no trae multa")
+	# la secreta: parece un guiri hasta que le intentas robar
+	var sec = _fresh(world, "urbano_secreta")
+	sec.known = false
+	_check(sec.undercover() and sec.label().contains("Turista") and not sec.looks_police(), "la Urbana de paisano no parece un guiri")
+	arrests = gs.arrests
+	_steady(gs)
+	_do(world, sec, "Robarle la cartera")
+	_check(gs.arrests == arrests + 1 and sec.known, "robarle a la secreta no acaba en detención")
+	_steady(gs)
+	# la estatua no se mueve hasta que le echan una moneda
+	var statue = _fresh(world, "estatua")
+	var spot: Vector2i = statue.cell
+	statue._idle = 0.0
+	statue._process(0.5)
+	_check(not statue.is_moving() and statue.cell == spot, "la estatua se mueve sola")
+	gs.money = 10
+	_do(world, statue, "Echarle una moneda en el platillo (1 €)")
+	_check(statue._still_until > statue._clock(), "la estatua no se mueve con la moneda")
+	# el guía sale con su grupo, y el grupo se va con él
+	var guide = _fresh(world, "guia")
+	var group: Array = world.npcs.filter(func(n): return n.amo == guide)
+	_check(group.size() >= Defs.GUIDE_GROUP.x and group.all(func(n): return n.kind == "turista"), "el guía sale sin su grupo")
+	_check(group[0].label().contains(guide.display_name), "el turista del grupo no dice de quién es")
+	world.npcs.erase(guide)
+	world._respawn()
+	_check(world.npcs.filter(func(n): return n.amo == guide).is_empty(), "el grupo se queda sin guía")
+	guide.queue_free()
+	# el sin techo tiene dónde dormir; el punki, perro
+	var homeless = _fresh(world, "mendigo")
+	_check(homeless.bed.x >= 0 and city.is_walkable(homeless.bed), "el sin techo no tiene dónde dormir")
+	var punk = _fresh(world, "punki")
+	_check(world.npcs.any(func(n): return n.kind == "perro" and n.amo == punk), "el punki va sin perro")
+	# los skaters, en el MACBA; las trabajadoras sexuales, en Robadors
+	var macba = city.landmark_cell("MACBA")
+	_check(macba.x >= 0 and _fresh(world, "skater").home.distance_to(macba) <= world.LANDMARK_RADIUS * 1.5, "los skaters no están en el MACBA")
+	# la ronda de la policía y las secretas que se llevan a un carterista
+	world.police_event()
+	_check(world.npcs.filter(func(n): return n.kind == "mosso_secreta").all(func(n): return n.undercover() or n.known), "una secreta de los Mossos va de uniforme")
+	gs.wanted_until = -1.0
+	gs.heat = 0.0
+	print("  policía y fauna: OK (%d multas, %d hitos nuevos)" % [gs.fines, gs.milestones.size() - milestones])
 
 
 ## Pone a `npc` en `at` mirando hacia `toward`.

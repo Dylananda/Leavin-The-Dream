@@ -1,0 +1,57 @@
+{
+	"version": 1,
+	"id": "sergi",
+	"nombre": "Sergi",
+	"apodo": "",
+	"edad": 40,
+	"genero": "m",
+	"tipo": "mosso_secreta",
+	"historia": "Mosso de paisano que se viste de yonki: ropa vieja, barba, una lata en la mano. Lleva tanto tiempo en el papel que a veces le cuesta salir de él.",
+	"fuentes": "Fuentes del tipo en docs/ideas.md. Operaciones de paisano contra captadores y narcopisos: https://beteve.cat/societat/operacio-contra-captadors-associacions-cannabiques/",
+	"aspecto": {
+		"skin": "e0b08a",
+		"shirt": "4a4038",
+		"pants": "2a3034",
+		"hair": "1b1410",
+		"jacket": "675c6b",
+		"hair_style": "rapado",
+		"facial": "barba",
+		"glasses": true,
+		"skirt": false,
+		"accesorio": "",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "rambla_raval",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [],
+	"lugares": [],
+	"stats": {
+		"dinero": 20,
+		"velocidad": 12.0,
+		"fuerza": 7,
+		"valor": 6,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "Eres mosso de paisano haciéndote pasar por yonki para encontrar puntos de venta. Te cuesta no tener empatía con los que conoces.",
+		"habla": "Como los yonkis del barrio, pero se te escapa alguna palabra demasiado correcta.",
+		"sabe": "Mucho de los camellos de la Rambla del Raval.",
+		"no_sabe": "Cómo se siente de verdad el mono (y se nota).",
+		"quiere": "Que alguien le lleve a pillar a casa de Quique el Nano."
+	},
+	"frases": [
+		"¿Tienes fuego?",
+		"¿Sabes dónde pillar?",
+		"Primo..."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Si le llevas al piso de Quique, detienen a Quique y a ti te dejan ir. Si te das cuenta de que es poli (se le escapan palabras raras), puedes avisar a Txell, que lo difunde."
+}

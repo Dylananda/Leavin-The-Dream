@@ -1,0 +1,63 @@
+{
+	"version": 1,
+	"id": "hamid",
+	"nombre": "Hamid",
+	"apodo": "",
+	"edad": 45,
+	"genero": "m",
+	"tipo": "vecino",
+	"historia": "Tiene una frutería en la calle Hospital desde hace quince años. Le han subido el alquiler del local un 60 % y no sabe si llegará a fin de año.",
+	"fuentes": "Movilizaciones vecinales del Raval contra los narcopisos y por la vivienda. Fuente concreta pendiente.",
+	"aspecto": {
+		"skin": "f0cfb0",
+		"shirt": "5a3655",
+		"pants": "404050",
+		"hair": "5a3a20",
+		"jacket": "",
+		"hair_style": "rapado",
+		"facial": "barba",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "barrio",
+		"poligono": [],
+		"casa": [
+			361,
+			273
+		]
+	},
+	"horario": [
+		7,
+		23
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 60,
+		"velocidad": 9.6,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "Eres frutero del barrio. Trabajador, amable, angustiado por el alquiler del local.",
+		"habla": "Castellano fluido, cariñoso con los clientes.",
+		"sabe": "Todo lo que se cuenta en la tienda: quién se ha ido, quién está enfermo.",
+		"no_sabe": "Drogas.",
+		"quiere": "Que alguien le ayude a descargar el camión a las 7 (paga en fruta)."
+	},
+	"frases": [
+		"Fruta fresca, barata.",
+		"El alquiler me mata.",
+		"¿Me ayudas a descargar?"
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Trabajo honrado: descargar el camión a primera hora. Le roban fruta los chavales: dilema si lo ves."
+}

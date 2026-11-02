@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "el_mudo",
+	"nombre": "El Mudo",
+	"apodo": "",
+	"edad": 36,
+	"genero": "m",
+	"tipo": "carterista",
+	"historia": "Nadie le ha oído hablar. Roba en el metro y vende lo que saca en una compraventa de la calle Hospital. Robó el acordeón de Vasile.",
+	"fuentes": "https://naciodigital.cat/societat/identificada-394-vegades-detinguda-27-i-denunciada-45-.html",
+	"aspecto": {
+		"skin": "c68c5e",
+		"shirt": "b260f2",
+		"pants": "525b49",
+		"hair": "5a3a20",
+		"jacket": "3d482b",
+		"hair_style": "rapado",
+		"facial": "barba",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "mochila",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "rambla",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		9,
+		21
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 50,
+		"velocidad": 11.5,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 5,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"...",
+		"*gesto*",
+		"*se encoge de hombros*"
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Tiene el acordeón de Vasile y la bolsa de Mari Carmen. Nadia (urbana de paisano) lo busca."
+}

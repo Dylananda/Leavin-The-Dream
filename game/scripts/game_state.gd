@@ -32,12 +32,15 @@ var caida := 0.0
 var debt := 0  ## Lo que debes a los camellos
 ## Hasta cuándo (minutos de now()) estás fichado: la policía que te vea te persigue. -1 = no.
 var wanted_until := -1.0
+## Por qué estás fichado (clave de Defs.CRIME_CORPS): decide qué cuerpo de policía va a por ti.
+var wanted_crime := ""
 var inventory: Dictionary = {}
 ## Cuántos de los objetos de `inventory` no son lo que crees (la basura que recogiste ido
 ## pensando que era un móvil): id -> número. Ver scripts/street_items.gd.
 var fakes: Dictionary = {}
 var milestones: Array[String] = []
 var arrests := 0
+var fines := 0  ## Multas de la Guàrdia Urbana (ver fine())
 var admissions := 0  ## Ingresos en el psiquiátrico
 ## Sustancias que conoces: id -> {"high": colocón, "mono": mono, "addiction": enganche, "crash": minutos de bajón}
 var subs: Dictionary = {}
@@ -94,12 +97,14 @@ func new_game(profile_id: String) -> void:
 		_learn(id, float(profile["knows"][id]))
 	heat = 0.0
 	wanted_until = -1.0
+	wanted_crime = ""
 	caida = 0.0
 	debt = 0
 	inventory = profile["items"].duplicate()
 	fakes = {}
 	milestones = []
 	arrests = 0
+	fines = 0
 	admissions = 0
 	day = 1
 	minute_of_day = 9.0 * 60.0
@@ -136,11 +141,42 @@ func is_wanted() -> bool:
 	return wanted_until > now()
 
 
-## Te fichan (alguien ha dado tu descripción) durante Defs.WANTED_MINUTES.
-func mark_wanted(why: String) -> void:
+## Si te busca el cuerpo `corps` ("urbana" o "mossos"): estás fichado por algo de su competencia.
+func is_wanted_by(corps: String) -> bool:
+	return is_wanted() and corps in Defs.CRIME_CORPS.get(wanted_crime, Defs.CRIME_CORPS["hurto"])
+
+
+## Te fichan (alguien ha dado tu descripción) durante Defs.WANTED_MINUTES por `crime` (clave de
+## Defs.CRIME_CORPS); si ya lo estabas por algo más grave (que persiguen más cuerpos), se queda.
+func mark_wanted(why: String, crime := "hurto") -> void:
+	var corps: Array = Defs.CRIME_CORPS[crime]
 	if not is_wanted():
-		log_msg("Fichado: %s. Si un agente te ve, irá a por ti." % why, C_BAD)
+		log_msg("Fichado: %s. Si te ve %s, irá a por ti." % [why, _corps_text(corps)], C_BAD)
+		wanted_crime = crime
+	elif corps.size() >= Defs.CRIME_CORPS.get(wanted_crime, []).size():
+		wanted_crime = crime
 	wanted_until = now() + Defs.WANTED_MINUTES
+
+
+func _corps_text(corps: Array) -> String:
+	if corps.size() > 1:
+		return "un agente"
+	return "la Urbana" if corps[0] == "urbana" else "un mosso"
+
+
+## Multa de la Guàrdia Urbana por la ordenanza: pagas lo que llevas hasta `amount` €; lo que no
+## puedes pagar queda como denuncia (se nota en la dignidad, no en el bolsillo).
+func fine(amount: int, why: String) -> void:
+	var paid := mini(money, amount)
+	money -= paid
+	fines += 1
+	if paid >= amount:
+		log_msg("Multa de %d € por %s." % [amount, why], C_BAD)
+	else:
+		log_msg("Multa de %d € por %s. No llevas ni para empezar: te la mandan a una dirección que ya no es la tuya." % [amount, why], C_BAD)
+	change_dignity(-2, "Que te multen por %s" % why)
+	milestone("multa")
+	changed.emit()
 
 
 ## Hora de un instante de now(): «14:30», o «10:00 del día 3» si no es hoy.
@@ -707,6 +743,7 @@ func arrest() -> void:
 		inventory.erase(id)
 	heat = 0.0
 	wanted_until = -1.0
+	wanted_crime = ""
 	log_msg("Detenido. Te quitan lo que llevabas encima y pasas la noche en el calabozo.", C_BAD)
 	milestone("primera_detencion")
 	add_caida(8.0)

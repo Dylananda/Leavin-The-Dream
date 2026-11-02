@@ -1,0 +1,69 @@
+{
+	"version": 1,
+	"id": "nando",
+	"nombre": "Nando",
+	"apodo": "",
+	"edad": 61,
+	"genero": "m",
+	"tipo": "musico",
+	"historia": "Cantaor de los tablaos de la Rambla en los ochenta. No tiene permiso de Música al Carrer y canta donde le dejan, casi siempre a voces.",
+	"fuentes": "https://www.barcelona.cat/barcelonacultura/en/recomanem/call-proposals-musica-carrer",
+	"aspecto": {
+		"skin": "c68c5e",
+		"shirt": "605e79",
+		"pants": "493d3a",
+		"hair": "3a2418",
+		"jacket": "",
+		"hair_style": "corto",
+		"facial": "",
+		"glasses": true,
+		"skirt": false,
+		"accesorio": "guitarra",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "musica",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		10,
+		23
+	],
+	"lugares": [
+		{
+			"tipo": "tocar",
+			"x": 186,
+			"y": 203,
+			"desde": 11,
+			"hasta": 15,
+			"nota": "plaza dels Àngels"
+		}
+	],
+	"stats": {
+		"dinero": 10,
+		"velocidad": 9.0,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 4,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"¡Olé!",
+		"Esto antes era un tablao.",
+		"Que me multen, que canto igual."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Choca con Clara. Te pide que le guardes el sitio."
+}

@@ -150,12 +150,13 @@ func _add_person() -> void:
 	var role := "nadie"
 	var actor: Actor
 	if r < threat:
+		var corps := "mosso" if _host.kind == "camello" else "urbano"
 		if randf() < clampf(Defs.LOOKOUT_UNDERCOVER * (0.6 + 0.8 * d), 0.0, 0.9):
 			role = "secreta"
-			actor = puppet_of_kind(["vecino", "turista"].pick_random())
+			actor = puppet_of_kind(corps + "_secreta")
 		else:
 			role = "poli"
-			actor = puppet_of_kind("policia")
+			actor = puppet_of_kind(corps)
 	elif r < threat + Defs.LOOKOUT_CLIENTS:
 		role = "cliente"
 		actor = puppet_of_kind(_client_kind)

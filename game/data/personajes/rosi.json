@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "rosi",
+	"nombre": "Rosi",
+	"apodo": "",
+	"edad": 52,
+	"genero": "f",
+	"tipo": "trabajadora_sexual",
+	"historia": "Treinta años en Robadors. Conoce a todas y a todos. Organiza a las compañeras para que no trabajen solas y apunta las matrículas de los clientes peligrosos.",
+	"fuentes": "https://www.eldiario.es/catalunya/prostitutas-barcelona-organizan_1_5709876.amp.html",
+	"aspecto": {
+		"skin": "8d5a3b",
+		"shirt": "64c4b9",
+		"pants": "352f2b",
+		"hair": "8a5a30",
+		"jacket": "3e363a",
+		"hair_style": "moño",
+		"facial": "",
+		"glasses": true,
+		"skirt": true,
+		"accesorio": "",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "robadors",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		11,
+		5
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 40,
+		"velocidad": 8.0,
+		"fuerza": 5,
+		"valor": 8,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"Aquí cuidamos unas de otras.",
+		"Esa matrícula, apúntala.",
+		"Sin papeles no hay derechos."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Te pide que vigiles a Joy cuando trabaja. Conoce al agresor de Joy."
+}

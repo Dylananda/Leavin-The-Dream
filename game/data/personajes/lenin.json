@@ -1,0 +1,53 @@
+{
+	"version": 1,
+	"id": "lenin",
+	"nombre": "Lenin",
+	"apodo": "",
+	"edad": 4,
+	"genero": "m",
+	"tipo": "perro",
+	"historia": "Uno de los perros de Txus. Es el más listo y abre bolsas de basura con una sola pata.",
+	"fuentes": "",
+	"aspecto": {
+		"skin": "8d5a3b",
+		"shirt": "1c1a18",
+		"pants": "434436",
+		"hair": "1b1410",
+		"jacket": "2b2520",
+		"hair_style": "coleta",
+		"facial": "",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "barrio",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [],
+	"lugares": [],
+	"stats": {
+		"dinero": 10,
+		"velocidad": 11.0,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Va con Txus (punki)."
+}

@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "nadia",
+	"nombre": "Nadia",
+	"apodo": "",
+	"edad": 31,
+	"genero": "f",
+	"tipo": "urbano_secreta",
+	"historia": "De paisano en el metro de Liceu y Drassanes. Antes trabajaba en la oficina de denuncias y se cansó de rellenar papeles de turistas llorando.",
+	"fuentes": "Fuentes del tipo en docs/ideas.md. Carteristas del metro y la Rambla: https://www.3cat.cat/3catinfo/100-carteristes-actuen-cada-dia-al-metro-i-alguns-els-han-enxampat-fins-a-1000-cops/noticia/2935115/",
+	"aspecto": {
+		"skin": "5a3a26",
+		"shirt": "60f290",
+		"pants": "755e62",
+		"hair": "7a7a7a",
+		"jacket": "2a3326",
+		"hair_style": "rapado",
+		"facial": "",
+		"glasses": false,
+		"skirt": true,
+		"accesorio": "mochila",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "rambla",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		9,
+		23
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 50,
+		"velocidad": 12.0,
+		"fuerza": 6,
+		"valor": 8,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "Eres agente de la Urbana de paisano en el metro. Fría, observadora, paciente.",
+		"habla": "Poco. Inglés con turistas, castellano seco con los demás.",
+		"sabe": "Qué vagones trabajan los carteristas y a qué hora.",
+		"no_sabe": "Lo que pasa en las calles de dentro del Raval.",
+		"quiere": "Que nadie sospeche de ella. Detener a El Mudo."
+	},
+	"frases": [
+		"Excuse me, which line?",
+		"*mira el plano*",
+		"*se toca la oreja*"
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Relacionada con El Mudo (carterista): lo busca por el robo del acordeón de Vasile."
+}

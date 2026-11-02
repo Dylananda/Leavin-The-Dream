@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "ripon",
+	"nombre": "Ripon",
+	"apodo": "",
+	"edad": 22,
+	"genero": "m",
+	"tipo": "rosero",
+	"historia": "El más joven de los roseros. Estudia castellano en una escuela de adultos del barrio y practica con los turistas, que no le contestan.",
+	"fuentes": "https://beteve.cat/economia/floristes-critiquen-intrusisme-sant-jordi-2026-menys-venda-roses-prevista/",
+	"aspecto": {
+		"skin": "c68c5e",
+		"shirt": "9e7fbe",
+		"pants": "3f474f",
+		"hair": "7a7a7a",
+		"jacket": "",
+		"hair_style": "coleta",
+		"facial": "barba",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "rosas",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "bares",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		20,
+		3
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 10,
+		"velocidad": 9.0,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"¿Una rosa?",
+		"¿Cómo se dice... «enamorados»?",
+		"Buenas noches."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Te pide ayuda con los deberes de castellano: a cambio, te cuenta lo que oye en las terrazas."
+}

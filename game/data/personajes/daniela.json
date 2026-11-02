@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "daniela",
+	"nombre": "Daniela",
+	"apodo": "",
+	"edad": 26,
+	"genero": "f",
+	"tipo": "mensajero",
+	"historia": "Reparte en bici con una cuenta alquilada. Estudió enfermería en Caracas y convalida el título por las noches.",
+	"fuentes": "https://es.ara.cat/economia/tecnologia/gran-problema-riders-papeles_1_5220622.html",
+	"aspecto": {
+		"skin": "e0b08a",
+		"shirt": "ffc81e",
+		"pants": "60564d",
+		"hair": "3a2418",
+		"jacket": "",
+		"hair_style": "melena",
+		"facial": "",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "reparto",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "barrio",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		11,
+		24
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 20,
+		"velocidad": 17.0,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"¡Paso!",
+		"Cuatro pedidos más.",
+		"Sin papeles no hay cuenta."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "A veces le cancelan pedidos y los regala."
+}

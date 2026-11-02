@@ -34,7 +34,9 @@ var display_name := ""
 var look := {
 	"skin": Color("d9a77c"), "shirt": Color.GRAY, "pants": Color.DIM_GRAY, "hair": Color.BLACK,
 }
-var accessory := ""  ## "", "gorra_poli", "mochila", "capucha", "chaleco", "despedida", "bolsa", "caja", "gorra"
+var accessory := ""  ## "", "gorra_poli", "mochila", "capucha", "chaleco", "despedida", "bolsa", "caja", "gorra",
+## "baston", "reparto", "guitarra", "platillo", "carton", "skate", "folletos", "rosas", "carro",
+## "paraguas", "caballete", "cresta"
 var body_size := 1.0  ## multiplicador de tamaño (los chavales son más bajos)
 var slow_factor := 1.0
 var run_factor := 1.0  ## > 1 al correr (Shift)
@@ -431,13 +433,19 @@ func _build_person() -> void:
 	_part(_body, CityProps.sphere(0.06), Color.BLACK, Vector3(-0.12, 1.92, 0.31))
 	_part(_body, CityProps.sphere(0.06), Color.BLACK, Vector3(0.12, 1.92, 0.31))
 	_part(_body, CityProps.sphere(0.09), look["skin"].darkened(0.15), Vector3(0, 1.82, 0.36))
-	if accessory != "capucha":
+	if accessory == "cresta":
+		_build_hair("rapado", true)  # rapado por los lados; la cresta va abajo
+	elif accessory != "capucha":
 		_build_hair(look.get("hair_style", "melena" if female else "corto"), accessory in ["gorra_poli", "gorra", "mochila"])
 	_build_face()
 	match accessory:
 		"gorra_poli":
-			_part(_body, CityProps.cylinder(0.36, 0.38, 0.22), Color("1d2a5a"), Vector3(0, 2.14, 0))
-			_part(_body, CityProps.box(Vector3(0.5, 0.05, 0.3)), Color("111833"), Vector3(0, 2.05, 0.3))
+			# gorra de plato con la banda de su cuerpo: cuadros blancos la Urbana, roja los Mossos
+			var cap_color: Color = look.get("cap", Color("1d2a5a"))
+			_part(_body, CityProps.cylinder(0.36, 0.38, 0.22), cap_color, Vector3(0, 2.14, 0))
+			_part(_body, CityProps.box(Vector3(0.5, 0.05, 0.3)), cap_color.darkened(0.4), Vector3(0, 2.05, 0.3))
+			if look.has("cap_band"):
+				_part(_body, CityProps.cylinder(0.385, 0.385, 0.07), look["cap_band"], Vector3(0, 2.09, 0))
 		"capucha":
 			_part(_body, CityProps.sphere(0.42), sleeves.darkened(0.2), Vector3(0, 1.9, -0.08), Vector3(1, 1, 0.9))
 		"mochila":
@@ -467,6 +475,67 @@ func _build_person() -> void:
 		"reparto":
 			# la mochila cúbica del reparto, del color de la camiseta
 			_part(_body, CityProps.box(Vector3(0.62, 0.62, 0.5)), shirt.darkened(0.1), Vector3(0, 1.3, -0.45))
+		"guitarra":
+			# guitarra cruzada por delante: caja, boca y mástil
+			var body := _part(_body, CityProps.box(Vector3(0.5, 0.6, 0.14)), Color("a0602a"), Vector3(-0.08, 1.0, 0.28))
+			body.rotation.z = deg_to_rad(-30.0)
+			var hole := _part(_body, CityProps.cylinder(0.09, 0.09, 0.02), Color("2a1a10"), Vector3(-0.08, 1.02, 0.36))
+			hole.rotation.x = deg_to_rad(90.0)
+			var neck := _part(_body, CityProps.box(Vector3(0.08, 0.6, 0.06)), Color("3a2414"), Vector3(0.22, 1.5, 0.3))
+			neck.rotation.z = deg_to_rad(-30.0)
+		"platillo":
+			# el sombrero en el suelo, boca arriba, para las monedas
+			_part(_body, CityProps.cylinder(0.3, 0.3, 0.04), look["shirt"].darkened(0.3), Vector3(0, 0.02, 0.7))
+			_part(_body, CityProps.cylinder(0.17, 0.19, 0.14), look["shirt"].darkened(0.3), Vector3(0, 0.08, 0.7))
+		"carton":
+			# cartón escrito a mano y el vaso, en el suelo delante
+			var board := _part(_body, CityProps.box(Vector3(0.6, 0.42, 0.03)), Color("c8a46a"), Vector3(0, 0.22, 0.62))
+			board.rotation.x = deg_to_rad(-20.0)
+			_part(_body, CityProps.box(Vector3(0.44, 0.05, 0.035)), Color("2a2a2a"), Vector3(0, 0.26, 0.64))
+			_part(_body, CityProps.cylinder(0.06, 0.05, 0.13), Color("f0f0e8"), Vector3(0.42, 0.07, 0.5))
+		"skate":
+			# la tabla bajo el brazo
+			var deck := _part(_body, CityProps.box(Vector3(0.08, 0.22, 0.85)), Color("e04a2a"), Vector3(arm_x + 0.12, 1.05, 0.05))
+			deck.rotation.x = deg_to_rad(15.0)
+			for z in [-0.28, 0.28]:
+				_part(_body, CityProps.box(Vector3(0.1, 0.18, 0.06)), Color("f0f0f0"), Vector3(arm_x + 0.2, 1.05, z + 0.05))
+		"folletos":
+			# un taco de flyers en la mano
+			_part(_body, CityProps.box(Vector3(0.18, 0.04, 0.26)), Color("ff3ca0"), Vector3(arm_x + 0.05, 0.86, 0.2))
+			_part(_body, CityProps.box(Vector3(0.18, 0.04, 0.26)), Color("40e0f0"), Vector3(arm_x + 0.05, 0.9, 0.21))
+		"rosas":
+			# el ramo de rosas, envueltas en celofán
+			_part(_body, CityProps.cylinder(0.04, 0.12, 0.5), Color(0.9, 0.95, 1.0, 1.0), Vector3(arm_x + 0.08, 0.95, 0.2))
+			for i in 5:
+				var a := TAU * i / 5.0
+				_part(_body, CityProps.sphere(0.07), Color("c01830"), Vector3(arm_x + 0.08 + cos(a) * 0.08, 1.24, 0.2 + sin(a) * 0.08))
+		"carro":
+			# carro de supermercado delante, cargado de chatarra
+			var metal := Color("a8acb0")
+			_part(_body, CityProps.box(Vector3(0.75, 0.5, 0.95)), metal, Vector3(0, 0.8, 1.05))
+			_part(_body, CityProps.box(Vector3(0.65, 0.3, 0.8)), Color("5a4a3a"), Vector3(0, 1.1, 1.05))  # somier y trastos
+			_part(_body, CityProps.box(Vector3(0.12, 0.4, 0.5)), Color("8a3a20"), Vector3(0.18, 1.3, 1.0))  # radiador oxidado
+			_part(_body, CityProps.box(Vector3(0.8, 0.05, 0.05)), metal.darkened(0.3), Vector3(0, 1.0, 0.5))  # el asa
+			for x in [-0.3, 0.3]:
+				for z in [0.65, 1.45]:
+					_part(_body, CityProps.cylinder(0.025, 0.025, 0.55), metal.darkened(0.2), Vector3(x, 0.28, z))
+					_part(_body, CityProps.sphere(0.06), Color("202020"), Vector3(x, 0.06, z))
+		"paraguas":
+			# el paraguas cerrado en alto para que el grupo no le pierda
+			_part(_body, CityProps.cylinder(0.025, 0.025, 1.5), Color("303030"), Vector3(arm_x + 0.05, 1.7, 0.1))
+			_part(_body, CityProps.cylinder(0.02, 0.12, 0.5), Color("ffd020"), Vector3(arm_x + 0.05, 2.35, 0.1))
+		"caballete":
+			# caballete con el lienzo, de cara a la calle, y el taburete
+			for x in [-0.3, 0.3]:
+				var leg := _part(_body, CityProps.box(Vector3(0.04, 1.5, 0.04)), Color("6a4a2a"), Vector3(x, 0.75, 0.75))
+				leg.rotation.z = deg_to_rad(8.0 * signf(-x))
+			_part(_body, CityProps.box(Vector3(0.7, 0.55, 0.03)), Color("f4f0e4"), Vector3(0, 1.25, 0.73))
+			_part(_body, CityProps.sphere(0.13), Color("e0a080"), Vector3(0, 1.28, 0.75), Vector3(1, 1.2, 0.2))  # la caricatura
+		"cresta":
+			# cresta de colores de la frente a la nuca
+			for i in 6:
+				var a := PI * (0.15 + 0.7 * i / 5.0)
+				_part(_body, CityProps.box(Vector3(0.07, 0.24, 0.1)), look["hair"], Vector3(0, 1.86 + sin(a) * 0.4, cos(a) * 0.36))
 
 
 

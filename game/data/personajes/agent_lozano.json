@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "agent_lozano",
+	"nombre": "Agent Lozano",
+	"apodo": "",
+	"edad": 29,
+	"genero": "m",
+	"tipo": "urbano",
+	"historia": "Lleva un año de agente y viene de Badalona. Quiere pasar a la unidad de paisano y cuenta las multas como si fueran puntos.",
+	"fuentes": "Fuentes del tipo en docs/ideas.md. Funciones de la Urbana (convivencia, incivismo, no orden público): https://beteve.cat/politica/ciutadans-pp-guardia-urbana-aldarulls/ · Ordenanza de convivencia: https://es.ara.cat/sociedad/barcelona/claves-nueva-ordenanza-convivencia-barcelona_1_5649264.html",
+	"aspecto": {
+		"skin": "8d5a3b",
+		"shirt": "2a3d7a",
+		"pants": "1d2a5a",
+		"hair": "7a7a7a",
+		"jacket": "",
+		"hair_style": "corto",
+		"facial": "",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "gorra_poli",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "rambla",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		15,
+		23
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 20,
+		"velocidad": 14.4,
+		"fuerza": 7,
+		"valor": 6,
+		"agresividad": 5,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "Eres agente novato de la Guàrdia Urbana. Ambicioso y algo chulo: quieres ascender y las multas son tu forma de hacer méritos.",
+		"habla": "Castellano rápido, formal con los turistas y seco con los del barrio. Usas «caballero» con ironía.",
+		"sabe": "Dónde se ponen los lateros y los manteros, el horario de las rondas, que la unidad de paisano busca carteristas.",
+		"no_sabe": "Nada del barrio de antes ni de la gente por su nombre.",
+		"quiere": "Requisar mercancía, multar a quien bebe en la calle y que su sargento lo vea."
+	},
+	"frases": [
+		"¡Eh! ¡Esa lata!",
+		"Documentación.",
+		"Circulando, circulando."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Misión cruzada con Sohel (latero): Lozano te ofrece no multarte si le dices dónde esconden las latas los lateros. Si se lo dices, Sohel lo pierde todo y deja de hablarte; si no, multa."
+}

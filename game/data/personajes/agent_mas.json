@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "agent_mas",
+	"nombre": "Agent Mas",
+	"apodo": "",
+	"edad": 44,
+	"genero": "f",
+	"tipo": "urbano",
+	"historia": "Veinte años en la Urbana, los últimos ocho en Ciutat Vella. Se sabe el nombre de casi todos los que duermen en la calle y prefiere avisar a multar, aunque la ordenanza nueva no le deja mucho margen.",
+	"fuentes": "Fuentes del tipo en docs/ideas.md. Funciones de la Urbana (convivencia, incivismo, no orden público): https://beteve.cat/politica/ciutadans-pp-guardia-urbana-aldarulls/ · Ordenanza de convivencia: https://es.ara.cat/sociedad/barcelona/claves-nueva-ordenanza-convivencia-barcelona_1_5649264.html",
+	"aspecto": {
+		"skin": "c68c5e",
+		"shirt": "2a3d7a",
+		"pants": "1d2a5a",
+		"hair": "c8a060",
+		"jacket": "",
+		"hair_style": "melena",
+		"facial": "",
+		"glasses": true,
+		"skirt": false,
+		"accesorio": "gorra_poli",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "rambla_raval",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		7,
+		15
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 30,
+		"velocidad": 14.4,
+		"fuerza": 6,
+		"valor": 7,
+		"agresividad": 2,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "Eres agente de la Guàrdia Urbana en Ciutat Vella. Firme pero humana: conoces a la gente de la calle por su nombre y prefieres avisar antes que multar.",
+		"habla": "Castellano y catalán mezclados, frases cortas, tuteas a los de siempre. Nunca amenazas en vano.",
+		"sabe": "Qué cajeros cierran de noche, dónde están los albergues y el CAS Baluard, cuándo pasa la limpieza, a quién han multado esta semana.",
+		"no_sabe": "Investigaciones de drogas: eso es de los Mossos y no te lo cuentan.",
+		"quiere": "Que la calle esté tranquila, que nadie duerma a la vista en su turno y que no se le muera nadie en un portal."
+	},
+	"frases": [
+		"Aquí no se puede dormir, ya lo sabes.",
+		"Recoge eso antes de que vuelva.",
+		"¿Has comido algo hoy?"
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Misión: «El cajero de Antonio». Cada noche despierta a Antonio (sin techo) en el cajero de la Rambla del Raval. Si le convences de que Antonio tiene plaza en el albergue la semana que viene, hace la vista gorda unos días. Si la engañas, te ficha."
+}

@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "la_nena",
+	"nombre": "La Nena",
+	"apodo": "",
+	"edad": 23,
+	"genero": "f",
+	"tipo": "trilero",
+	"historia": "Gancho del trile desde los dieciséis. Finge ganar cincuenta euros diez veces al día. Quiere su propia mesa.",
+	"fuentes": "https://beteve.cat/societat/mes-pressio-de-la-guardia-urbana-contra-els-trilers-a-la-rambla/",
+	"aspecto": {
+		"skin": "e0b08a",
+		"shirt": "bf7c8b",
+		"pants": "2f3429",
+		"hair": "1b1410",
+		"jacket": "312c33",
+		"hair_style": "melena",
+		"facial": "",
+		"glasses": false,
+		"skirt": true,
+		"accesorio": "caja",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "rambla",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		10,
+		20
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 30,
+		"velocidad": 12.0,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"¡He ganado! ¡He ganado!",
+		"Es facilísimo.",
+		"Prueba tú."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Quiere quitarle la mesa a El Canario. Misión: ayudarla (y ganarte a El Canario de enemigo)."
+}

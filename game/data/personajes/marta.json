@@ -1,0 +1,57 @@
+{
+	"version": 1,
+	"id": "marta",
+	"nombre": "Marta",
+	"apodo": "",
+	"edad": 36,
+	"genero": "f",
+	"tipo": "mosso_secreta",
+	"historia": "Mossa de paisano en Robadors. Se ha alquilado una habitación enfrente de un portal sospechoso y apunta quién entra. Los vecinos creen que es estudiante de doctorado.",
+	"fuentes": "Fuentes del tipo en docs/ideas.md. Operaciones de paisano contra captadores y narcopisos: https://beteve.cat/societat/operacio-contra-captadors-associacions-cannabiques/",
+	"aspecto": {
+		"skin": "8d5a3b",
+		"shirt": "bf615a",
+		"pants": "514c40",
+		"hair": "5a3a20",
+		"jacket": "",
+		"hair_style": "corta",
+		"facial": "",
+		"glasses": false,
+		"skirt": true,
+		"accesorio": "",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "robadors",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [],
+	"lugares": [],
+	"stats": {
+		"dinero": 30,
+		"velocidad": 12.0,
+		"fuerza": 6,
+		"valor": 7,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "Eres mossa de paisano vigilando a los camellos de Robadors. Te haces pasar por vecina estudiante.",
+		"habla": "Amable, neutra, preguntas como quien no quiere la cosa.",
+		"sabe": "Quién entra en el piso de La Rubia y cuándo.",
+		"no_sabe": "Lo que pasa en la Rambla.",
+		"quiere": "Ver un pase entre La Rubia y un cliente para detenerla."
+	},
+	"frases": [
+		"*hace como que lee*",
+		"Perdona, ¿tienes hora?",
+		"*apunta algo*"
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Peligro: si haces un encargo para La Rubia mientras Marta mira, te detienen con el paquete. Si la descubres a tiempo, puedes avisar a La Rubia (que te lo agradece) o callar."
+}

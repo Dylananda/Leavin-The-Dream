@@ -18,6 +18,11 @@ const ZONAS := {
 	"rambla_raval": "Rambla del Raval, Sant Pau y Robadors",
 	"bares": "Junto a los bares",
 	"plazas": "Las plazas",
+	"robadors": "Robadors, Sant Ramon y Sant Pau",
+	"musica": "Puntos de música (Rambla, el Pi, MACBA, Liceu, CCCB)",
+	"pintores": "Plaça de Sant Josep Oriol y del Pi",
+	"estatuas": "Tramo de abajo de la Rambla",
+	"macba": "Plaça dels Àngels (MACBA)",
 	"poligono": "Zona dibujada en el mapa",
 }
 ## Tipos de sitio de la rutina: adonde va el personaje a esas horas y se queda por allí.

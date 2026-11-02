@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "tariq",
+	"nombre": "Tariq",
+	"apodo": "",
+	"edad": 40,
+	"genero": "m",
+	"tipo": "latero",
+	"historia": "El más veterano de los lateros. Organiza los turnos para que no se pisen entre ellos y presta dinero a los nuevos sin interés.",
+	"fuentes": "https://www.eldiario.es/catalunya/xavier-trias-reconoce-obsesion-lateros_1_5782404.html",
+	"aspecto": {
+		"skin": "f0cfb0",
+		"shirt": "46949e",
+		"pants": "38362c",
+		"hair": "1b1410",
+		"jacket": "",
+		"hair_style": "rapado",
+		"facial": "bigote",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "bolsa",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "bares",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		20,
+		5
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 25,
+		"velocidad": 10.0,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"Un euro, una cerveza.",
+		"Aquí cada uno su esquina.",
+		"¿Necesitas algo?"
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Presta dinero sin interés si le caes bien: forma de pagar la deuda con Txell sin trabajar para Quique."
+}

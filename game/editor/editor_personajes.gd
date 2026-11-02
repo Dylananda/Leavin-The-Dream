@@ -780,8 +780,8 @@ func _aplicar_tipo() -> void:
 	var id: String = _def["tipo"]
 	var t: Dictionary = TiposPersonaje.TIPOS.get(id, {})
 	var a: Dictionary = _def["aspecto"]
-	a["accesorio"] = t.get("accesorio", "")
-	a["tamano"] = t.get("tamano", 1.0)
+	a["accesorio"] = Npc.KINDS[id]["accessory"] if Npc.KINDS.has(id) else t.get("accesorio", "")
+	a["tamano"] = Npc.KINDS[id].get("size", 1.0) if Npc.KINDS.has(id) else t.get("tamano", 1.0)
 	for k in t.get("look", {}):
 		a[k] = t["look"][k]
 	if Npc.KINDS.has(id):
@@ -793,8 +793,14 @@ func _aplicar_tipo() -> void:
 	_rellenar()
 
 
-## Aspecto al azar con las mismas tiradas que los bots del juego (Npc.init_kind).
+## Aspecto al azar con las mismas tiradas que los bots del juego (Npc.init_kind), con los
+## colores de su oficio si el juego ya tiene el tipo.
 func _azar() -> void:
+	if Npc.KINDS.has(_def["tipo"]):
+		var bot := _de_bot(_def["tipo"], "azar %d" % randi(), _def["genero"])
+		_def["aspecto"] = bot["aspecto"]
+		_aplicar_tipo()
+		return
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
 	var g: String = _def["genero"]
@@ -819,6 +825,34 @@ func _azar() -> void:
 	look["skirt"] = g == "f" and rng.randf() < Npc.P_SKIRT
 	_def["aspecto"] = Personajes.aspecto_de(look, "", 1.0)
 	_aplicar_tipo()
+
+
+## Un personaje sacado de un bot del juego: el tipo `kind` con el nombre `nombre`, con su
+## aspecto (sale del nombre, como en el juego), su historia, su horario, su zona y su dinero.
+## Con `genero`, se le cambia el género si no es el suyo (y se vuelven a tirar los rasgos).
+func _de_bot(kind: String, nombre: String, genero := "") -> Dictionary:
+	var npc := Npc.new()
+	npc.init_kind(kind, nombre)
+	if genero != "" and genero != npc.gender:
+		npc.gender = genero
+		npc.look["gender"] = genero
+		npc.look["facial"] = ""
+		var rng := RandomNumberGenerator.new()
+		rng.seed = hash(nombre)
+		npc._roll_traits(rng)
+	var k: Dictionary = Npc.KINDS[kind]
+	var d := Personajes.nuevo(kind)
+	d["nombre"] = nombre
+	d["genero"] = npc.gender
+	d["aspecto"] = Personajes.aspecto_de(npc.look, npc.accessory, npc.body_size)
+	d["historia"] = k.get("bios", {}).get(nombre, "")
+	d["horario"] = k.get("hours", []).duplicate()
+	if k.has("zone"):
+		d["zona"]["tipo"] = k["zone"]
+	d["stats"]["velocidad"] = k["speed"]
+	d["stats"]["dinero"] = npc.money
+	npc.free()
+	return d
 
 
 func _editar(d: Dictionary, id_cargado: String) -> void:
@@ -905,11 +939,27 @@ func _leer_guardados() -> void:
 	_lista.clear()
 	_lista.add_item("— personaje nuevo —")
 	_lista.set_item_metadata(0, "")
+	var tuyos := {}
+	if not _guardados.is_empty():
+		_lista.add_separator("Personajes guardados")
 	for d in _guardados:
 		_lista.add_item("%s (%s)" % [d["nombre"], TiposPersonaje.label(d["tipo"], d["genero"])])
 		_lista.set_item_metadata(_lista.item_count - 1, d["id"])
+		tuyos[d["tipo"] + "|" + d["nombre"]] = true
 		if d["id"] == _id_cargado:
 			_lista.select(_lista.item_count - 1)
+	# los bots del juego, para partir de ellos (al guardarlos, sustituyen al bot)
+	for grupo in TiposPersonaje.GRUPOS:
+		var ids := TiposPersonaje.del_grupo(grupo).filter(func(id): return Npc.KINDS.has(id))
+		if ids.is_empty():
+			continue
+		_lista.add_separator("Bots del juego · " + grupo)
+		for kind in ids:
+			for n in Npc.KINDS[kind]["names"]:
+				if tuyos.has(kind + "|" + n):
+					continue
+				_lista.add_item("%s (%s)" % [n, TiposPersonaje.label(kind)])
+				_lista.set_item_metadata(_lista.item_count - 1, "bot:%s:%s" % [kind, n])
 
 
 ## Hace `what` ya o, si hay cambios sin guardar, después de preguntar.
@@ -927,6 +977,10 @@ func _on_lista(i: int) -> void:
 	_si_descarta(func():
 		if id == "":
 			_nuevo_ya()
+		elif id.begins_with("bot:"):
+			var parts := id.split(":", true, 2)
+			_editar(_de_bot(parts[1], parts[2]), "")
+			_estado.text = "Plantilla del juego. Si lo guardas con el mismo nombre, sustituye a ese bot."
 		else:
 			_editar(Personajes.cargar(Personajes.DIR + id + ".json"), id)
 		_lista.select(_lista_indice(id)))

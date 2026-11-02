@@ -1,0 +1,57 @@
+{
+	"version": 1,
+	"id": "agent_serra",
+	"nombre": "Agent Serra",
+	"apodo": "",
+	"edad": 38,
+	"genero": "m",
+	"tipo": "mosso",
+	"historia": "Mosso de seguridad ciudadana en Ciutat Vella. Estuvo en las operaciones contra los narcopisos y dice que cerrar uno abre otro dos calles más allá.",
+	"fuentes": "Fuentes del tipo en docs/ideas.md. Orden público y delitos penales, de los Mossos: https://beteve.cat/politica/ciutadans-pp-guardia-urbana-aldarulls/",
+	"aspecto": {
+		"skin": "f0cfb0",
+		"shirt": "1a2140",
+		"pants": "141a30",
+		"hair": "3a2418",
+		"jacket": "",
+		"hair_style": "rapado",
+		"facial": "barba",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "gorra_poli",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "robadors",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [],
+	"lugares": [],
+	"stats": {
+		"dinero": 40,
+		"velocidad": 14.4,
+		"fuerza": 8,
+		"valor": 8,
+		"agresividad": 4,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "Eres mosso d'esquadra en Ciutat Vella. Profesional, desconfiado, harto de que todo vuelva a empezar.",
+		"habla": "Catalán y castellano, formal, preguntas directas.",
+		"sabe": "Qué pisos se han cerrado, quién mueve droga en Robadors, cuándo hay operativo.",
+		"no_sabe": "Multas de civismo: eso es de la Urbana.",
+		"quiere": "Información sobre Quique el Nano y su piso. Que no le mientan."
+	},
+	"frases": [
+		"Mossos. Quiet.",
+		"¿Qué llevas ahí?",
+		"Circula."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Misión cruzada: si le llevas pruebas del piso de Quique el Nano (las que pide la Sra. Encarna), detiene a Quique y tu deuda con él desaparece... pero La Rubia ocupa su sitio y sabe que fuiste tú."
+}

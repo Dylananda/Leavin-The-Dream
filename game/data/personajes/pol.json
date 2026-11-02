@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "pol",
+	"nombre": "Pol",
+	"apodo": "",
+	"edad": 33,
+	"genero": "m",
+	"tipo": "pudiente",
+	"historia": "Compra pisos para alquilarlos por temporada a nómadas digitales. Quiere el edificio del Sr. Feliu entero.",
+	"fuentes": "https://ddd.uab.cat/pub/papers/papers_a2024v109n3/papers_a2024v109n3ae2353.info",
+	"aspecto": {
+		"skin": "5a3a26",
+		"shirt": "f4f4f0",
+		"pants": "2a2a30",
+		"hair": "1b1410",
+		"jacket": "",
+		"hair_style": "corto",
+		"facial": "",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "barrio",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		10,
+		2
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 400,
+		"velocidad": 10.0,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"Es una oportunidad.",
+		"El barrio está cambiando.",
+		"Todo el mundo tiene un precio."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Te paga por convencer al Sr. Feliu de irse (dilema)."
+}

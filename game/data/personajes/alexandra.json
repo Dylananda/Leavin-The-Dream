@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "alexandra",
+	"nombre": "Alexandra",
+	"apodo": "",
+	"edad": 38,
+	"genero": "f",
+	"tipo": "pudiente",
+	"historia": "Galerista. Ha abierto un espacio junto al MACBA y busca «artistas auténticos del barrio» para la inauguración.",
+	"fuentes": "https://ddd.uab.cat/pub/papers/papers_a2024v109n3/papers_a2024v109n3ae2353.info",
+	"aspecto": {
+		"skin": "5a3a26",
+		"shirt": "f4f4f0",
+		"pants": "2a2a30",
+		"hair": "c8a060",
+		"jacket": "264a39",
+		"hair_style": "coleta",
+		"facial": "",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "barrio",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		10,
+		2
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 300,
+		"velocidad": 10.0,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"¡Qué auténtico!",
+		"¿Conoces artistas?",
+		"Uf, el olor."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Podría exponer a Lin (caricaturista)."
+}

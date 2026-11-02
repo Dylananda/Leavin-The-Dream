@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "liam",
+	"nombre": "Liam",
+	"apodo": "",
+	"edad": 27,
+	"genero": "m",
+	"tipo": "fiestero",
+	"historia": "Despedida de soltero de su hermano. Ha perdido el móvil la primera noche y no se acuerda del apartamento.",
+	"fuentes": "https://es.ara.cat/sociedad/barcelona/noche-rutas-borrachera-prohibidas-barcelona-vegas-bro_130_5466856.html",
+	"aspecto": {
+		"skin": "c68c5e",
+		"shirt": "6d77ad",
+		"pants": "33333f",
+		"hair": "5a3a20",
+		"jacket": "",
+		"hair_style": "rapado",
+		"facial": "",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "despedida",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "bares",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		22,
+		5
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 90,
+		"velocidad": 9.0,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"Have you seen my phone?",
+		"Lads! LADS!",
+		"Where's the flat?"
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Ibou tiene su móvil. Recompensa por devolverlo."
+}

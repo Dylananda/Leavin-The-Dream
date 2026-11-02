@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "iris",
+	"nombre": "Iris",
+	"apodo": "",
+	"edad": 19,
+	"genero": "f",
+	"tipo": "skater",
+	"historia": "Del barrio de toda la vida. Es de las pocas chicas que patinan el MACBA y organiza sesiones para que vengan más.",
+	"fuentes": "https://beteve.cat/societat/placa-macba-meca-skaters-arreu-mon-no-volem-perdre/",
+	"aspecto": {
+		"skin": "5a3a26",
+		"shirt": "a53776",
+		"pants": "4c5f5a",
+		"hair": "1b1410",
+		"jacket": "",
+		"hair_style": "coleta",
+		"facial": "",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "skate",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "macba",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		12,
+		22
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 15,
+		"velocidad": 16.0,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"¡Venid el sábado!",
+		"Esto también es nuestro barrio.",
+		"*kickflip*"
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Nieta de la Sra. Rosario: puede mediar entre la abuela y los skaters."
+}

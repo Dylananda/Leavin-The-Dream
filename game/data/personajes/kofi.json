@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "kofi",
+	"nombre": "Kofi",
+	"apodo": "",
+	"edad": 39,
+	"genero": "m",
+	"tipo": "chatarrero",
+	"historia": "Recorre el Raval con un carro de súper desde las seis de la mañana. Cuenta que en su país era profesor de matemáticas; aquí calcula el peso del cobre a ojo sin fallar.",
+	"fuentes": "https://www.publico.es/especiales/el-quinze/malvivir-chatarra-barcelona.html",
+	"aspecto": {
+		"skin": "f0cfb0",
+		"shirt": "597589",
+		"pants": "5d4a4d",
+		"hair": "c8a060",
+		"jacket": "1f3032",
+		"hair_style": "corto",
+		"facial": "",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "carro",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "barrio",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		7,
+		22
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 25,
+		"velocidad": 8.0,
+		"fuerza": 7,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"¿Tienes cobre?",
+		"Treinta céntimos el kilo.",
+		"Ese hierro es mío."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Te compra chatarra y cobre a mejor precio si le traes el carro que le debe El Gallego."
+}

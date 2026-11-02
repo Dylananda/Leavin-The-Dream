@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "hugo",
+	"nombre": "Hugo",
+	"apodo": "",
+	"edad": 30,
+	"genero": "m",
+	"tipo": "mosso_secreta",
+	"historia": "De paisano entre los captadores de clubs cannábicos de la Rambla. Va de turista ligón y se deja captar para entrar en los clubs.",
+	"fuentes": "Fuentes del tipo en docs/ideas.md. Operaciones de paisano contra captadores y narcopisos: https://beteve.cat/societat/operacio-contra-captadors-associacions-cannabiques/",
+	"aspecto": {
+		"skin": "5a3a26",
+		"shirt": "4c604b",
+		"pants": "484151",
+		"hair": "3a2418",
+		"jacket": "",
+		"hair_style": "corto",
+		"facial": "",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "rambla",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		18,
+		2
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 80,
+		"velocidad": 12.0,
+		"fuerza": 8,
+		"valor": 7,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "Eres mosso de paisano que se hace pasar por turista para que los captadores te lleven a los clubs ilegales.",
+		"habla": "Inglés de turista con acento de aquí.",
+		"sabe": "Qué clubs cannábicos venden a turistas y quién capta para ellos.",
+		"no_sabe": "Nada del Raval de día.",
+		"quiere": "Que Joel le lleve a un club."
+	},
+	"frases": [
+		"Hey, is there a party?",
+		"Weed? Where?",
+		"*sonríe demasiado*"
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Cruzada con Joel (captador): si Joel le capta, cierran el club y Joel se queda sin trabajo. Puedes avisar a Joel."
+}

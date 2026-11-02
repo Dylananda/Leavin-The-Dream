@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "anwar",
+	"nombre": "Anwar",
+	"apodo": "",
+	"edad": 44,
+	"genero": "m",
+	"tipo": "rosero",
+	"historia": "Vende rosas de noche y regenta un locutorio de día. Conoce a medio barrio porque ahí envían dinero a casa.",
+	"fuentes": "https://beteve.cat/economia/floristes-critiquen-intrusisme-sant-jordi-2026-menys-venda-roses-prevista/",
+	"aspecto": {
+		"skin": "e0b08a",
+		"shirt": "a56c85",
+		"pants": "3f3745",
+		"hair": "c8a060",
+		"jacket": "",
+		"hair_style": "rapado",
+		"facial": "",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "rosas",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "bares",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		20,
+		3
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 30,
+		"velocidad": 9.0,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"Rosas, rosas.",
+		"Mañana en el locutorio.",
+		"Mi primo te lo arregla."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "En su locutorio se puede enviar dinero y conseguir un móvil de segunda mano barato."
+}

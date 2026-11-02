@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "la_novia",
+	"nombre": "La Novia",
+	"apodo": "",
+	"edad": 39,
+	"genero": "f",
+	"tipo": "estatua",
+	"historia": "Vestida de novia cadáver, se mueve de golpe y asusta a los turistas. Fue actriz de teatro y da clases de mimo los lunes.",
+	"fuentes": "https://www.catalannews.com/life-style/item/human-statues-will-move-to-the-lowest-part-of-barcelonas-rambla",
+	"aspecto": {
+		"skin": "f0cfb0",
+		"shirt": "794f59",
+		"pants": "715b69",
+		"hair": "3a2418",
+		"jacket": "715a64",
+		"hair_style": "coleta",
+		"facial": "",
+		"glasses": true,
+		"skirt": true,
+		"accesorio": "platillo",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "estatuas",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		10,
+		20
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 20,
+		"velocidad": 6.0,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "Eres estatua humana vestida de novia cadáver. Actriz de formación, teatral y divertida.",
+		"habla": "Teatral, culta, con humor negro.",
+		"sabe": "Teatro, Rambla, licencias de estatuas.",
+		"no_sabe": "Drogas.",
+		"quiere": "Público, monedas y que respeten el arte de calle."
+	},
+	"frases": [
+		"*inmóvil*",
+		"*se mueve de golpe*",
+		"*hace una reverencia*"
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Puede enseñarte a quedarte quieto (útil para esconderte de la policía)."
+}

@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "dani_clavos",
+	"nombre": "Dani Clavos",
+	"apodo": "",
+	"edad": 41,
+	"genero": "m",
+	"tipo": "punki",
+	"historia": "Lleva más imperdibles que ropa. Se pelea con los nazis que bajan de vez en cuando y cuida de los perros de todos.",
+	"fuentes": "",
+	"aspecto": {
+		"skin": "8d5a3b",
+		"shirt": "1a1a1a",
+		"pants": "546954",
+		"hair": "5a3a20",
+		"jacket": "101010",
+		"hair_style": "corto",
+		"facial": "barba",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "cresta",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "plazas",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		11,
+		4
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 6,
+		"velocidad": 9.0,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 5,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"¡Oi!",
+		"Cuidado con mis perros.",
+		"Un euro pa' birras."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Aliado en las peleas si estás de su lado."
+}

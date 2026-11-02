@@ -1,0 +1,78 @@
+{
+	"version": 1,
+	"id": "txell",
+	"nombre": "Txell",
+	"apodo": "",
+	"edad": 38,
+	"genero": "f",
+	"tipo": "yonki",
+	"historia": "Fue auxiliar de enfermería en el Clínic. Una lesión de espalda, los opiáceos y luego el caballo. Sabe curar heridas mejor que nadie en la calle y le debes 40 €.",
+	"fuentes": "Consumo en la calle en el Raval y salas de consumo supervisado (CAS Baluard). Fuente concreta pendiente.",
+	"aspecto": {
+		"skin": "5a3a26",
+		"shirt": "43313c",
+		"pants": "333b2f",
+		"hair": "7a7a7a",
+		"jacket": "262e20",
+		"hair_style": "coleta",
+		"facial": "",
+		"glasses": false,
+		"skirt": true,
+		"accesorio": "",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "rambla_raval",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [],
+	"lugares": [
+		{
+			"tipo": "dormir",
+			"x": 495,
+			"y": 385,
+			"desde": 0,
+			"hasta": 8,
+			"nota": "albergue"
+		},
+		{
+			"tipo": "pedir",
+			"x": 318,
+			"y": 180,
+			"desde": 10,
+			"hasta": 14,
+			"nota": "puerta del súper"
+		}
+	],
+	"stats": {
+		"dinero": 5,
+		"velocidad": 8.8,
+		"fuerza": 3,
+		"valor": 6,
+		"agresividad": 4,
+		"llama_policia": false,
+		"quiere": [
+			"caballo"
+		],
+		"lleva": {
+			"caballo": 1
+		},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"Me debes cuarenta, no se me olvida.",
+		"Déjame ver esa herida.",
+		"Hoy estoy mala."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Le debes 40 €. Ver «El paquete para Txell» (Quique el Nano). Si le pagas, te cura una herida gratis cuando lo necesites. Tiene una perra, Tula."
+}

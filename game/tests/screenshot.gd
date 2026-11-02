@@ -12,6 +12,8 @@ func _initialize() -> void:
 	var hour := float(args[4]) if args.size() > 4 else -1.0
 	var take := args[5].split(",", false) if args.size() > 5 else PackedStringArray()
 	root.get_node("GameState").new_game(profile)
+	if hour >= 0.0:
+		root.get_node("GameState").minute_of_day = hour * 60.0  # antes de cargar: salen los de esa hora
 	change_scene_to_file(scene_path)
 	await process_frame
 	await process_frame

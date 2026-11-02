@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "dorin",
+	"nombre": "Dorin",
+	"apodo": "",
+	"edad": 50,
+	"genero": "m",
+	"tipo": "chatarrero",
+	"historia": "Trabajó en una fundición. Ahora recoge chatarra con su hijo y sueña con abrir un taller propio. No soporta que le toquen el carro.",
+	"fuentes": "https://www.publico.es/especiales/el-quinze/malvivir-chatarra-barcelona.html",
+	"aspecto": {
+		"skin": "c68c5e",
+		"shirt": "7b4725",
+		"pants": "745c60",
+		"hair": "3a2418",
+		"jacket": "474e65",
+		"hair_style": "rizos",
+		"facial": "",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "carro",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "barrio",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		7,
+		22
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 20,
+		"velocidad": 8.0,
+		"fuerza": 8,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"¡No toques el carro!",
+		"El hierro sube.",
+		"Mi hijo aprende rápido."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Rivalidad con Kofi por las mismas calles. Misión: mediar entre ellos o ponerte de un lado."
+}

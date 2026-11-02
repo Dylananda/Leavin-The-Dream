@@ -1,0 +1,57 @@
+{
+	"version": 1,
+	"id": "margit",
+	"nombre": "Margit",
+	"apodo": "",
+	"edad": 67,
+	"genero": "f",
+	"tipo": "turista",
+	"historia": "Jubilada de Copenhague. Vino al Raval con su marido en 1979 y vuelve sola tras enviudar para encontrar el bar donde se conocieron.",
+	"fuentes": "Turismo masivo en Ciutat Vella. Fuente concreta pendiente.",
+	"aspecto": {
+		"skin": "5a3a26",
+		"shirt": "60f28d",
+		"pants": "617a63",
+		"hair": "d8d8d8",
+		"jacket": "3c6358",
+		"hair_style": "corta",
+		"facial": "",
+		"glasses": true,
+		"skirt": false,
+		"accesorio": "mochila",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "barrio",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [],
+	"lugares": [],
+	"stats": {
+		"dinero": 120,
+		"velocidad": 10.4,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "Eres una turista mayor que busca un bar donde estuvo hace 45 años con su marido, ya fallecido. Melancólica y amable.",
+		"habla": "Inglés lento, alguna palabra en castellano.",
+		"sabe": "Cómo era el barrio en 1979.",
+		"no_sabe": "Nada del barrio de ahora.",
+		"quiere": "Encontrar el bar. Alguien que la acompañe."
+	},
+	"frases": [
+		"Where is the old bar?",
+		"In 1979 it was different.",
+		"So many memories."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Misión: acompañarla a buscar el bar (ruta por el barrio). Recompensa generosa. Ojo con Vera, que la sigue."
+}

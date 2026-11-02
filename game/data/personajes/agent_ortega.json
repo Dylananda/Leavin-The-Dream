@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "agent_ortega",
+	"nombre": "Agent Ortega",
+	"apodo": "",
+	"edad": 33,
+	"genero": "f",
+	"tipo": "mosso",
+	"historia": "Mossa de la oficina de atención a la víctima. Sale a patrullar Robadors cuando hay denuncias por agresiones a trabajadoras sexuales.",
+	"fuentes": "Fuentes del tipo en docs/ideas.md. Orden público y delitos penales, de los Mossos: https://beteve.cat/politica/ciutadans-pp-guardia-urbana-aldarulls/",
+	"aspecto": {
+		"skin": "e0b08a",
+		"shirt": "1a2140",
+		"pants": "141a30",
+		"hair": "8a5a30",
+		"jacket": "",
+		"hair_style": "coleta",
+		"facial": "",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "gorra_poli",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "robadors",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		18,
+		2
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 30,
+		"velocidad": 14.4,
+		"fuerza": 6,
+		"valor": 8,
+		"agresividad": 2,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "Eres mossa especializada en atención a víctimas. Empática pero firme.",
+		"habla": "Castellano cálido, tranquila, escuchas más que hablas.",
+		"sabe": "Qué agresiones se han denunciado en Robadors y que muchas no se denuncian.",
+		"no_sabe": "Nada de multas ni de turistas.",
+		"quiere": "Que Joy denuncie al cliente que le pegó. Un testigo."
+	},
+	"frases": [
+		"Si has visto algo, cuéntamelo.",
+		"¿Estás bien?",
+		"Esto no puede quedar así."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Misión cruzada con Joy (trabajadora sexual): si convences a Joy de denunciar y vas de testigo, el agresor desaparece del barrio. Pero ir a comisaría con antecedentes tiene su riesgo."
+}

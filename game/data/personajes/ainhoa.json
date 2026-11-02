@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "ainhoa",
+	"nombre": "Ainhoa",
+	"apodo": "",
+	"edad": 27,
+	"genero": "f",
+	"tipo": "guia",
+	"historia": "Hace tours de street art. Conoce cada grafiti del barrio y a quién lo pintó.",
+	"fuentes": "https://naciodigital.cat/societat/grups-de-maxim-15-turistes-i-sense-megafon-barcelona-vol-reduir-limpacte-al-centre_251100_102.html",
+	"aspecto": {
+		"skin": "f0cfb0",
+		"shirt": "92935a",
+		"pants": "514151",
+		"hair": "5a3a20",
+		"jacket": "556866",
+		"hair_style": "rizos",
+		"facial": "",
+		"glasses": false,
+		"skirt": true,
+		"accesorio": "paraguas",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "rambla",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		10,
+		19
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 50,
+		"velocidad": 7.5,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"This mural is by...",
+		"Group of fifteen max!",
+		"No megaphone, sorry."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Misión: encontrar un grafiti perdido."
+}

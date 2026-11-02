@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "ernesto",
+	"nombre": "Ernesto",
+	"apodo": "",
+	"edad": 66,
+	"genero": "m",
+	"tipo": "caricaturista",
+	"historia": "Retratista de la Rambla desde 1980. Dibujó a famosos que ya nadie recuerda y guarda una carpeta con sus caras.",
+	"fuentes": "https://www.barcelona.cat/barcelonacultura/en/detail/99400322599",
+	"aspecto": {
+		"skin": "8d5a3b",
+		"shirt": "769a74",
+		"pants": "363a44",
+		"hair": "d8d8d8",
+		"jacket": "",
+		"hair_style": "corto",
+		"facial": "barba",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "caballete",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "pintores",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		10,
+		20
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 40,
+		"velocidad": 7.0,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"¿Un retrato? Diez minutos.",
+		"Dibujé a Dalí, ¿sabes?",
+		"Quédate quieto."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Te puede hacer un retrato (recuerdo / dignidad)."
+}

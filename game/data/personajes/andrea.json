@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "andrea",
+	"nombre": "Andrea",
+	"apodo": "",
+	"edad": 34,
+	"genero": "f",
+	"tipo": "trabajadora_sexual",
+	"historia": "Mujer trans y activista. Da talleres de derechos en una asociación del barrio y se planta delante de quien haga falta, policía incluida.",
+	"fuentes": "https://www.eldiario.es/catalunya/prostitutas-barcelona-organizan_1_5709876.amp.html",
+	"aspecto": {
+		"skin": "8d5a3b",
+		"shirt": "9abf44",
+		"pants": "485645",
+		"hair": "7a7a7a",
+		"jacket": "5f5456",
+		"hair_style": "rizos",
+		"facial": "",
+		"glasses": true,
+		"skirt": false,
+		"accesorio": "",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "robadors",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		11,
+		5
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 50,
+		"velocidad": 8.0,
+		"fuerza": 5,
+		"valor": 9,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"Conoce tus derechos.",
+		"A mí no me grites.",
+		"Ven al taller del jueves."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Te ayuda si te detienen injustamente (conoce abogados). Enemistad con Agent Camps."
+}

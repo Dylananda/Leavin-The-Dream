@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "gabriel",
+	"nombre": "Gabriel",
+	"apodo": "",
+	"edad": 40,
+	"genero": "m",
+	"tipo": "guia",
+	"historia": "Hace un tour de «crímenes del Raval» que los vecinos odian. Gana mucho dinero con las historias más morbosas.",
+	"fuentes": "https://naciodigital.cat/societat/grups-de-maxim-15-turistes-i-sense-megafon-barcelona-vol-reduir-limpacte-al-centre_251100_102.html",
+	"aspecto": {
+		"skin": "8d5a3b",
+		"shirt": "70b4c4",
+		"pants": "2b3236",
+		"hair": "3a2418",
+		"jacket": "",
+		"hair_style": "rizos",
+		"facial": "",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "paraguas",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "rambla",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		10,
+		19
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 70,
+		"velocidad": 7.5,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"Here, in 1912...",
+		"Scary, no?",
+		"Very dangerous neighbourhood!"
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Choca con la Sra. Encarna. Te paga por asustar a su grupo."
+}

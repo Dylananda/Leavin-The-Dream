@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "el_hombre_dorado",
+	"nombre": "El Hombre Dorado",
+	"apodo": "",
+	"edad": 45,
+	"genero": "m",
+	"tipo": "estatua",
+	"historia": "Pintado de oro de la cabeza a los pies. Se quedó sin su sitio cuando llevaron las estatuas al tramo de abajo de la Rambla y dice que allí no pasa nadie.",
+	"fuentes": "https://www.catalannews.com/life-style/item/human-statues-will-move-to-the-lowest-part-of-barcelonas-rambla",
+	"aspecto": {
+		"skin": "c68c5e",
+		"shirt": "847f51",
+		"pants": "686453",
+		"hair": "3a2418",
+		"jacket": "",
+		"hair_style": "rapado",
+		"facial": "",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "platillo",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "estatuas",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		10,
+		20
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 25,
+		"velocidad": 6.0,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "Eres estatua humana en la Rambla. Cuando no actúas, eres un hombre cansado y amargado por el traslado de las estatuas.",
+		"habla": "Susurras sin mover los labios mientras actúas; fuera de la actuación, hablas sin parar.",
+		"sabe": "Todo lo que pasa delante de ti en la Rambla: lo ves todo sin moverte.",
+		"no_sabe": "Lo que pasa en el interior del Raval.",
+		"quiere": "Volver a su sitio de antes. Que nadie le robe el platillo."
+	},
+	"frases": [
+		"*inmóvil*",
+		"*saluda al caer la moneda*",
+		"*guiña un ojo*"
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Testigo perfecto: ha visto quién robó a quién. Te lo cuenta a cambio de vigilar su platillo."
+}

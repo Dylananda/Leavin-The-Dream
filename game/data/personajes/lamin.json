@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "lamin",
+	"nombre": "Lamin",
+	"apodo": "",
+	"edad": 31,
+	"genero": "m",
+	"tipo": "chatarrero",
+	"historia": "Vivía en una nave ocupada del Poblenou hasta el desalojo. Ahora duerme donde puede y recoge chatarra por el Raval.",
+	"fuentes": "https://www.publico.es/especiales/el-quinze/malvivir-chatarra-barcelona.html",
+	"aspecto": {
+		"skin": "e0b08a",
+		"shirt": "894d8b",
+		"pants": "675364",
+		"hair": "7a7a7a",
+		"jacket": "",
+		"hair_style": "rapado",
+		"facial": "barba",
+		"glasses": true,
+		"skirt": false,
+		"accesorio": "carro",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "barrio",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		7,
+		22
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 15,
+		"velocidad": 8.0,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"Desalojaron la nave.",
+		"Electrodomésticos, ¿tienes?",
+		"Mañana más."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Sabe qué edificios del barrio están vacíos (posible sitio para dormir)."
+}

@@ -6,7 +6,8 @@ extends RefCounted
 ## saldrán a la calle hasta que existan en Npc.KINDS (ver en_juego()).
 ##
 ## grupo = apartado de la lista; desc = qué es y qué hace (para quien diseña);
-## look = colores fijos de uniforme o de oficio; accesorio = el de partida.
+## look = colores fijos de uniforme o de oficio; accesorio y tamano = los de partida si el
+## juego aún no tiene el tipo (si lo tiene, salen de Npc.KINDS).
 
 const GRUPOS := ["Policía", "Buscarse la vida", "Calle y artistas", "Vecinos", "De paso"]
 
@@ -23,17 +24,12 @@ const TIPOS := {
 	},
 	"mosso": {
 		"label": "Mosso d'Esquadra", "grupo": "Policía", "accesorio": "gorra_poli",
-		"look": {"shirt": "1c2340", "pants": "141a30"},
+		"look": {"shirt": "1a2140", "pants": "141a30"},
 		"desc": "Policía de la Generalitat: delitos penales. Robos con violencia, peleas, tráfico de drogas, narcopisos y detenciones.",
 	},
 	"mosso_secreta": {
 		"label": "Mosso de paisano", "grupo": "Policía", "accesorio": "capucha",
 		"desc": "Mosso de paisano que sigue a los camellos y espera a ver el pase para detenerlos.",
-	},
-	"policia": {
-		"label": "Agente (sin dividir)", "grupo": "Policía", "accesorio": "gorra_poli",
-		"look": {"shirt": "2a3d7a", "pants": "1d2a5a"},
-		"desc": "El policía genérico de ahora. Se dividirá en Guàrdia Urbana y Mossos: mejor elegir uno de ellos.",
 	},
 	# --- Buscarse la vida
 	"yonki": {"label": "Yonki", "grupo": "Buscarse la vida", "desc": "Consume en la calle, pide, trapichea y conoce todos los rincones."},
@@ -53,7 +49,7 @@ const TIPOS := {
 	"estatua": {"label": "Estatua humana", "grupo": "Calle y artistas", "desc": "Inmóvil en la Rambla hasta que le echan una moneda. Necesita permiso municipal para su sitio."},
 	"caricaturista": {"label": "Caricaturista", "grupo": "Calle y artistas", "desc": "Pintor de retratos y caricaturas para turistas en la Rambla."},
 	"skater": {"label": "Skater", "grupo": "Calle y artistas", "accesorio": "gorra", "desc": "De la plaza dels Àngels, frente al MACBA. Llegan de todo el mundo a patinar ahí."},
-	"punki": {"label": "Punki", "grupo": "Calle y artistas", "desc": "Punki con perros. Duerme donde puede, pide y se junta con los suyos en las plazas."},
+	"punki": {"label": "Punki", "grupo": "Calle y artistas", "look": {"shirt": "1a1a1a", "jacket": "101010"}, "desc": "Punki con perros. Duerme donde puede, pide y se junta con los suyos en las plazas."},
 	"educador": {"label": "Educador social", "label_f": "Educadora social", "grupo": "Calle y artistas", "accesorio": "chaleco", "look": {"shirt": "e07a30"}, "desc": "Educadores de calle: reparten material, acompañan al CAS y conocen a todos por su nombre."},
 	# --- Vecinos
 	"vecino": {"label": "Vecino", "label_f": "Vecina", "grupo": "Vecinos", "desc": "Vive en el barrio y está harto, o lo defiende, o las dos cosas."},
@@ -73,6 +69,9 @@ const ACCESORIOS := {
 	"": "Ninguno", "gorra": "Gorra del revés", "gorra_poli": "Gorra de policía", "capucha": "Capucha",
 	"mochila": "Mochila y sombrero", "chaleco": "Chaleco", "bolsa": "Bolsa de latas", "caja": "Caja de trile",
 	"baston": "Bastón", "reparto": "Mochila de reparto", "despedida": "Banda de despedida",
+	"guitarra": "Guitarra", "platillo": "Platillo (estatua)", "carton": "Cartón y manta", "skate": "Monopatín",
+	"folletos": "Folletos", "rosas": "Ramo de rosas", "carro": "Carro de chatarra", "paraguas": "Paraguas de guía",
+	"caballete": "Caballete", "cresta": "Cresta",
 }
 const PEINADOS := {"corto": "Corto", "rapado": "Rapado", "calvo": "Calvo", "tupe": "Tupé", "rizos": "Rizos",
 	"coleta": "Coleta", "melena": "Melena", "moño": "Moño", "corta": "Media melena"}
@@ -84,7 +83,10 @@ static func en_juego(id: String) -> bool:
 	return Npc.KINDS.has(id)
 
 
+## Nombre del tipo en el género dado: el del juego si ya lo tiene, si no el de TIPOS.
 static func label(id: String, genero := "m") -> String:
+	if Npc.KINDS.has(id):
+		return Npc.kind_label(id, genero)
 	var t: Dictionary = TIPOS.get(id, {"label": id})
 	return t.get("label_f", t["label"]) if genero == "f" else t["label"]
 

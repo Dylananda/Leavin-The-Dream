@@ -26,7 +26,7 @@ func _init(p_world: World) -> void:
 func offers_for(npc: Npc) -> Array:
 	var acts := []
 	if npc.remembers("timado") > 0:
-		if Defs.CLIENTS.has(npc.kind):
+		if Defs.CLIENTS.has(client_kind(npc)):
 			npc.say("A ti no te compro nada más. Aquello era yeso")
 		return acts
 	acts.append_array(_sales(npc))
@@ -37,25 +37,31 @@ func offers_for(npc: Npc) -> Array:
 
 # -------------------------------------------------------------------- vender
 
+## Qué cliente es `npc` en Defs.CLIENTS: los de paisano compran como lo que parecen.
+func client_kind(npc: Npc) -> String:
+	return "turista" if npc.kind == "urbano_secreta" else npc.kind
+
+
 ## Lo que paga `npc` ahora por una dosis de `id` (más si ya te compró antes).
 func price_for(npc: Npc, id: String) -> int:
-	var c: Dictionary = Defs.CLIENTS[npc.kind]
+	var c: Dictionary = Defs.CLIENTS[client_kind(npc)]
 	var regular := mini(npc.remembers("cliente"), Defs.REGULAR_MAX)
 	var base: float = Defs.SUBSTANCES[id]["price"] * c["markup"]
 	return maxi(1, roundi(base * (1.0 + Defs.REGULAR_BONUS * regular)))
 
 
-## Si este guiri es en realidad un secreta (siempre igual para el mismo nombre).
+## Si este cliente es en realidad un secreta: los agentes de paisano, y algún guiri que lo es
+## sin estar en la calle como tal (siempre igual para el mismo nombre).
 func undercover(npc: Npc) -> bool:
-	return npc.kind == "turista" and npc._trait("secreta") < Defs.UNDERCOVER_CHANCE
+	return npc.is_police() or (npc.kind == "turista" and npc._trait("secreta") < Defs.UNDERCOVER_CHANCE)
 
 
 func _sales(npc: Npc) -> Array:
 	var acts := []
-	if not Defs.CLIENTS.has(npc.kind):
+	if not Defs.CLIENTS.has(client_kind(npc)):
 		return acts
 	var gs := GameState
-	for id in Defs.CLIENTS[npc.kind]["wants"]:
+	for id in Defs.CLIENTS[client_kind(npc)]["wants"]:
 		if not gs.has_item(id):
 			continue
 		var price := price_for(npc, id)
@@ -73,8 +79,13 @@ func sell(npc: Npc, id: String, cut: bool) -> void:
 	gs.advance(5)
 	if undercover(npc):
 		gs.remove_item(id)
-		npc.say("Policía. Las manos donde las vea.", 4.0)
-		gs.log_msg("El guiri de las chanclas saca una placa. Era un secreta.", G.C_BAD)
+		npc.known = true
+		if npc.kind == "mosso_secreta":
+			npc.say("Mossos d'Esquadra. Las manos donde las vea.", 4.0)
+			gs.log_msg("El vecino que preguntaba si tenías algo saca una placa de los Mossos.", G.C_BAD)
+		else:
+			npc.say("Policía. Las manos donde las vea.", 4.0)
+			gs.log_msg("El guiri de las chanclas saca una placa. Era un secreta.", G.C_BAD)
 		gs.milestone("secreta")
 		world.arrest_player()
 		return
@@ -102,9 +113,9 @@ func sell(npc: Npc, id: String, cut: bool) -> void:
 func _after_deal(client: Npc) -> void:
 	var gs := GameState
 	var seen := world.watching([], client)
-	if seen.any(func(n): return n.kind == "policia"):
+	if seen.any(func(n): return n.is_police()):
 		gs.heat = minf(100.0, gs.heat + 60.0)
-		gs.log_msg("Un agente te ha visto pasar algo.", G.C_BAD)
+		gs.mark_wanted("un agente te ha visto pasar algo", "drogas")
 	elif seen.any(func(n): return n.kind in World.WITNESS_KINDS):
 		gs.heat = minf(100.0, gs.heat + 10.0)
 	for npc in seen:

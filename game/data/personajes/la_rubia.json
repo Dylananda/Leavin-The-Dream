@@ -1,0 +1,63 @@
+{
+	"version": 1,
+	"id": "la_rubia",
+	"nombre": "La Rubia",
+	"apodo": "",
+	"edad": 41,
+	"genero": "f",
+	"tipo": "camello",
+	"historia": "Vende pastillas y un poco de farlopa a los de fiesta. Fía a las amigas y apunta todo en una libreta con dibujos. Tiene una hija que no sabe a qué se dedica.",
+	"fuentes": "Narcopisos y venta de calle en el Raval (prensa local, 2017-2019). Fuente concreta pendiente.",
+	"aspecto": {
+		"skin": "f0cfb0",
+		"shirt": "9443bb",
+		"pants": "506459",
+		"hair": "e8c860",
+		"jacket": "",
+		"hair_style": "melena",
+		"facial": "",
+		"glasses": false,
+		"skirt": true,
+		"accesorio": "capucha",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "robadors",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [],
+	"lugares": [],
+	"stats": {
+		"dinero": 120,
+		"velocidad": 12.0,
+		"fuerza": 4,
+		"valor": 6,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {
+			"pastillas": 10,
+			"farlopa": 3
+		},
+		"vende": {
+			"pastillas": 4,
+			"farlopa": 35
+		}
+	},
+	"ficha": {
+		"quien": "Eres camella de pastillas y farlopa. Cariñosa, lista y desconfiada. Proteges a tu hija de todo esto.",
+		"habla": "Castellano de barrio con cariño fingido: «guapo», «cariño», «reina».",
+		"sabe": "Quién va de fiesta y quién paga, qué bares cierran tarde.",
+		"no_sabe": "Que Marta, la «estudiante» de enfrente, es mossa.",
+		"quiere": "Discreción, gente de confianza para repartir y que nadie se acerque a su hija."
+	},
+	"frases": [
+		"Guapo, ¿qué te pongo?",
+		"Te lo apunto.",
+		"No me hables aquí."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Misión: repartir pastillas a las despedidas (Liam, Sophie). Peligro: Marta (mossa secreta) vigila su portal."
+}
