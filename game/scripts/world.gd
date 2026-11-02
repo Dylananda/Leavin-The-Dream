@@ -106,6 +106,7 @@ var _pending: Variant = null  ## Npc o PoiMarker al que vamos a interactuar
 var _pending_tries := 0
 var _npc_targets := {}
 var _personajes: Array[Dictionary] = []  ## personajes del editor (ver Personajes)
+var censo: Censo  ## todos los bots del barrio, con cuerpo o latentes (ver Censo)
 var _event_timer := 20.0
 var _respawn_timer := 30.0
 var _last_rummage := -999.0
@@ -168,12 +169,20 @@ func _ready() -> void:
 	Npc.reservados.clear()
 	for d in _personajes:
 		Npc.reservados[d["tipo"] + "|" + d["nombre"]] = true
+	# el censo: todos los del barrio en el registro; cuerpo solo los que andan cerca
+	censo = Censo.new(self)
 	for kind in BASE_NPCS:
 		_npc_targets[kind] = _target_count(kind)
 		if Npc.active_at(kind, GameState.hour()):
 			for i in _npc_targets[kind]:
-				_spawn_npc(kind)
-	_spawn_personajes(_probar_id())
+				censo.nuevo(kind)
+	var probar := _probar_id()
+	for d in _personajes:
+		if Npc.KINDS.has(d["tipo"]):
+			var r := censo.de_personaje(d)
+			if d["id"] == probar:
+				censo.despertar(r, player.cell).say("¡Aquí estoy!", 4.0)
+	censo.repasar(0, 0, true)
 
 	hud = Hud.new()
 	add_child(hud)
@@ -248,34 +257,10 @@ func _place_markers() -> void:
 		markers.append(m)
 
 
+## Un bot nuevo del tipo `kind`, en el censo y ya con cuerpo, junto a su casa.
 func _spawn_npc(kind: String) -> Npc:
-	var npc := Npc.new()
-	npc.init_kind(kind)
-	npc.player = player
-	npc.world = self
-	var home: Vector2i
-	var zone: String = Npc.KINDS[kind].get("zone", "")
-	if zone != "":
-		home = _zone_cell(zone)
-	else:
-		home = _default_home(kind)
-	npc.home = home
-	city.entities.add_child(npc)
-	npc.setup(city, city.random_walkable_near(home, 8))
-	npc.caught_player.connect(_on_caught)
-	npcs.append(npc)
-	if Npc.KINDS[kind].has("bed"):
-		npc.bed = _bed_for(npc)
-	# algunos sacan al perro (Npc.DOG_OWNERS; por encima de 1, más de uno)
-	var p_dog: float = Npc.DOG_OWNERS.get(kind, 0.0)
-	while randf() < p_dog:
-		_spawn_follower("perro", npc)
-		p_dog -= 1.0
-	# el guía, con su grupo del free tour
-	if kind == "guia":
-		for i in randi_range(Defs.GUIDE_GROUP.x, Defs.GUIDE_GROUP.y):
-			_spawn_follower("turista", npc)
-	return npc
+	var r := censo.nuevo(kind)
+	return censo.despertar(r, city.random_walkable_near(r["home"], 8))
 
 
 ## Uno que va detrás de `amo` (su perro, un turista del grupo del guía); se va cuando se va él.
@@ -320,40 +305,9 @@ func hidden_spot(cell: Vector2i) -> bool:
 	return open < Defs.HIDDEN_OPEN_CELLS
 
 
-## Saca a la calle a los personajes del editor (Personajes) que estén en su horario y no
-## anden ya por ahí. Los de un tipo que el juego aún no tiene se quedan en casa.
-## `probar` = id de uno que se pone junto al jugador, sea la hora que sea (botón «Probar en el
-## juego» del editor).
-func _spawn_personajes(probar := "") -> void:
-	var h := GameState.hour()
-	for d in _personajes:
-		if not Npc.KINDS.has(d["tipo"]):
-			continue
-		if d["id"] != probar and not Personajes.activo(d, h):
-			continue
-		if npcs.any(func(n): return n.personaje.get("id", "") == d["id"]):
-			continue
-		var npc := Npc.new()
-		npc.init_personaje(d)
-		npc.player = player
-		npc.world = self
-		var zona: Array[Vector2i] = []
-		if d["zona"]["tipo"] == "poligono":
-			zona = _cells_in_polygon(d["zona"]["poligono"])
-			npc.set_zona(zona)
-		npc.home = _personaje_home(d, zona)
-		city.entities.add_child(npc)
-		var start := player.cell if d["id"] == probar else npc.home
-		npc.setup(city, city.random_walkable_near(start, 3 if d["id"] == probar else 2))
-		npc.caught_player.connect(_on_caught)
-		npcs.append(npc)
-		if d["id"] == probar:
-			npc.say("¡Aquí estoy!", 4.0)
-
-
 ## Dónde vive un personaje del editor: el lugar de su rutina a esta hora, su casa, o una
 ## casilla de su zona.
-func _personaje_home(d: Dictionary, zona: Array[Vector2i]) -> Vector2i:
+func _personaje_home(d: Dictionary, zona: Array) -> Vector2i:
 	var l := Personajes.lugar_a(d, GameState.hour())
 	if not l.is_empty():
 		return city.nearest_walkable(Vector2i(l["x"], l["y"]))
@@ -490,6 +444,7 @@ func _process(delta: float) -> void:
 	if _event_timer <= 0.0:
 		_event_timer = randf_range(15.0, 35.0) / city.crime_factor("peleas")
 		_random_event()
+	censo.tick(delta)
 	_respawn_timer -= delta
 	if _respawn_timer <= 0.0:
 		_respawn_timer = 30.0
@@ -1241,7 +1196,8 @@ func highlight_poi(poi: Dictionary) -> void:
 			get_tree().create_timer(12.0, false).timeout.connect(func(): m.highlighted = false)
 
 
-## Repone los bots que faltan y retira, lejos de tu vista, los que ya no están en su horario.
+## Retira, lejos de tu vista, a los que ya no están en su horario y repone en el censo los
+## que faltan (latentes: se materializan cuando te acercas, ver Censo).
 func _respawn() -> void:
 	var h := GameState.hour()
 	for npc in npcs.duplicate():
@@ -1253,15 +1209,20 @@ func _respawn() -> void:
 			npc.queue_free()
 			continue
 		if not npc.active(h) and npc.distance_to_cell(player.cell) > DESPAWN_DISTANCE and npc.mode == "":
-			npcs.erase(npc)
-			npc.queue_free()
+			var r := censo.de(npc)
+			if r.is_empty():
+				npcs.erase(npc)
+				npc.queue_free()
+			else:
+				censo.dormir(r)
+	# los que no te conocen se van del barrio al acabar su horario; los demás esperan latentes
+	censo.olvidar(h)
 	for kind in _npc_targets:
 		if not Npc.active_at(kind, h):
 			continue
-		var missing: int = _npc_targets[kind] - npcs.filter(func(n): return n.kind == kind and n.amo == null and n.personaje.is_empty()).size()
-		for i in mini(missing, ceili(_npc_targets[kind] / 4.0)):
-			_spawn_npc(kind)
-	_spawn_personajes()
+		var missing: int = _npc_targets[kind] - censo.registros.filter(func(r): return r["kind"] == kind and r["personaje"].is_empty()).size()
+		for i in missing:
+			censo.nuevo(kind)
 
 
 ## Eventos del barrio: peleas entre yonkis, yonkis que vienen a pedirte y carteristas trabajando.

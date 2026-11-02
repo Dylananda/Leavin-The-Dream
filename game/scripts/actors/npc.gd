@@ -668,7 +668,7 @@ func active(h: int) -> bool:
 
 
 ## Prepara un personaje del editor (`d`, ver Personajes): su tipo base con su nombre, su
-## aspecto, su dinero y su velocidad. La casa y la zona las pone World._spawn_personajes.
+## aspecto, su dinero y su velocidad. La casa y la zona las pone Censo.despertar.
 func init_personaje(d: Dictionary) -> void:
 	init_kind(d["tipo"], d["nombre"])
 	personaje = d
@@ -681,8 +681,8 @@ func init_personaje(d: Dictionary) -> void:
 
 
 ## Casillas de su zona dibujada (las transitables dentro del polígono).
-func set_zona(cells: Array[Vector2i]) -> void:
-	_zona = cells
+func set_zona(cells: Array) -> void:
+	_zona.assign(cells)
 
 
 ## Adónde va a dar una vuelta: al lugar de su rutina a esta hora, si tiene; si no, a

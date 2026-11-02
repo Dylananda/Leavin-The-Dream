@@ -237,6 +237,12 @@ python tools/make_textures.py
   los vértices (`Actor._merge_parts`: cuerpo y extremidades, con un solo material) y los bots
   fuera de la pantalla que no tienen nada contigo se actualizan cada `Defs.OFFSCREEN_EVERY`
   frames. En una GTX 1060 a 1600×900: unos 1.000 bots a 60 FPS (54 con todo el zoom)
+- `game/scripts/censo.gd` — el censo del barrio: cada bot es un registro de datos y solo los
+  que andan a menos de `Censo.RADIO_ACTIVO` casillas tienen cuerpo; los demás están latentes y,
+  al acercarte, aparecen donde les toca por su casa, su rutina y la hora, con lo que les pasó
+  y lo que han olvidado desde entonces (`Defs.LATENT_*`). No se duermen los que tienen asuntos
+  contigo (te persiguen, les debes, te dieron un encargo). Con 10 veces la gente de ahora
+  (unos 2.600 en el censo) va a 60 FPS. `game/tests/paseo.gd [multiplica]` lo mide.
 - `game/editor/` — diseñador de personajes (`editor_personajes.gd`): formulario, muñeco
   (`muneco.gd`), mapa para zona y rutina (`mapa_zona.gd`) y catálogo de tipos base (`tipos.gd`)
 - `game/scripts/personajes.gd` — formato de los personajes del diseñador, compartido por el

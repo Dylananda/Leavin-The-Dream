@@ -77,6 +77,10 @@ const MOSSOS_SWEEP := 0.12
 const UNDERCOVER_CATCH := 0.35
 ## El grupo de un free tour: turistas que siguen al guía (en Ciutat Vella, máximo 15).
 const GUIDE_GROUP := Vector2i(4, 8)
+## Bots latentes (scripts/censo.gd): lo que se pone al día al volver a verlos.
+const LATENT_ROBBED_FORGET := 24.0 * 60.0  ## minutos tras los que al que robaron vuelve a llevar dinero
+const LATENT_MEMORY_FADE := 3.0 * 24.0 * 60.0  ## minutos latente por cada vez que olvida algo que le hiciste...
+const LATENT_GRUDGES := ["robado", "pegado", "timado", "pisado"]  ## ... y esto lo olvida a la mitad de ritmo
 
 ## Escándalo al robar: quién oye el grito (casillas) y lo lejos que llega una llamada a la policía.
 const SCANDAL_HEAR := 20

@@ -12,6 +12,8 @@ func _initialize() -> void:
 		await process_frame
 		await process_frame
 		var world = current_scene
+		world.censo.pausado = true  # que no se duerma nadie a media prueba (el censo se prueba aparte)
+		_test_censo(world)
 		# los que no salen a esta hora (despedidas, lateros...) se crean a mano para probarlos
 		for kind in world.BASE_NPCS:
 			if world.npcs.filter(func(n): return n.kind == kind).is_empty():
@@ -105,6 +107,42 @@ var _failures := 0
 ## Conversación con IA sin depender de Ollama: contra un puerto en el que no escucha nadie
 ## (el juego debe seguir y avisar en el registro) y con una respuesta inventada que usa
 ## todas las acciones de juego.
+## Censo: el que se aleja se duerme con lo que le ha pasado, el que tiene asuntos contigo no,
+## al volver se acuerda (y con el tiempo olvida).
+func _test_censo(world) -> void:
+	var censo = world.censo
+	var me: Vector2i = world.player.cell
+	var lejos: Vector2i = me
+	while maxi(absi(lejos.x - me.x), absi(lejos.y - me.y)) <= censo.RADIO_DORMIR:
+		lejos = world.city.random_walkable()
+	var r: Dictionary = censo.nuevo("vecino")
+	var npc = censo.despertar(r, me)
+	npc.known = true
+	npc.money = 7
+	npc.remember("pedido")
+	npc.remember("pedido")
+	var name: String = npc.display_name
+	npc.setup(world.city, lejos)
+	npc.debt = 5
+	censo.repasar()
+	_check(is_instance_valid(npc) and npc in world.npcs, "censo: se duerme alguien con asuntos contigo")
+	npc.debt = 0
+	censo.repasar()
+	_check(r["npc"] == null and npc not in world.npcs, "censo: el que se aleja no se duerme")
+	_check(r["estado"]["memory"].get("pedido", 0) == 2, "censo: al dormirse no guarda lo que le hiciste")
+	r["home"] = me
+	censo.repasar()
+	var back = r["npc"]
+	_check(back != null and back.display_name == name and back.known and back.money == 7 and back.remembers("pedido") == 2,
+		"censo: al despertar no es el mismo o no se acuerda")
+	censo.dormir(r)
+	r["visto"] -= Defs.LATENT_MEMORY_FADE * 2.0
+	back = censo.despertar(r, me)
+	_check(back.remembers("pedido") == 0, "censo: no olvida con el tiempo")
+	var n: int = censo.registros.size()
+	print("  censo: OK (%d registros, %d con cuerpo, %d latentes)" % [n, n - censo.latentes(), censo.latentes()])
+
+
 ## Género según el nombre, etiquetas en femenino y el mismo aspecto para el mismo nombre.
 func _test_looks(world) -> void:
 	var npc_script = load("res://scripts/actors/npc.gd")  # cargado aquí: usa los autoloads

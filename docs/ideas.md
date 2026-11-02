@@ -64,6 +64,15 @@ sí y una memoria poco fiable**, que puede ir creciendo hacia misiones de rol en
     - [ ] Fase 2: misiones en el editor (condiciones, objetivo con los encargos y minijuegos
       que ya hay, plazo y resultados al cumplir o fallar)
     - [ ] Fase 3: relaciones entre personajes y esquema de las cadenas de misiones
+12. **Bots latentes (censo)**: todos los del barrio en un registro de datos y cuerpo solo para
+    los que tienes cerca; al volver a verlos se ponen al día. — hecho lo básico (rama `feat/editor-personajes`)
+    - [x] Dormir y despertar según la distancia, con lo que les pasó; no se duermen los que
+      tienen asuntos contigo; olvidan con el tiempo (el rencor, más despacio)
+    - [x] Medido: 2.600 en el censo a 60 FPS (unos 40–60 con cuerpo alrededor)
+    - [ ] Subir la población del barrio ahora que cabe (¿1 de cada 20 vecinos reales?)
+    - [ ] «Despertadores»: que un latente con asuntos contigo actúe aunque esté lejos
+      (el camello que viene a cobrar) en vez de quedarse con cuerpo todo el rato
+    - [ ] Guardar el censo en la partida guardada (cuando haya partidas guardadas)
 
 ## 2. Estado del personaje
 

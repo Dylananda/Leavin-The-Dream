@@ -2,7 +2,7 @@ class_name Personajes
 extends RefCounted
 ## Personajes únicos hechos con el editor de personajes (editor/editor_personajes.tscn), uno por
 ## archivo en data/personajes/<id>.json. El juego los carga al empezar y saca a cada uno en su
-## zona y a sus horas (ver World._spawn_personajes). Lo que todavía no sabe usar (fuerza,
+## zona y a sus horas (ver Censo). Lo que todavía no sabe usar (fuerza,
 ## misiones, relaciones...) se guarda igual, para cuando lo sepa: ver USADO.
 ##
 ## Las posiciones (polígono de la zona, casa y lugares) van en casillas de la cuadrícula del
