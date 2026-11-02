@@ -85,7 +85,19 @@ del Raval y Sant Pau; de noche, despedidas de soltero y lateros junto a los bare
 también hay niños jugando en las plazas, gente mayor con bastón (y algunos con perro),
 repartidores con la mochila cúbica a toda prisa y gente con pasta que viene al Liceu, al MACBA
 o a ver un piso que comprar. Algunos vecinos, abuelos, yonkis y pijos sacan al perro, que va
-detrás de ellos y se va cuando se van. Los
+detrás de ellos y se va cuando se van. Por la Rambla hay músicos en su punto fijo, estatuas
+humanas (en el tramo de Colom) que no se mueven hasta que les echas una moneda, captadores de
+discotecas y clubs cannábicos, caricaturistas y guías de free tour con su grupo detrás; en el
+MACBA, skaters; en Robadors, trabajadoras sexuales; de noche, roseros por los bares; y a todas
+horas, chatarreros con su carro, punkis con sus perros y gente sin techo que pide en la puerta
+de una iglesia y de noche se va a su cajero o a su portal.
+
+La policía son dos cuerpos. La **Guàrdia Urbana** lleva la convivencia: te despierta y te echa
+si te ve dormir en la calle (en un rincón escondido es más difícil), multa por beber, requisa la
+manta, las latas y la mesa del trile, y te manda a los Mossos si te chivas de un camello. Los
+**Mossos d'Esquadra** llevan los delitos: peleas, drogas, detenciones y comisaría. Los dos tienen
+agentes de paisano (de guiri en la Rambla, de vecino en Robadors) que no se descubren hasta que
+actúan. Si te fichan, te persigue el cuerpo al que le toca lo que hiciste. Los
 personajes nuevos tienen nombre e historia propia; las fuentes están en `docs/ideas.md`.
 
 ### Cosas por la calle

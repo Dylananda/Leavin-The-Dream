@@ -9,8 +9,11 @@ signal caught_player(npc: Npc)
 
 ## speed en metros por segundo; wander en casillas (2 m).
 ## hours = [desde, hasta) en horas del día (puede pasar de medianoche); sin hours, a todas horas.
-## zone = dónde viven: "rambla", "rambla_raval", "bares" (ver World._spawn_npc).
-## disguise = cómo se le ve hasta que hablas con él; bios = historia de cada nombre.
+## zone = dónde viven: "rambla", "rambla_raval", "bares", "plazas", "macba", "robadors",
+## "musica", "pintores", "estatuas" (ver World.ZONE_STREETS y World._zone_cell).
+## disguise = cómo se le ve hasta que hablas con él (las secretas, hasta que actúan);
+## bios = historia de cada nombre. still = se queda quieto sin mirar a los lados (estatuas);
+## bed = tipo de lugar del mapa donde pasa la noche (ver World._spawn_npc).
 ## women = nombres que son de mujer; either = nombres que no dicen el género (se elige al
 ## azar, pero siempre el mismo para ese nombre); el resto son hombres. label_f = etiqueta en
 ## femenino si cambia. looks = rasgos fijos de algún nombre (ver Actor.look).
@@ -27,11 +30,42 @@ const KINDS := {
 		"names": ["El Rata", "Chino", "El Tuerto", "Nene", "Boli", "El Primo"],
 		"lines": ["Chocolate, maría...", "¿Qué buscas, amigo?", "Sssst, ven aquí", "Aquí no, muévete"],
 	},
-	"policia": {
-		"label": "Agente", "speed": 14.4, "wander": 120, "accessory": "gorra_poli",
-		"names": ["Agente Puig", "Agente Soler", "Agente Romero", "Agente Vidal"],
-		"either": ["Agente Puig", "Agente Soler", "Agente Romero", "Agente Vidal"],
-		"lines": ["Circulen.", "Documentación.", "¿Todo bien por aquí?"],
+	# La policía, en dos cuerpos con sus competencias (ver Defs.CRIME_CORPS): la Guàrdia
+	# Urbana (del Ajuntament: convivencia y ordenanzas) y los Mossos d'Esquadra (de la
+	# Generalitat: delitos, orden público y detenciones). Cada uno con agentes de paisano.
+	"urbano": {
+		"label": "Agente de la Urbana", "speed": 14.4, "wander": 120, "accessory": "gorra_poli",
+		"names": ["Agente Puig", "Agente Soler", "Agente Romero", "Agente Vidal", "Agente Ferrer", "Agente Navarro"],
+		"either": ["Agente Puig", "Agente Soler", "Agente Romero", "Agente Vidal", "Agente Ferrer", "Agente Navarro"],
+		"lines": ["Circulen.", "Aquí no se puede beber.", "Recoja eso, por favor.", "¿Todo bien por aquí?", "Esto es vía pública."],
+	},
+	"mosso": {
+		"label": "Mosso d'Esquadra", "label_f": "Mossa d'Esquadra", "speed": 14.4, "wander": 140, "accessory": "gorra_poli",
+		"names": ["Agent Casals", "Agent Rius", "Agent Moreno", "Agent Prats", "Agent Gil"],
+		"either": ["Agent Casals", "Agent Rius", "Agent Moreno", "Agent Prats", "Agent Gil"],
+		"lines": ["Documentació, si us plau.", "Documentación.", "¿Ha visto algo?", "Apártese, por favor.", "Mossos. Quieto ahí."],
+	},
+	"urbano_secreta": {
+		"label": "Urbana de paisano", "speed": 12.0, "wander": 50, "accessory": "mochila", "disguise": "turista",
+		"hours": [9, 23], "zone": "rambla",
+		"names": ["Toni", "Cristina", "Marcos", "Eva"],
+		"women": ["Cristina", "Eva"],
+		"lines": ["Is this the Boqueria?", "*mira el móvil*", "*se toca la oreja*", "Sorry, sorry"],
+		"bios": {
+			"Toni": "Seis años en la unidad de paisano de la Guàrdia Urbana en Ciutat Vella. Conoce de vista a todos los carteristas de la Rambla y ellos, cada vez más, a él.",
+			"Cristina": "Va de guiri con una mochila y un mapa al revés. En el metro de Liceu se baja y se sube del mismo vagón hasta que alguien mete la mano donde no debe.",
+		},
+	},
+	"mosso_secreta": {
+		"label": "Mosso de paisano", "label_f": "Mossa de paisano", "speed": 12.0, "wander": 40, "disguise": "vecino",
+		"accessory": "", "zone": "robadors",
+		"names": ["Jordi", "Sílvia", "Rubén", "Laura"],
+		"women": ["Sílvia", "Laura"],
+		"lines": ["Voy al mercado", "*hace como que lee el periódico*", "*se toca la oreja*", "Uf, qué calor"],
+		"bios": {
+			"Rubén": "De la unidad de investigación de los Mossos en Ciutat Vella. Lleva tres semanas apuntando quién entra y quién sale de un narcopiso de la calle d'en Robador.",
+			"Laura": "Se hace pasar por vecina con el carro de la compra. Los camellos la saludan; ella les sonríe y apunta matrículas.",
+		},
 	},
 	"yonki": {
 		"label": "Yonki", "speed": 8.8, "wander": 50, "accessory": "",
@@ -186,9 +220,162 @@ const KINDS := {
 			"Jean-Baptiste": "Coleccionista de arte. Viene a una inauguración en el MACBA; su chófer le espera en la Rambla.",
 		},
 	},
+	# --- fauna de la calle (fuentes en docs/ideas.md)
+	"musico": {
+		"label": "Músico", "label_f": "Música", "speed": 9.0, "wander": 0, "accessory": "guitarra",
+		"hours": [10, 23], "zone": "musica",
+		"names": ["Iosif", "Lucía", "Pere", "Abdou", "Martina"],
+		"women": ["Lucía", "Martina"],
+		"lines": ["*toca «Bésame mucho»*", "Gràcies, gràcies!", "Una monedita para la música", "Esta es para los enamorados", "*afina*"],
+		"bios": {
+			"Iosif": "Toca el acordeón en la plaça del Pi desde hace veinte años. En Bucarest daba clases de solfeo; aquí se sabe de memoria lo que piden los guiris: «Bésame mucho» y la de El Padrino.",
+			"Lucía": "Estudia en el Conservatori del Liceu y toca el violonchelo en la calle los fines de semana para pagar la habitación. Pasó la prueba para tener uno de los puntos de Música al Carrer.",
+			"Pere": "Cantautor de los ochenta. Grabó un disco que nadie recuerda; él sí. Canta en catalán junto al MACBA y vende el CD a cinco euros.",
+			"Abdou": "Toca el djembé con dos amigos. Cuando llegan los skaters se pican a ver quién hace más ruido, y los vecinos de Ferlandina les gritan a los dos.",
+			"Martina": "Llegó de Rosario con una guitarra y un visado de estudiante. Toca tangos a la salida del Liceu y dice que la Rambla tiene mejor acústica que su piso.",
+		},
+	},
+	"estatua": {
+		"label": "Estatua humana", "speed": 6.0, "wander": 0, "accessory": "platillo", "still": true,
+		"hours": [10, 20], "zone": "estatuas",
+		"names": ["El Hombre de Plata", "La Dama de Bronce", "Rui", "Gerardo"],
+		"women": ["La Dama de Bronce"],
+		"lines": ["*inmóvil*", "*ni pestañea*", "*guiña un ojo*", "*inmóvil*"],
+		"bios": {
+			"El Hombre de Plata": "Lleva veinte años pintándose de plata cada mañana en un portal de la calle Nou de la Rambla. Desde que el Ajuntament mandó las estatuas al tramo de abajo, junto a Colom, saca la mitad.",
+			"La Dama de Bronce": "Bailarina de formación. Aguanta dos horas sin moverse y, cuando le cae una moneda, hace la reverencia que aprendió en el Institut del Teatre.",
+			"Rui": "Tiene la licencia de estatua humana, que se reparte por concurso. Dice que lo más duro no es estarse quieto, sino el viento que baja del puerto en invierno.",
+		},
+	},
+	"mendigo": {
+		"label": "Sin techo", "speed": 6.5, "wander": 3, "accessory": "carton", "bed": "cajero",
+		"names": ["Ramón", "Mercè", "Andrzej", "Fina", "Ousmane"],
+		"women": ["Mercè", "Fina"],
+		"lines": ["Una ayuda, por favor", "Buenos días, que tenga un buen día", "*cuenta las monedas del vaso*", "Gracias, guapa", "¿Me da algo para un café?"],
+		"bios": {
+			"Ramón": "Fue camionero treinta años. Una hernia, el paro, el divorcio y el desahucio, por ese orden. Duerme en un cajero y lo deja limpio antes de que abra la oficina.",
+			"Mercè": "Sesenta y un años. Pide en la puerta de Betlem con un vaso de cartón y saluda a todo el mundo por su nombre. Los voluntarios de Arrels le traen la cena y la cuentan en el recuento de cada invierno.",
+			"Andrzej": "Vino a trabajar en la obra del Fòrum. Ahora vive en un portal con las mantas bien dobladas y habla de volver a Gdańsk cuando haga calor.",
+			"Fina": "Se quedó en la calle al dejar a su pareja, que le pegaba. Prefiere un portal a un albergue lleno de hombres. Duerme poco y con un ojo abierto.",
+			"Ousmane": "Tiene papeles y un título de electricista que aquí no le convalidan. Sin nómina no hay piso, y sin piso no hay nómina.",
+		},
+	},
+	"skater": {
+		"label": "Skater", "speed": 16.0, "wander": 10, "accessory": "skate",
+		"hours": [12, 22], "zone": "macba",  # de 22 a 9 no se puede patinar en la plaza (2023)
+		"names": ["Biel", "Noa", "Jonas", "Yuki", "Bruno"],
+		"women": ["Noa"],
+		"lines": ["*clac* ¡Uooo!", "¡Casi!", "Otra vez, otra vez", "Aparta, que voy", "¿Lo has grabado?"],
+		"bios": {
+			"Biel": "Patina en la plaça dels Àngels desde los doce años. Los vecinos firman quejas por el ruido del mármol; su madre es una de ellas.",
+			"Jonas": "Vino de Copenhague tres semanas para grabar un vídeo en el MACBA, la plaza más famosa del skate europeo. Lleva dos años durmiendo en sofás.",
+			"Noa": "La única de su grupo que salta la escalera grande. Pone cafés por la mañana y por la tarde se deja las rodillas en el suelo del museo.",
+			"Yuki": "Fotógrafo de skate. Dice que la fachada del MACBA sale en más vídeos que todas las obras que hay dentro.",
+		},
+	},
+	"captador": {
+		"label": "Captador", "label_f": "Captadora", "speed": 10.0, "wander": 12, "accessory": "folletos",
+		"hours": [17, 3], "zone": "rambla",
+		"names": ["Leo", "Bianca", "Kenny", "Sofía"],
+		"women": ["Bianca", "Sofía"],
+		"lines": ["Party tonight? Free entrance!", "Cannabis club, my friend? Members only", "Pub crawl, free shots!", "Hey guys, where are you from?"],
+		"bios": {
+			"Bianca": "Licenciada en Turismo en Nápoles. Cobra unos euros por cada guiri que entra en la discoteca con su flyer; si no llega a veinte en la noche, no le pagan ni el bus.",
+			"Leo": "Ofrece «cannabis club, members only» a media voz. Sabe que captar socios en la calle está prohibido y que la Urbana tiene a gente de paisano para eso: cambia de esquina cada media hora.",
+			"Kenny": "Lleva la ruta de bares de los martes: doce bares, un chupito en cada uno y cuarenta guiris a su cargo. A las tres le toca recogerlos del suelo.",
+			"Sofía": "Reparte flyers de un club de la calle Escudellers. Odia el trabajo y adora a sus compañeros; entre todos se avisan de los carteristas.",
+		},
+	},
+	"rosero": {
+		"label": "Rosero", "label_f": "Rosera", "speed": 9.0, "wander": 25, "accessory": "rosas",
+		"hours": [20, 3], "zone": "bares",
+		"names": ["Habib", "Sumon", "Joy", "Anwar"],
+		"lines": ["¿Rosa, señorita?", "Una rosa para la novia", "Dos euros, amigo", "*ofrece una rosa*", "¿Foto? ¿Luz?"],
+		"bios": {
+			"Habib": "Compra las rosas por la mañana a mayoristas y las vende de noche por las terrazas. Si a las tres le quedan, se las regala a la última pareja que ve: dice que trae suerte.",
+			"Sumon": "Estudió informática. Vende rosas de noche y por la mañana va a clase de catalán; ya lo habla mejor que muchos del barrio.",
+			"Joy": "Tiene veintidós años y una sonrisa que vende más que las rosas. Comparte habitación con cinco compañeros en la calle de l'Hospital.",
+			"Anwar": "Lleva quince años por las terrazas de la plaça Reial y del Raval. Los camareros le conocen y le dejan usar el baño.",
+		},
+	},
+	"chatarrero": {
+		"label": "Chatarrero", "label_f": "Chatarrera", "speed": 8.0, "wander": 90, "accessory": "carro",
+		"hours": [7, 22],
+		"names": ["Pap", "Viorel", "Paco", "Lamin", "Mirela"],
+		"women": ["Mirela"],
+		"lines": ["¡Hierro, chatarra!", "¿Eso lo tiras?", "*empuja el carro*", "El cobre está caro, ¿eh?"],
+		"bios": {
+			"Pap": "Recorre el barrio con un carro de supermercado cargado de somieres y radiadores. Vivió en una nave del Poblenou con cientos de chatarreros hasta que la desalojaron.",
+			"Viorel": "Sale a las siete con el carro y su mujer, Mirela, cada uno por un lado. Sabe qué noche saca la gente los trastos en cada calle.",
+			"Paco": "Setenta años y una pensión que no llega. Vende la chatarra para el tabaco y, dice, para que no se le olvide andar.",
+			"Mirela": "Se conoce los contenedores de obra de todo Ciutat Vella. Separa el cobre, el aluminio y el hierro mejor que la planta de reciclaje.",
+		},
+	},
+	"trabajadora_sexual": {
+		"label": "Trabajadora sexual", "speed": 8.0, "wander": 4, "accessory": "",
+		"hours": [11, 5], "zone": "robadors",
+		"names": ["Mari Carmen", "Precious", "Ioana", "Valeria", "Lorena"],
+		"women": ["Mari Carmen", "Precious", "Ioana", "Valeria", "Lorena"],
+		"looks": {
+			"Mari Carmen": {"hair": Color("c8a060"), "hair_style": "melena", "skirt": true},
+			"Valeria": {"hair_style": "melena", "skirt": true},
+		},
+		"lines": ["Hola, cariño", "Si no vas a subir, no te pares aquí", "Hoy no hay nadie...", "¿Has visto a la Urbana?"],
+		"bios": {
+			"Mari Carmen": "Treinta años en la calle d'en Robador. Ha visto tirar medio barrio para abrir la Rambla del Raval; ella sigue en el mismo portal y paga la habitación por horas.",
+			"Precious": "Llegó con una deuda enorme con quien la trajo y la paga a plazos. Las de la asociación le han hablado de una abogada; todavía no se atreve.",
+			"Ioana": "Tiene un hijo de seis años con su madre, en Constanța. Le dicen que trabaja de camarera. Hace las revisiones en una asociación del barrio.",
+			"Valeria": "Mujer trans con estudios de enfermería. La echaron de dos trabajos al ver su nombre antiguo en el DNI. Es la que avisa a las demás cuando un cliente se pone violento.",
+			"Lorena": "Trabaja de día para recoger a su hija del colegio a las cinco. La Urbana le ha puesto dos multas por la ordenanza; las dos las ha recurrido.",
+		},
+	},
+	"guia": {
+		"label": "Guía", "speed": 7.5, "wander": 60, "accessory": "paraguas",
+		"hours": [10, 19], "zone": "rambla",
+		"names": ["Marta", "Giorgio", "Clara", "Álex"],
+		"women": ["Marta", "Clara"],
+		"lines": ["Follow me, please!", "Here, in 1920...", "Stay together, guys!", "This is the real Barcelona", "At the end, you pay what you think it's worth"],
+		"bios": {
+			"Marta": "Historiadora del arte. Hace tres free tours al día por el Gòtic y el Raval y vive de las propinas; la plataforma donde se apuntan los guiris también se lleva su parte.",
+			"Giorgio": "Cuenta la historia del barrio chino y de la Bella Dorita con tanto teatro que algunos guiris aplauden. En Ciutat Vella el grupo no puede pasar de quince ni llevar megáfono.",
+			"Clara": "Lleva un paraguas amarillo para que el grupo no la pierda. Los vecinos le gritan desde los balcones; ella les da la razón en voz baja.",
+			"Álex": "Hace la ruta del «Raval canalla»: los antiguos burdeles, los bares de marineros, la Criolla. Cuando pasa por delante de un narcopiso, acelera.",
+		},
+	},
+	"caricaturista": {
+		"label": "Caricaturista", "speed": 7.0, "wander": 0, "accessory": "caballete",
+		"hours": [10, 20], "zone": "pintores",
+		"names": ["Ernesto", "Anaïs", "Hyun", "Jaume"],
+		"women": ["Anaïs"],
+		"looks": {"Ernesto": {"hair": Color("b8b8b8"), "facial": "barba", "glasses": true}},
+		"lines": ["Caricature? Ten minutes!", "¿Un retrato, señora?", "Quieto, no se mueva", "*dibuja*", "Sonría, que sale mejor"],
+		"bios": {
+			"Ernesto": "Dibuja caricaturas en la Rambla desde antes de los Juegos Olímpicos. Tiene una de las licencias municipales y el taburete de un compañero que se jubiló.",
+			"Anaïs": "Estudió Bellas Artes en Toulouse. Pinta acuarelas de la plaça del Pi que los guiris compran por veinte euros; sus cuadros de verdad no los compra nadie.",
+			"Hyun": "Hace retratos a lápiz en diez minutos. Los turistas coreanos le hacen cola porque les habla en su idioma.",
+			"Jaume": "Lleva una libreta con caricaturas de todos los vecinos que se han ido del barrio. Dice que es su censo.",
+		},
+	},
+	"punki": {
+		"label": "Punki", "speed": 9.0, "wander": 25, "accessory": "cresta",
+		"hours": [11, 4], "zone": "plazas",
+		"names": ["Txus", "Klaus", "Raquel", "Moco"],
+		"women": ["Raquel"],
+		"lines": ["Unas monedas pa' los perros", "¡Oi! ¡Oi!", "Ni dios ni amo", "Tranqui, que no muerde... mucho", "*bebe del litro*"],
+		"bios": {
+			"Txus": "De Irún. Lleva desde los noventa en la calle con sus perros, Kaos y Bruja. En el albergue no admiten perros, así que duerme donde duermen ellos.",
+			"Klaus": "Vino de Hamburgo a un festival en 2009 y no se fue. Toca la armónica fatal y lo sabe; pide «para los perros» y es verdad.",
+			"Raquel": "Vivía en una casa okupada de la calle de la Cera hasta el desalojo. Hace malabares en los semáforos del Paral·lel y comparte el bocadillo con su perra.",
+			"Moco": "Veintitrés años, el pelo verde, una beca de Bellas Artes que perdió y un perro que no pierde nunca.",
+		},
+	},
 }
 ## Tipos de bot que pasean un perro a veces (World lo saca con ellos) y con qué probabilidad.
-const DOG_OWNERS := {"vecino": 0.3, "anciano": 0.35, "yonki": 0.3, "pudiente": 0.2}
+## Por encima de 1, más de uno: el punki lleva siempre uno y a menudo dos (1.6).
+const DOG_OWNERS := {"vecino": 0.3, "anciano": 0.35, "yonki": 0.3, "pudiente": 0.2, "punki": 1.6, "mendigo": 0.15}
+## La policía: los dos cuerpos, de uniforme y de paisano, y a cuál pertenece cada tipo.
+const POLICE := {"urbano": "urbana", "urbano_secreta": "urbana", "mosso": "mossos", "mosso_secreta": "mossos"}
+const CORPS_NAMES := {"urbana": "la Guàrdia Urbana", "mossos": "los Mossos"}
 const DOG_FURS := [Color("6b4426"), Color("1c1a18"), Color("e8e0d0"), Color("c8963c"), Color("8a8a8a")]
 
 const SKINS := [Color("f0cfb0"), Color("e0b08a"), Color("c68c5e"), Color("8d5a3b"), Color("5a3a26")]
@@ -201,7 +388,7 @@ const P_GLASSES := 0.15
 const P_JACKET := 0.35
 const P_SKIRT := 0.35
 ## Tipos que van de uniforme (sin chaqueta ni falda).
-const UNIFORMED := ["policia", "educador"]
+const UNIFORMED := ["urbano", "mosso", "educador"]
 const THINK_TIME := 0.25  ## cada cuánto miran y deciden (segundos)
 ## Colores del cono de visión: tranquilo, con sospecha y persiguiéndote.
 const C_CONE_CALM := Color(0.6, 0.9, 1.0, 0.16)
@@ -235,7 +422,9 @@ var last_seen := Vector2i.ZERO  ## casilla donde te vio por última vez
 var debt_due := 0.0  ## now() a partir del cual el camello viene a cobrar lo fiado
 ## Si se dibuja su cono de visión en el suelo (lo decide World según la distancia y la tecla V).
 var cone_visible := false
-var amo: Npc  ## (perros) a quién siguen; World los retira cuando se va su dueño
+var amo: Npc  ## (perros y el grupo de un guía) a quién siguen; World los retira cuando se va
+var bed := Vector2i(-1, -1)  ## (KINDS[...]["bed"]) dónde pasa la noche; -1 si no tiene sitio
+var _still_until := 0.0  ## (estatuas) hasta entonces se mueve: le han echado una moneda
 var on_screen := true  ## lo pone World: fuera de la pantalla se actualiza menos (ver _process)
 var _offscreen_dt := 0.0
 var _offscreen_frame := randi()  ## desfasado para que no les toque a todos en el mismo frame
@@ -283,9 +472,55 @@ func init_kind(p_kind: String, p_name := "") -> void:
 	}
 	_roll_traits(rng)
 	match kind:
-		"policia":
+		"urbano":
+			# azul de la Guàrdia Urbana, con la banda de cuadros blancos en la gorra
 			look["shirt"] = Color("2a3d7a")
 			look["pants"] = Color("1d2a5a")
+			look["cap"] = Color("1d2a5a")
+			look["cap_band"] = Color("e8ecf4")
+		"mosso":
+			# azul marino de los Mossos, con el rojo en la gorra
+			look["shirt"] = Color("1a2140")
+			look["pants"] = Color("141a30")
+			look["cap"] = Color("141a30")
+			look["cap_band"] = Color("c8202c")
+		"urbano_secreta":
+			money = randi_range(20, 60)
+			look["skin"] = SKINS[rng.randi_range(0, 2)]
+			look["shirt"] = Color.from_hsv(rng.randf(), 0.6, 0.95)  # de guiri, como los turistas
+		"mosso_secreta":
+			money = randi_range(10, 40)
+			look["jacket"] = Color.from_hsv(rng.randf(), 0.15, rng.randf_range(0.2, 0.4))
+		"musico", "caricaturista", "guia", "captador", "skater":
+			money = randi_range(5, 30)
+		"estatua":
+			# pintado de arriba abajo de un solo color: plata, bronce o dorado
+			var paint: Color = [Color("c8ccd0"), Color("9a6a3a"), Color("d8b848")][rng.randi_range(0, 2)]
+			if display_name == "El Hombre de Plata":
+				paint = Color("c8ccd0")
+			elif display_name == "La Dama de Bronce":
+				paint = Color("9a6a3a")
+			for part in ["skin", "shirt", "pants", "hair"]:
+				look[part] = paint
+			look["facial"] = ""
+			look["glasses"] = false
+			look.erase("jacket")
+			money = randi_range(5, 20)
+		"mendigo":
+			money = randi_range(0, 8)
+			look["shirt"] = look["shirt"].darkened(0.45)
+			look["jacket"] = Color.from_hsv(rng.randf(), 0.15, 0.22)  # el abrigo de siempre
+		"rosero", "chatarrero", "trabajadora_sexual":
+			money = randi_range(5, 25)
+			if kind == "trabajadora_sexual":
+				look["skirt"] = true
+				look["shirt"] = Color.from_hsv(rng.randf(), 0.7, 0.85)
+		"punki":
+			money = randi_range(0, 6)
+			look["shirt"] = Color("1a1a1a")
+			look["jacket"] = Color("101010")  # chupa de cuero
+			look["pants"] = [Color("2a2a2a"), Color("8a2020"), Color("3a3a50")][rng.randi_range(0, 2)]
+			look["hair"] = [Color("40d040"), Color("e03c8c"), Color("3c8ce0"), Color("e05020")][rng.randi_range(0, 3)]
 		"turista":
 			money = randi_range(20, 160)
 			look["skin"] = SKINS[rng.randi_range(0, 1)]
@@ -356,8 +591,10 @@ func _roll_traits(rng: RandomNumberGenerator) -> void:
 
 func label() -> String:
 	var k: Dictionary = KINDS[kind]
-	if kind == "perro" and amo != null and is_instance_valid(amo):
-		return "%s (%s de %s)" % [display_name, kind_label(kind, gender).to_lower(), amo.display_name]
+	if amo != null and is_instance_valid(amo):
+		if kind == "perro":
+			return "%s (%s de %s)" % [display_name, kind_label(kind, gender).to_lower(), amo.display_name]
+		return "%s (%s del grupo de %s)" % [display_name, kind_label(kind, gender).to_lower(), amo.display_name]
 	if not known and k.has("disguise"):
 		return "%s (%s)" % [display_name, kind_label(k["disguise"], gender)]
 	return "%s (%s)" % [display_name, kind_label(kind, gender)]
@@ -367,6 +604,38 @@ func label() -> String:
 static func kind_label(p_kind: String, p_gender: String) -> String:
 	var k: Dictionary = KINDS[p_kind]
 	return k.get("label_f", k["label"]) if p_gender == "f" else k["label"]
+
+
+## (estatuas) Se mueve `seconds` segundos: le han echado una moneda.
+func wake_statue(seconds: float) -> void:
+	_still_until = _clock() + seconds
+
+
+## Si es de la policía (de uniforme o de paisano).
+func is_police() -> bool:
+	return POLICE.has(kind)
+
+
+## Cuerpo al que pertenece ("urbana" o "mossos"); "" si no es policía.
+func corps() -> String:
+	return POLICE.get(kind, "")
+
+
+## Si se le ve como policía: de uniforme, o de paisano y ya se ha descubierto.
+func looks_police() -> bool:
+	return is_police() and (not KINDS[kind].has("disguise") or known)
+
+
+## Si es un agente de paisano que todavía no se ha descubierto.
+func undercover() -> bool:
+	return is_police() and KINDS[kind].has("disguise") and not known
+
+
+## Un agente de paisano se descubre: saca la placa y ya se le ve como lo que es.
+func reveal() -> void:
+	if undercover():
+		known = true
+		say("¡Guàrdia Urbana!" if corps() == "urbana" else "¡Mossos d'Esquadra!", 3.0)
 
 
 ## Historia de este personaje, si la tiene.
@@ -404,14 +673,14 @@ func add_debt(amount: int, hours: float) -> void:
 
 
 ## Lo que le toca hacer si te ve, según quién es y lo que recuerda de ti; "" si le da igual.
-## "persigue" (la policía, si estás fichado o muy buscado), "cobrar" (un camello al que
+## "persigue" (la policía, si estás fichado por algo de su competencia o muy buscado), "cobrar" (un camello al que
 ## debes), "venganza" (le robaste y va a por lo suyo), "denuncia" (le robaste y busca a un
 ## agente), "territorio" (un camello en cuya esquina vendiste), "aparta" (le has pedido
 ## demasiado, le pegaste o le timaste) o "acerca" (le ayudaste o te compra).
 func grudge() -> String:
 	var gs := GameState
-	if kind == "policia":
-		return "persigue" if gs.is_wanted() or gs.heat > Defs.CHASE_HEAT else ""
+	if is_police():
+		return "persigue" if gs.is_wanted_by(corps()) or gs.heat > Defs.CHASE_HEAT else ""
 	if kind == "camello" and debt > 0 and gs.now() >= debt_due:
 		return "cobrar"
 	if kind == "camello" and remembers("pisado") > 0:
@@ -442,7 +711,7 @@ func avenger() -> bool:
 ## Cómo reacciona ante un escándalo: "valiente" (intenta pararte), "llama" (a la policía) o
 ## "pasa". Los que viven de la calle siempre pasan.
 func temper() -> String:
-	if kind in Defs.NEVER_INTERVENE or kind == "policia":
+	if kind in Defs.NEVER_INTERVENE or is_police():
 		return "pasa"
 	var r := _trait("caracter")
 	if r < Defs.BRAVE_CHANCE:
@@ -508,8 +777,9 @@ func investigate(at: Vector2i) -> void:
 	if mode == "persigue":
 		return
 	mode = "busca"
-	if kind == "policia":
+	if is_police():
 		chase_reason = "policia"
+		reveal()
 	last_seen = at
 	_search = Defs.SEARCH_TIME * 1.5
 	speed = KINDS[kind]["speed"] * 1.3
@@ -521,7 +791,10 @@ func react(why: String) -> void:
 	_calm_until = _clock() + 25.0
 	match why:
 		"persigue":
-			say("¡Alto! ¡Policía!")
+			if undercover():
+				reveal()
+			else:
+				say("¡Alto! ¡Policía!" if corps() == "urbana" else "¡Alto! ¡Mossos!")
 			start_chase("policia")
 		"cobrar":
 			say("¡Eh, tú! ¡Mi dinero!", 3.0)
@@ -584,20 +857,27 @@ func _process(delta: float) -> void:
 		if mode == "busca" and not is_moving():
 			_look_around(delta, 2.5)
 		return
-	if kind == "perro":
+	if kind == "perro" or amo != null:
 		_follow_owner(delta)
 		return
+	if KINDS[kind].get("still", false) and _clock() >= _still_until:
+		return  # estatua: ni se mueve ni mira, hasta que le echan una moneda
 	if not is_moving():
 		_look_around(delta, 1.0)
 		_idle -= delta
 		if _idle <= 0.0:
 			_idle = randf_range(1.0, 5.0) if kind != "camello" else randf_range(4.0, 12.0)
+			# de noche, quien tiene sitio para dormir se va a él y se queda
+			if bed.x >= 0 and GameState.is_night():
+				if distance_to_cell(bed) > 1:
+					walk_to(bed)
+				return
 			walk_to(city.random_walkable_near(home, wander_radius))
 
 
 ## Mira (cono de visión) y sube o baja la sospecha. Llena, reacciona si tiene motivo.
 func perceive(dt: float) -> void:
-	var far: float = Defs.VISION["policia"]["range"] * Defs.EXPOSED_SIGHT
+	var far: float = Defs.VISION["mosso"]["range"] * Defs.EXPOSED_SIGHT
 	sees_player = distance_to_cell(player.cell) <= far and can_see(player)
 	if mode in ["aparta", "denuncia", "acerca"]:
 		return
@@ -682,8 +962,7 @@ func _follow_mode(dt: float) -> void:
 				calm_down()
 
 
-## Parado, gira la cabeza a un lado y a otro (para que el cono barra la calle).
-## (perros) Va detrás de su dueño, a dos o tres casillas, y husmea cuando se para.
+## (perros y grupos de un guía) Va detrás de su dueño, a dos o tres casillas, y mira cuando se para.
 func _follow_owner(delta: float) -> void:
 	if amo == null or not is_instance_valid(amo):
 		return
@@ -696,6 +975,7 @@ func _follow_owner(delta: float) -> void:
 		_look_around(delta, 2.0)
 
 
+## Parado, gira la cabeza a un lado y a otro (para que el cono barra la calle).
 func _look_around(delta: float, pace: float) -> void:
 	_look_timer -= delta * pace
 	if _look_timer <= 0.0:
@@ -709,7 +989,7 @@ func _nearest_police() -> Npc:
 		return null
 	var best: Npc = null
 	for n in world.npcs:
-		if n.kind == "policia" and is_instance_valid(n) and (best == null or n.distance_to_cell(cell) < best.distance_to_cell(cell)):
+		if n.looks_police() and is_instance_valid(n) and (best == null or n.distance_to_cell(cell) < best.distance_to_cell(cell)):
 			best = n
 	return best
 

@@ -199,7 +199,7 @@ func _prepare(npc: Npc) -> void:
 	var data := []
 	var f := Fichas.of(npc.kind)
 	if "policia" in f["datos"]:
-		data.append_array(_police_data(npc))
+		data.append_array(_police_data(npc, "secretas" in f["datos"]))
 	if "turistas" in f["datos"]:
 		data.append_array(_tourist_data(npc))
 	for d in data.slice(0, MAX_DATA):
@@ -227,11 +227,15 @@ func _meters(a: Npc, cell: Vector2i) -> int:
 	return int(a.distance_to_cell(cell) * world.city.cell_m)
 
 
-func _police_data(npc: Npc) -> Array:
+## Agentes cerca de `npc`, con su cuerpo; los de paisano, solo si `secretas` (quien vive de
+## la calle aprende a reconocerlos).
+func _police_data(npc: Npc, secretas: bool) -> Array:
+	const WHO := {"urbano": "un agente de la Urbana", "mosso": "una pareja de Mossos",
+		"urbano_secreta": "uno de la Urbana de paisano", "mosso_secreta": "uno de los Mossos de paisano"}
 	var out := []
 	for n in world.npcs:
-		if n.kind == "policia" and n.distance_to_cell(npc.cell) <= POLICE_RADIUS:
-			out.append("Hay un agente de la Urbana por %s, a unos %d m." % [world.city.street_name_near(n.cell), _meters(npc, n.cell)])
+		if n.is_police() and (n.looks_police() or secretas) and n.distance_to_cell(npc.cell) <= POLICE_RADIUS:
+			out.append("Hay %s por %s, a unos %d m." % [WHO[n.kind], world.city.street_name_near(n.cell), _meters(npc, n.cell)])
 	if out.is_empty():
 		out.append("Ahora mismo no hay ningún agente por aquí cerca.")
 	return out

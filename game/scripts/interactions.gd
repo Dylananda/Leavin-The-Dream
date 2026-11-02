@@ -37,10 +37,15 @@ func _heat(amount: float) -> void:
 ## visto otro, grita y se monta el escándalo; si no, la víctima quizá se da cuenta al rato
 ## y se queda con tu cara.
 func _after_theft(victim: Npc) -> void:
-	if world.police_watching() > 0:
+	var agents := world.watching(World._police_kinds())
+	if not agents.is_empty():
 		victim.remember("robado")
 		_heat(60)
-		GameState.log_msg("Un agente lo ha visto todo.", G.C_BAD)
+		if agents[0].undercover():
+			agents[0].reveal()
+			GameState.log_msg("El «%s» que miraba el móvil saca una placa: lo ha visto todo." % Npc.kind_label(Npc.KINDS[agents[0].kind]["disguise"], agents[0].gender).to_lower(), G.C_BAD)
+		else:
+			GameState.log_msg("Un agente lo ha visto todo.", G.C_BAD)
 		return
 	var seen := world.robbery_witnesses(victim)
 	if not seen.is_empty():
@@ -63,7 +68,10 @@ func for_npc(npc: Npc) -> Array:
 	match npc.kind:
 		"turista": acts = _turista(npc)
 		"camello": acts = _camello(npc)
-		"policia": acts = _policia(npc)
+		"urbano": acts = _urbano(npc)
+		"mosso": acts = _mosso(npc)
+		"urbano_secreta": acts = _secreta(npc, _turista(npc))
+		"mosso_secreta": acts = _secreta(npc, _vecino(npc))
 		"yonki": acts = _yonki(npc)
 		"educador": acts = _educador(npc)
 		"vecino": acts = _vecino(npc)
@@ -78,6 +86,17 @@ func for_npc(npc: Npc) -> Array:
 		"perro": acts = _perro(npc)
 		"mensajero": acts = _mensajero(npc)
 		"pudiente": acts = _pudiente(npc)
+		"musico": acts = _musico(npc)
+		"estatua": acts = _estatua(npc)
+		"mendigo": acts = _mendigo(npc)
+		"skater": acts = _skater(npc)
+		"captador": acts = _captador(npc)
+		"rosero": acts = _rosero(npc)
+		"chatarrero": acts = _chatarrero(npc)
+		"trabajadora_sexual": acts = _trabajadora_sexual(npc)
+		"guia": acts = _guia(npc)
+		"caricaturista": acts = _caricaturista(npc)
+		"punki": acts = _punki(npc)
 	acts.append_array(world.trade.offers_for(npc))
 	acts.append_array(world.errands.offers_for(npc))
 	if npc.bio() != "":
@@ -214,7 +233,7 @@ func _camello(npc: Npc) -> Array:
 				gs.debt = maxi(0, gs.debt - paid)
 				gs.log_msg("Le pagas %d €. Debes %d €." % [paid, npc.debt])))
 		acts.append(_act("Hacerle de aguador (2 h) para saldar", func():
-			_lookout(npc, 120, 0.85, func(share: float, tips: int):
+			_lookout(npc, 120, 0.85 - 0.1 * world.police_near(npc.cell, 30, "mossos"), func(share: float, tips: int):
 				var off := roundi(15 * share) + tips
 				npc.debt = maxi(0, npc.debt - off)
 				gs.debt = maxi(0, gs.debt - off)
@@ -223,7 +242,8 @@ func _camello(npc: Npc) -> Array:
 				gs.change_dignity(-2),
 			func():
 				_heat(60)
-				gs.log_msg("¡Redada! Sales corriendo con la policía detrás. Y sigues debiéndole.", G.C_BAD)
+				gs.log_msg("¡Redada de los Mossos! Sales corriendo. Y sigues debiéndole.", G.C_BAD)
+				gs.mark_wanted("los Mossos te han visto de aguador", "drogas")
 				gs.change_dignity(-2))))
 		return acts
 	for id in Defs.DEALER_STOCK:
@@ -247,7 +267,7 @@ func _camello(npc: Npc) -> Array:
 					npc.say("Sin pasta no hay fiesta")
 				gs.change_dignity(-2)))
 	acts.append(_act("Hacerle de aguador (2 h)", func():
-		_lookout(npc, 120, 0.85, func(share: float, tips: int):
+		_lookout(npc, 120, 0.85 - 0.1 * world.police_near(npc.cell, 30, "mossos"), func(share: float, tips: int):
 			var got := roundi(15 * share) + tips
 			_heat(15)
 			gs.add_money(got)
@@ -256,17 +276,45 @@ func _camello(npc: Npc) -> Array:
 			gs.change_dignity(-2),
 		func():
 			_heat(75)
-			gs.log_msg("¡Redada! Sales corriendo con la policía detrás.", G.C_BAD)
+			gs.log_msg("¡Redada de los Mossos! Sales corriendo con ellos detrás.", G.C_BAD)
+			gs.mark_wanted("los Mossos te han visto de aguador", "drogas")
 			gs.change_dignity(-2))))
 	return acts
 
 
-func _policia(npc: Npc) -> Array:
+## La Guàrdia Urbana: convivencia. Te manda a los servicios sociales, no lleva las drogas
+## (eso es de los Mossos) y si le faltas te multa.
+func _urbano(npc: Npc) -> Array:
 	var gs := GameState
 	return [
 		_act("Pedirle ayuda", func():
 			gs.advance(5)
-			npc.say("Pásate por el Baluard, hombre")
+			var beds := world.city.pois_of_kind("albergue")
+			if beds.is_empty():
+				npc.say("Pásate por el Baluard, hombre")
+			else:
+				npc.say("Hay un albergue por %s. A partir de las siete" % world.city.street_name_near(Vector2i(beds[0]["x"], beds[0]["y"])), 4.0)
+				world.highlight_poi(beds[0])
+			gs.change_dignity(-1)),
+		_act("Chivarte de un camello", func():
+			gs.advance(5)
+			npc.say("Eso es cosa de los Mossos. Llama al 112")
+			gs.log_msg("La Urbana no lleva el tráfico de drogas: te manda a los Mossos.")),
+		_act("Insultarle", func():
+			npc.say("¿Perdona? Documentación, ahora mismo")
+			_heat(20)
+			gs.fine(Defs.FINE_INSULT, "faltarle al respeto a un agente")),
+	]
+
+
+## Los Mossos d'Esquadra: los delitos. Recogen el chivatazo de un camello y, si les faltas,
+## acabas en su comisaría.
+func _mosso(npc: Npc) -> Array:
+	var gs := GameState
+	return [
+		_act("Pedirle ayuda", func():
+			gs.advance(5)
+			npc.say("Si te han robado, denúncialo en comisaría")
 			gs.change_dignity(-1)),
 		_act("Chivarte de un camello", func():
 			npc.say("Gracias por la información")
@@ -279,6 +327,21 @@ func _policia(npc: Npc) -> Array:
 			gs.change_dignity(-3)
 			world.arrest_player()),
 	]
+
+
+## Un agente de paisano: le hablas como a lo que parece (`acts`, el menú del turista o del
+## vecino), pero si le intentas robar te agarra la muñeca y saca la placa.
+func _secreta(npc: Npc, acts: Array) -> Array:
+	var gs := GameState
+	for a in acts:
+		if a["label"].begins_with("Robarle") or a["label"].begins_with("Pedirle el móvil"):
+			a["do"] = func():
+				gs.advance(5)
+				npc.reveal()
+				gs.log_msg("Antes de que llegues al bolsillo te agarra la muñeca. «%s. Quieto.»" % ("Guàrdia Urbana" if npc.corps() == "urbana" else "Mossos d'Esquadra"), G.C_BAD)
+				gs.change_dignity(-3)
+				world.arrest_player()
+	return acts
 
 
 func _yonki(npc: Npc) -> Array:
@@ -320,6 +383,8 @@ func _fight(npc: Npc) -> void:
 	gs.advance(10)
 	_heat(30)
 	npc.remember("pegado")
+	if world.police_watching() > 0:
+		gs.mark_wanted("un agente te ha visto pelearte", "violencia")
 	world.play_minigame(Fight.new(npc), _fight_chance(), func(result: String, _stats: Dictionary):
 		_fight_done(npc, result == "ok"))
 
@@ -411,7 +476,7 @@ func _mantero(npc: Npc) -> Array:
 	var acts := [
 		_act("Hacerle de vigía (2 h)", func():
 			var pay := 20 if gs.profile.get("id") == "sin_papeles" else 8
-			_lookout(npc, 120, 0.9 - 0.1 * world.police_near(npc.cell, 30), func(share: float, tips: int):
+			_lookout(npc, 120, 0.9 - 0.1 * world.police_near(npc.cell, 30, "urbana"), func(share: float, tips: int):
 				var got := roundi(pay * share) + tips
 				gs.add_money(got)
 				_heat(10)
@@ -420,6 +485,7 @@ func _mantero(npc: Npc) -> Array:
 				gs.log_msg("Vigilas por si viene la policía. Te da %d €." % got, G.C_GOOD),
 			func():
 				_heat(25)
+				gs.mark_wanted("la Urbana te ha visto con el mantero", "civismo")
 				npc.say("¡Corre, corre!", 3.0)
 				gs.log_msg("La Urbana se lleva la manta de %s. Hoy no cobra nadie." % npc.display_name, G.C_BAD))),
 	]
@@ -508,7 +574,7 @@ func _latero(npc: Npc) -> Array:
 			gs.log_msg("Cuatro latas. Él sabe perfectamente quién ha sido.", G.C_GOOD)
 			gs.change_dignity(-6, "Robarle a uno que está peor que tú")
 			gs.change_sanity(-3)))
-	if world.police_near(npc.cell, 25) > 0:
+	if world.police_near(npc.cell, 25, "urbana") > 0:
 		acts.append(_act("Avisarle de que viene la Urbana", func():
 			npc.remember("ayudado")
 			npc.say("¡Gracias, hermano! Toma, invita la casa")
@@ -544,7 +610,7 @@ func _trilero(npc: Npc) -> Array:
 		gs.log_msg("Finges ganar una y otra vez para que piquen los guiris. %d €." % pay, G.C_GOOD)
 		gs.change_dignity(-3, "Engañar a los turistas")))
 	acts.append(_act("Hacerle de vigía (1 h)", func():
-		_lookout(npc, 60, 0.6 if world.police_near(npc.cell, 30) > 0 else 0.95, func(share: float, tips: int):
+		_lookout(npc, 60, 0.6 if world.police_near(npc.cell, 30, "urbana") > 0 else 0.95, func(share: float, tips: int):
 			var got := roundi(6 * share) + tips
 			gs.add_money(got)
 			_heat(5)
@@ -799,6 +865,336 @@ func _pudiente(npc: Npc) -> Array:
 	return acts
 
 
+## Un euro a quien vive de la calle (músicos, estatuas, sin techo...): le alegras el día.
+func _give_coin(npc: Npc, line: String, dignity := 1.0) -> Dictionary:
+	var gs := GameState
+	return _act("Echarle un euro", func():
+		gs.add_money(-1)
+		npc.money += 1
+		npc.remember("ayudado")
+		npc.say(line)
+		gs.change_sanity(2)
+		gs.change_dignity(dignity, "Dar lo poco que tienes"))
+
+
+func _musico(npc: Npc) -> Array:
+	var gs := GameState
+	var acts := [
+		_act("Escucharle un rato (20 min)", func():
+			gs.advance(20)
+			npc.say(["*toca algo lento*", "Esta es de mi tierra", "Gràcies per escoltar"].pick_random(), 3.0)
+			gs.change_sanity(5)
+			gs.ease_mono(2.0)
+			gs.log_msg("Durante veinte minutos la Rambla suena bonita.", G.C_GOOD)),
+		_act("Pasar la gorra por él (1 h)", func():
+			gs.advance(60)
+			if gs.dignity < 30 or gs.high > 50.0:
+				npc.say("Gracias, pero así me espantas al público")
+				gs.change_dignity(-2, "Que un músico no te quiera ni de ayudante")
+				return
+			var n := randi_range(3, 9)
+			gs.add_money(n)
+			npc.remember("ayudado")
+			npc.say("¡Buen trabajo, socio!")
+			gs.log_msg("Pasas la gorra entre los guiris mientras toca. Te da %d €." % n, G.C_GOOD)),
+	]
+	if gs.money >= 1:
+		acts.insert(0, _give_coin(npc, "¡Gràcies! Esta va por ti"))
+	return acts
+
+
+## La estatua no se mueve hasta que le echan una moneda (y entonces hace su número).
+func _estatua(npc: Npc) -> Array:
+	var gs := GameState
+	var acts := [
+		_act("Intentar hacerla reír (10 min)", func():
+			gs.advance(10)
+			if _chance(0.15):
+				npc.wake_statue(4.0)
+				npc.say("*se le escapa la risa*", 3.0)
+				gs.change_sanity(3)
+				gs.milestone("estatua")
+				gs.log_msg("Muecas, bailes, una imitación de Colom... y al final se ríe. Los guiris aplauden.", G.C_GOOD)
+			else:
+				npc.say("*ni pestañea*")
+				gs.change_dignity(-1, "Hacer el payaso delante de una estatua")),
+	]
+	if gs.money >= 1:
+		acts.insert(0, _act("Echarle una moneda en el platillo (1 €)", func():
+			gs.add_money(-1)
+			npc.money += 1
+			npc.remember("ayudado")
+			npc.wake_statue(5.0)
+			npc.say(["*se mueve como un robot y te da la mano*", "*hace una reverencia*", "*te guiña un ojo*"].pick_random(), 3.0)
+			gs.change_sanity(2)))
+	if not npc.robbed and npc.money > 0:
+		acts.append(_act("Robarle el platillo", func():
+			gs.advance(2)
+			npc.robbed = true
+			# una estatua no corre detrás de nadie... pero la Rambla está llena de ojos
+			var n := npc.money
+			npc.money = 0
+			gs.add_money(n)
+			npc.wake_statue(8.0)
+			gs.log_msg("Te llevas %d € en calderilla. La estatua, por primera vez en el día, se mueve deprisa." % n, G.C_GOOD)
+			gs.change_dignity(-5, "Robarle a una estatua")
+			_heat(15)
+			_after_theft(npc)))
+	return acts
+
+
+func _mendigo(npc: Npc) -> Array:
+	var gs := GameState
+	var acts := []
+	for food in ["bocadillo", "durum", "sobras"]:
+		if gs.has_item(food):
+			acts.append(_act("Compartir tu %s" % Defs.item_name(food).to_lower(), func():
+				gs.remove_item(food)
+				npc.remember("ayudado")
+				npc.say("Que Dios te lo pague. Ven, siéntate un rato")
+				gs.change_sanity(4)
+				gs.change_dignity(3, "Compartir con quien tiene menos")))
+			break
+	if gs.money >= 1:
+		acts.append(_give_coin(npc, "Gracias, de verdad"))
+	acts.append(_act("Preguntarle dónde se puede dormir", func():
+		gs.advance(10)
+		npc.say("En un rincón donde no se te vea desde la calle. Si no, la Urbana te levanta a las tres", 5.0)
+		gs.log_msg("%s te explica dónde no te despierta la Urbana: los rincones al fondo de los pasajes, lejos de las calles anchas. Los cajeros, mejor que un banco." % npc.display_name, G.C_GOOD)
+		if npc.bed.x >= 0:
+			gs.log_msg("Él duerme por %s." % world.city.street_name_near(npc.bed))))
+	acts.append(_act("Pedir a su lado (1 h)", func():
+		gs.advance(60)
+		npc.remember("ayudado")
+		var n := randi_range(0, 4) + (2 if gs.profile.get("id") == "jubilado" else 0)
+		gs.add_money(n)
+		npc.say("Aquí cabemos los dos")
+		gs.log_msg("Una hora con un vaso de cartón al lado de %s: %d €." % [npc.display_name, n], G.C_GOOD if n > 0 else Color.WHITE)
+		gs.change_dignity(-3, "Pedir sentado en el suelo")))
+	return acts
+
+
+func _skater(npc: Npc) -> Array:
+	var gs := GameState
+	return [
+		_act("Mirar cómo patinan (15 min)", func():
+			gs.advance(15)
+			npc.say(["*clac* ¡Uooo!", "¡Lo tengo, lo tengo!", "Casi me mato, tío"].pick_random(), 3.0)
+			gs.change_sanity(3)),
+		_act("Pedirle el skate", func():
+			gs.advance(10)
+			if _chance(0.3 + (0.2 if gs.profile.get("id") == "nino_bien" else 0.0)):
+				npc.say("¡Brutal! ¿Tú patinabas o qué?")
+				gs.change_sanity(5)
+				gs.change_dignity(2, "Aún te queda algo de equilibrio")
+			else:
+				npc.say("¡Ay! ¿Estás bien?", 3.0)
+				gs.change_health(-4, "Una caída en el mármol del MACBA")
+				gs.change_dignity(-2, "Comerte el suelo delante de veinte chavales")),
+		_act("Pedirles un cigarro", func():
+			gs.advance(2)
+			npc.remember("pedido")
+			npc.say("Toma, pero no me pidas otro" if _chance(0.5) else "Liado, el último")
+			gs.change_dignity(-1)),
+	]
+
+
+## Captadores: discotecas, rutas de bares y clubs cannábicos (esto último prohibido en la calle).
+func _captador(npc: Npc) -> Array:
+	var gs := GameState
+	var acts := [
+		_act("Ayudarle a repartir flyers (1 h)", func():
+			gs.advance(60)
+			if gs.dignity < 35 or gs.mono > 60.0:
+				npc.say("Lo siento, con esa pinta me espantas a los guiris")
+				gs.change_dignity(-2, "Que no te quieran ni para repartir flyers")
+				return
+			var guiris := world.npcs.filter(func(n): return n.kind in ["turista", "fiestero"] and n.distance_to_cell(npc.cell) < 50).size()
+			var n := clampi(2 + guiris, 3, 15)
+			gs.add_money(n)
+			_heat(5)
+			npc.remember("ayudado")
+			gs.milestone("flyers")
+			gs.log_msg("Una hora gritando «party tonight!» por la Rambla. Te da %d €." % n, G.C_GOOD)),
+	]
+	if gs.money >= 10:
+		acts.append(_act("Que te lleve al club cannábico (10 €)", func():
+			gs.advance(30)
+			if gs.dignity < 30:
+				npc.say("Members only, colega. Y tú no tienes pinta de socio")
+				return
+			gs.add_money(-10)
+			gs.add_item("porro", 2)
+			npc.say("Te hago socio. Tú no me has visto, ¿eh?")
+			gs.log_msg("Un local sin rótulo, una ficha de socio con un nombre inventado y dos porros. La Urbana va detrás de estos captadores.", G.C_GOOD)
+			if world.police_watching("urbana") > 0:
+				gs.mark_wanted("la Urbana te ha visto entrar con un captador", "civismo")))
+	return acts
+
+
+func _rosero(npc: Npc) -> Array:
+	var gs := GameState
+	var acts := []
+	if gs.money >= 2:
+		acts.append(_act("Comprarle una rosa (2 €)", func():
+			gs.add_money(-2)
+			npc.money += 2
+			npc.remember("ayudado")
+			npc.say("Para ti, amigo. Bonita noche")
+			gs.change_sanity(3)
+			gs.change_dignity(1, "Una rosa sin nadie a quien dársela")))
+	acts.append(_act("Preguntarle por los bares abiertos", func():
+		gs.advance(5)
+		var bars := world.city.pois_of_kind("bar")
+		var best: Dictionary = {}
+		for b in bars:
+			if best.is_empty() or npc.distance_to_cell(Vector2i(b["x"], b["y"])) < npc.distance_to_cell(Vector2i(best["x"], best["y"])):
+				best = b
+		if best.is_empty():
+			npc.say("Hoy está todo cerrado")
+		else:
+			npc.say("Ese de ahí cierra tarde y el camarero es buena gente", 4.0)
+			world.highlight_poi(best)))
+	return acts
+
+
+func _chatarrero(npc: Npc) -> Array:
+	var gs := GameState
+	var acts := []
+	for id in ["chatarra", "cobre"]:
+		if gs.has_item(id):
+			var price: int = maxi(1, Defs.ITEMS[id]["sell"] - 1)
+			acts.append(_act("Venderle %s (%d €)" % [Defs.item_name(id).to_lower(), price], func():
+				if world.street_items.take_fake(id, "«Esto no vale nada, hermano.» Es %s."):
+					return
+				gs.remove_item(id)
+				gs.add_money(price)
+				npc.remember("cliente")
+				npc.say("Va al carro. Gracias")
+				gs.log_msg("Te ahorras ir al compraventa: %d €." % price, G.C_GOOD)))
+	acts.append(_act("Ayudarle a empujar el carro (1 h)", func():
+		gs.advance(60)
+		var n := randi_range(3, 7)
+		gs.add_money(n)
+		npc.remember("ayudado")
+		npc.say("Con dos se llega más lejos")
+		gs.change_health(-2, "Empujar un carro lleno de hierros")
+		gs.log_msg("Una hora de contenedor en contenedor. Te da %d € de lo que saca en el desguace." % n, G.C_GOOD)))
+	return acts
+
+
+## Trabajadoras sexuales de Robadors: se las trata con respeto; saben mucho de la calle.
+func _trabajadora_sexual(npc: Npc) -> Array:
+	var gs := GameState
+	var acts := [
+		_act("Darle conversación (15 min)", func():
+			gs.advance(15)
+			if npc.remembers("pedido") > 1:
+				npc.say("Cariño, que estoy trabajando")
+				return
+			npc.remember("pedido")
+			npc.say(["Aquí lo que pasa es que nadie mira", "La Urbana multa a nosotras, a los otros no", "Hoy está la calle muerta"].pick_random(), 4.0)
+			gs.change_sanity(3)),
+		_act("Preguntarle por los camellos de la zona", func():
+			gs.advance(5)
+			var dealers := world.npcs.filter(func(n): return n.kind == "camello" and n.distance_to_cell(npc.cell) < 80)
+			if dealers.is_empty():
+				npc.say("Por aquí hoy no hay nadie. Y tú no deberías buscar")
+			else:
+				npc.say("En %s. Y no le digas que te lo he dicho yo" % world.city.street_name_near(dealers[0].cell), 4.0)
+			gs.change_dignity(-1)),
+	]
+	if world.police_near(npc.cell, 25, "urbana") > 0:
+		acts.append(_act("Avisarle de que viene la Urbana", func():
+			npc.remember("ayudado")
+			npc.say("Gracias, guapo. Te debo una")
+			gs.change_dignity(1, "Echar un cable")
+			npc.walk_to(world.city.random_walkable_near(npc.home, 12))))
+	return acts
+
+
+## El guía y su free tour: el grupo le sigue (World._spawn_follower).
+func _guia(npc: Npc) -> Array:
+	var gs := GameState
+	var group := world.npcs.filter(func(n): return n.amo == npc)
+	var acts := [
+		_act("Pegarte al grupo (30 min)", func():
+			gs.advance(30)
+			if gs.dignity < 30 or gs.high > 60.0:
+				npc.say("Sorry, private group. Gracias")
+				gs.change_dignity(-2, "Que te echen de un free tour")
+				return
+			npc.say(["Here, in the old Barri Xino...", "Esta plaza era un cementerio", "Look up! Modernisme!"].pick_random(), 4.0)
+			gs.change_sanity(3)
+			gs.log_msg("Aprendes que el Raval era el Barrio Chino, que aquí hubo conventos y fábricas, y que nadie de los que lo cuentan vive en él.", G.C_GOOD)),
+	]
+	if not group.is_empty():
+		acts.append(_act("Pedirle al grupo", func():
+			gs.advance(5)
+			npc.remember("pedido")
+			var n := 0
+			for t in group:
+				if _chance(0.2 + _beg_bonus()):
+					n += randi_range(1, 2)
+			gs.add_money(n)
+			npc.say("Please, guys, keep walking!", 3.0)
+			gs.log_msg("%s: %d €." % ["Algún guiri del grupo se apiada" if n > 0 else "Ni un euro: el guía los aparta", n], G.C_GOOD if n > 0 else Color.WHITE)
+			gs.change_dignity(-3, "Pedirle a un free tour")))
+	return acts
+
+
+func _caricaturista(npc: Npc) -> Array:
+	var gs := GameState
+	var acts := [
+		_act("Posar de modelo (30 min)", func():
+			gs.advance(30)
+			var n := randi_range(2, 5)
+			gs.add_money(n)
+			npc.remember("ayudado")
+			npc.say("Tienes una cara con mucha historia")
+			gs.log_msg("Media hora quieto para que los guiris vean cómo dibuja. %d €." % n, G.C_GOOD)
+			gs.change_dignity(1, "Que alguien te mire de verdad")),
+	]
+	if gs.money >= 5:
+		acts.insert(0, _act("Que te haga una caricatura (5 €)", func():
+			gs.add_money(-5)
+			gs.advance(15)
+			npc.say("Mira, mira cómo te he sacado")
+			gs.change_sanity(4)
+			gs.log_msg("Te ves con los ojos de otro: más ojeroso, más flaco... y sonriendo. Hacía tiempo.", G.C_GOOD)
+			gs.change_dignity(2, "Una caricatura tuya")))
+	return acts
+
+
+func _punki(npc: Npc) -> Array:
+	var gs := GameState
+	var acts := [
+		_act("Pedirle un cigarro", func():
+			gs.advance(2)
+			npc.remember("pedido")
+			npc.say("Toma, compa" if _chance(0.6) else "Me queda medio, ¿lo partimos?")),
+	]
+	if gs.has_item("litrona"):
+		acts.insert(0, _act("Compartir tu litrona", func():
+			gs.remove_item("litrona")
+			gs.consume("litrona")
+			npc.remember("ayudado")
+			npc.say("¡Así se hace! ¡Oi!")
+			gs.change_sanity(3)
+			gs.change_dignity(1, "Compartir el litro en la plaza")
+			if world.police_watching("urbana") > 0:
+				gs.fine(Defs.FINE_DRINKING, "beber en la calle")))
+	for food in ["sobras", "bocadillo"]:
+		if gs.has_item(food):
+			acts.append(_act("Darle tus %s para los perros" % Defs.item_name(food).to_lower(), func():
+				gs.remove_item(food)
+				npc.remember("ayudado")
+				npc.say("Mira cómo mueven el rabo. Gracias, tío")
+				gs.change_dignity(2, "Compartir con los perros")))
+			break
+	return acts
+
+
 # ------------------------------------------------------------------- lugares
 
 const POI_LABELS := {
@@ -874,7 +1270,7 @@ func for_poi(poi: Dictionary) -> Array:
 					gs.log_msg("Sacas %d €." % gs.bank, G.C_GOOD)
 					gs.bank = 0))
 			acts.append(_act("Dormir en el cajero (7 h)", func():
-				world.sleep(7 * 60, 0.15, 25.0, 0.7)
+				world.sleep(7 * 60, 0.15, 25.0, 0.7, "cajero")
 				gs.change_dignity(-6, "Dormir entre recibos")
 				gs.milestone("cajero")))
 		"iglesia":
@@ -888,7 +1284,7 @@ func for_poi(poi: Dictionary) -> Array:
 				gs.change_dignity(-2, "Pedir en la iglesia")))
 		"banco":
 			acts.append(_act("Dormir en el banco (6 h)", func():
-				world.sleep(6 * 60, 0.3, 15.0, 0.6)
+				world.sleep(6 * 60, 0.3, 15.0, 0.6, "banco")
 				gs.change_dignity(-4, "Dormir al raso")
 				gs.milestone("primera_calle")))
 		"albergue":

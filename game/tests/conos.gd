@@ -27,7 +27,7 @@ func _initialize() -> void:
 			break
 	w.player.setup(w.city, p)
 	w._camera_focus = w.player.position
-	var cops: Array = w.npcs.filter(func(n): return n.kind == "policia")
+	var cops: Array = w.npcs.filter(func(n): return n.kind == "urbano")
 	for i in mini(2, cops.size()):
 		cops[i].setup(w.city, w.city.random_walkable_near(p, 10))
 	w._spawn_npc("camello")

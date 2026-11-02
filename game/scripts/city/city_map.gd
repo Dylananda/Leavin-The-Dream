@@ -19,6 +19,7 @@ var cell_m := 4.0
 var cells := PackedByteArray()
 var pois: Array = []  ## [{kind, name, x, y}] en casillas
 var streets: Array = []  ## [{name, x, y}] muestras de cada calle, en casillas
+var labels: Array = []  ## [{text, x, z}] rótulos de los edificios conocidos (MACBA, Liceu...), en metros
 var crime: Dictionary = {}
 var barrio_name := ""
 
@@ -69,6 +70,7 @@ func _load() -> void:
 			cells[y * width + x] = row.unicode_at(x) - 48
 	pois = _data["pois"]
 	streets = _data["streets"]
+	labels = _data.get("labels", [])
 	if FileAccess.file_exists(crime_path):
 		crime = JSON.parse_string(FileAccess.get_file_as_string(crime_path))
 
@@ -229,6 +231,15 @@ func random_walkable_near(center: Vector2i, radius: int) -> Vector2i:
 
 func pois_of_kind(kind: String) -> Array:
 	return pois.filter(func(p): return p["kind"] == kind)
+
+
+## Casilla andable más cercana al edificio con el rótulo `text` (MACBA, Liceu, Colom...);
+## (-1, -1) si no está en el mapa.
+func landmark_cell(text: String) -> Vector2i:
+	for l in labels:
+		if l["text"] == text:
+			return nearest_walkable(world_to_cell(Vector3(l["x"], 0.0, l["z"])))
+	return Vector2i(-1, -1)
 
 
 ## Casillas transitables de una calle (a partir de sus muestras); vacío si no está en el mapa.
