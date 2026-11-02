@@ -219,6 +219,9 @@ var player: Actor
 var world: World
 var robbed := false  ## Ya le han robado (turistas), tú o un carterista
 var last_interaction_day := -1
+## Personaje único hecho con el editor de personajes (ver Personajes); vacío en los bots corrientes.
+var personaje := {}
+var _zona: Array[Vector2i] = []  ## casillas por las que anda, si su zona es un polígono dibujado
 var known := false  ## Ya has hablado con él (los disfrazados dejan de parecer lo que no son)
 ## Lo que ha pasado contigo: "pedido", "robado", "ayudado", "pegado", y del trapicheo
 ## (scripts/trade.gd) "cliente", "timado" (le vendiste cortado o una piedra) y "pisado" (un
@@ -371,7 +374,49 @@ static func kind_label(p_kind: String, p_gender: String) -> String:
 
 ## Historia de este personaje, si la tiene.
 func bio() -> String:
+	if personaje.get("historia", "") != "":
+		return personaje["historia"]
 	return KINDS[kind].get("bios", {}).get(display_name, "")
+
+
+## Lo que dice al pasar: sus frases si es un personaje del editor, si no las de su tipo.
+func lines() -> Array:
+	return personaje["frases"] if not personaje.get("frases", []).is_empty() else KINDS[kind]["lines"]
+
+
+## Si este bot anda por la calle a la hora `h` (su horario, o el de su tipo).
+func active(h: int) -> bool:
+	return Personajes.activo(personaje, h) if not personaje.is_empty() else active_at(kind, h)
+
+
+## Prepara un personaje del editor (`d`, ver Personajes): su tipo base con su nombre, su
+## aspecto, su dinero y su velocidad. La casa y la zona las pone World._spawn_personajes.
+func init_personaje(d: Dictionary) -> void:
+	init_kind(d["tipo"], d["nombre"])
+	personaje = d
+	gender = d["genero"]
+	look = Personajes.look_de(d)
+	accessory = d["aspecto"]["accesorio"]
+	body_size = d["aspecto"]["tamano"]
+	money = int(d["stats"]["dinero"])
+	speed = d["stats"]["velocidad"]
+
+
+## Casillas de su zona dibujada (las transitables dentro del polígono).
+func set_zona(cells: Array[Vector2i]) -> void:
+	_zona = cells
+
+
+## Adónde va a dar una vuelta: al lugar de su rutina a esta hora, si tiene; si no, a
+## cualquier sitio de su zona dibujada o, sin ella, cerca de casa.
+func _wander_target() -> Vector2i:
+	if not personaje.is_empty():
+		var l := Personajes.lugar_a(personaje, GameState.hour())
+		if not l.is_empty():
+			return city.random_walkable_near(Vector2i(l["x"], l["y"]), Personajes.LUGAR_WANDER)
+		if not _zona.is_empty():
+			return _zona.pick_random()
+	return city.random_walkable_near(home, wander_radius)
 
 
 ## Si los de este tipo andan por la calle a la hora `h`.
@@ -571,7 +616,7 @@ func _process(delta: float) -> void:
 	if _chatter <= 0.0:
 		_chatter = randf_range(15.0, 45.0)
 		if player and distance_to_cell(player.cell) < 20:
-			say(KINDS[kind]["lines"].pick_random())
+			say(lines().pick_random())
 	if player and _think <= 0.0:
 		_think = THINK_TIME
 		perceive(THINK_TIME)
@@ -592,7 +637,7 @@ func _process(delta: float) -> void:
 		_idle -= delta
 		if _idle <= 0.0:
 			_idle = randf_range(1.0, 5.0) if kind != "camello" else randf_range(4.0, 12.0)
-			walk_to(city.random_walkable_near(home, wander_radius))
+			walk_to(_wander_target())
 
 
 ## Mira (cono de visión) y sube o baja la sospecha. Llena, reacciona si tiene motivo.
@@ -651,7 +696,7 @@ func _follow_mode(dt: float) -> void:
 						say("Se ha escapado...")
 						GameState.mark_wanted("te has escapado de la policía")
 					calm_down()
-					walk_to(city.random_walkable_near(home, wander_radius))
+					walk_to(_wander_target())
 		"denuncia":
 			if not is_instance_valid(_denounce_to):
 				_denounce_to = _nearest_police()

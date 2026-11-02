@@ -44,7 +44,7 @@ func _init(p_world: World) -> void:
 
 
 static func can_talk(npc: Npc) -> bool:
-	return Fichas.has(npc.kind) and not npc.has_meta("enemigo")
+	return Fichas.has_npc(npc) and not npc.has_meta("enemigo")
 
 
 func _key(npc: Npc) -> String:
@@ -197,7 +197,7 @@ func _prepare(npc: Npc) -> void:
 		if not NOT_OFFERED.any(func(w): return a["label"].begins_with(w)):
 			_turn["options"]["o%d" % (_turn["options"].size() + 1)] = a
 	var data := []
-	var f := Fichas.of(npc.kind)
+	var f := Fichas.of_npc(npc)
 	if "policia" in f["datos"]:
 		data.append_array(_police_data(npc))
 	if "turistas" in f["datos"]:
@@ -286,7 +286,7 @@ static func _list(d: Dictionary, describe: Callable, empty: String) -> String:
 ## Instrucciones para el modelo. También prepara las opciones de esta frase (ver `schema`).
 func system_prompt(npc: Npc) -> String:
 	_prepare(npc)
-	var f := Fichas.of(npc.kind)
+	var f := Fichas.of_npc(npc)
 	var bio: String = npc.bio() if npc.bio() != "" else f["historia"]
 	var facts: Array = _mem(npc)["facts"]
 	return "\n".join([

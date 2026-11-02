@@ -151,6 +151,24 @@ Con `proveedor="ollama"` se puede poner otro `modelo` local; con `proveedor="ope
 cualquier API compatible con OpenAI. Para comparar sin tocar el archivo, `tests/charla.gd`
 también lee las variables `YONKILAND_IA_PROVEEDOR` y `YONKILAND_IA_MODELO`.
 
+## Diseñar personajes
+
+`editor_personajes.cmd` (o `godot --path game res://editor/editor_personajes.tscn`) abre el
+diseñador de personajes, una herramienta aparte del juego para crear personajes únicos:
+
+- **Identidad**: nombre, edad, género, tipo base (de él hereda cómo se mueve y qué se puede
+  hacer con él), historia y fuentes. Hay tipos que el juego aún no tiene (Guàrdia Urbana y
+  Mossos, músicos, estatuas, mendigos...): se pueden diseñar ya y saldrán cuando existan.
+- **Aspecto**, con el muñeco del juego al lado (se gira arrastrando, puede andar y verse de noche).
+- **Zona y rutina** en el mapa: un barrio o zona hecha, o un polígono dibujado; su casa; y los
+  lugares a los que va a ciertas horas (dormir, pedir, tocar...). Avisa si un punto cae en un edificio.
+- **Estadísticas**, **ficha de conversación** para la IA y frases sueltas.
+- **Misiones y notas**: de momento en texto libre, para programarlas a mano.
+
+Cada personaje se guarda en `game/data/personajes/<id>.json` y el juego lo saca a la calle en
+su zona y a sus horas. Los campos marcados con ◌ se guardan pero el juego aún no los usa.
+«Probar en el juego» guarda y abre una partida con el personaje al lado.
+
 ## Datos reales
 
 | Qué | De dónde | Script |
@@ -207,6 +225,10 @@ python tools/make_textures.py
   los vértices (`Actor._merge_parts`: cuerpo y extremidades, con un solo material) y los bots
   fuera de la pantalla que no tienen nada contigo se actualizan cada `Defs.OFFSCREEN_EVERY`
   frames. En una GTX 1060 a 1600×900: unos 1.000 bots a 60 FPS (54 con todo el zoom)
+- `game/editor/` — diseñador de personajes (`editor_personajes.gd`): formulario, muñeco
+  (`muneco.gd`), mapa para zona y rutina (`mapa_zona.gd`) y catálogo de tipos base (`tipos.gd`)
+- `game/scripts/personajes.gd` — formato de los personajes del diseñador, compartido por el
+  editor y el juego (`World._spawn_personajes`, `Npc.init_personaje`, `Fichas.of_npc`)
 - `game/shaders/silhouette.gdshader` — silueta de los personajes a través de los edificios (stencil)
 - `game/tests/smoke.gd` — ejecuta todas las acciones con los 6 perfiles, cada sustancia,
   los extremos de hambre, sueño y salud mental, los encargos con la libreta, el género de los personajes,
@@ -221,6 +243,8 @@ python tools/make_textures.py
   `godot --path game --resolution 1600x900 --script res://tests/conos.gd -- out.png [hora]`
 - `game/tests/minijuego.gd` — captura de un minijuego a medias:
   `godot --path game --resolution 1600x900 --script res://tests/minijuego.gd -- out.png robo|movil|vigia|aguador|pelea [hora] [sustancias]`
+- `game/tests/editor_captura.gd` — captura de cada pestaña del diseñador de personajes:
+  `godot --path game --resolution 1600x900 --script res://tests/editor_captura.gd -- out.png [id]`
 - `game/tests/screenshot.gd` — capturas sin abrir el editor; el sexto argumento consume
   sustancias antes (p. ej. `... -- res://scenes/world.tscn shot.png parado "" 12 caballo,litrona`)
 

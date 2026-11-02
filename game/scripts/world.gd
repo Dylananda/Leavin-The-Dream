@@ -77,6 +77,7 @@ var _street_timer := 0.0
 var _pending: Variant = null  ## Npc o PoiMarker al que vamos a interactuar
 var _pending_tries := 0
 var _npc_targets := {}
+var _personajes: Array[Dictionary] = []  ## personajes del editor (ver Personajes)
 var _event_timer := 20.0
 var _respawn_timer := 30.0
 var _last_rummage := -999.0
@@ -140,6 +141,8 @@ func _ready() -> void:
 		if Npc.active_at(kind, GameState.hour()):
 			for i in _npc_targets[kind]:
 				_spawn_npc(kind)
+	_personajes = Personajes.cargar_todos()
+	_spawn_personajes(_probar_id())
 
 	hud = Hud.new()
 	add_child(hud)
@@ -242,6 +245,76 @@ func _spawn_npc(kind: String) -> void:
 		dog.setup(city, city.random_walkable_near(npc.cell, 2))
 		dog.caught_player.connect(_on_caught)
 		npcs.append(dog)
+
+
+## Saca a la calle a los personajes del editor (Personajes) que estén en su horario y no
+## anden ya por ahí. Los de un tipo que el juego aún no tiene se quedan en casa.
+## `probar` = id de uno que se pone junto al jugador, sea la hora que sea (botón «Probar en el
+## juego» del editor).
+func _spawn_personajes(probar := "") -> void:
+	var h := GameState.hour()
+	for d in _personajes:
+		if not Npc.KINDS.has(d["tipo"]):
+			continue
+		if d["id"] != probar and not Personajes.activo(d, h):
+			continue
+		if npcs.any(func(n): return n.personaje.get("id", "") == d["id"]):
+			continue
+		var npc := Npc.new()
+		npc.init_personaje(d)
+		npc.player = player
+		npc.world = self
+		var zona: Array[Vector2i] = []
+		if d["zona"]["tipo"] == "poligono":
+			zona = _cells_in_polygon(d["zona"]["poligono"])
+			npc.set_zona(zona)
+		npc.home = _personaje_home(d, zona)
+		city.entities.add_child(npc)
+		var start := player.cell if d["id"] == probar else npc.home
+		npc.setup(city, city.random_walkable_near(start, 3 if d["id"] == probar else 2))
+		npc.caught_player.connect(_on_caught)
+		npcs.append(npc)
+		if d["id"] == probar:
+			npc.say("¡Aquí estoy!", 4.0)
+
+
+## Dónde vive un personaje del editor: el lugar de su rutina a esta hora, su casa, o una
+## casilla de su zona.
+func _personaje_home(d: Dictionary, zona: Array[Vector2i]) -> Vector2i:
+	var l := Personajes.lugar_a(d, GameState.hour())
+	if not l.is_empty():
+		return city.nearest_walkable(Vector2i(l["x"], l["y"]))
+	var casa: Array = d["zona"]["casa"]
+	if casa.size() == 2:
+		return city.nearest_walkable(Vector2i(casa[0], casa[1]))
+	if not zona.is_empty():
+		return zona.pick_random()
+	if d["zona"]["tipo"] in ["barrio", "poligono"]:
+		return city.random_walkable()
+	return _zone_cell(d["zona"]["tipo"])
+
+
+## Casillas transitables dentro de un polígono ([[x, y], ...] en casillas).
+func _cells_in_polygon(poly: Array) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	if poly.size() < 3:
+		return out
+	var r := Rect2i(Vector2i(poly[0][0], poly[0][1]), Vector2i.ZERO)
+	for v in poly:
+		r = r.expand(Vector2i(v[0], v[1]))
+	for y in range(r.position.y, r.end.y + 1):
+		for x in range(r.position.x, r.end.x + 1):
+			if city.is_walkable(Vector2i(x, y)) and Personajes.dentro(Vector2(x, y), poly):
+				out.append(Vector2i(x, y))
+	return out
+
+
+## El id del personaje que pide probar el editor (`-- --probar=<id>`), o "".
+func _probar_id() -> String:
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--probar="):
+			return a.trim_prefix("--probar=")
+	return ""
 
 
 ## Casilla al azar de una zona: sus calles, o cerca de los bares para la noche.
@@ -1002,15 +1075,16 @@ func _respawn() -> void:
 			npcs.erase(npc)
 			npc.queue_free()
 			continue
-		if not Npc.active_at(npc.kind, h) and npc.distance_to_cell(player.cell) > DESPAWN_DISTANCE and npc.mode == "":
+		if not npc.active(h) and npc.distance_to_cell(player.cell) > DESPAWN_DISTANCE and npc.mode == "":
 			npcs.erase(npc)
 			npc.queue_free()
 	for kind in _npc_targets:
 		if not Npc.active_at(kind, h):
 			continue
-		var missing: int = _npc_targets[kind] - npcs.filter(func(n): return n.kind == kind).size()
+		var missing: int = _npc_targets[kind] - npcs.filter(func(n): return n.kind == kind and n.personaje.is_empty()).size()
 		for i in mini(missing, ceili(_npc_targets[kind] / 4.0)):
 			_spawn_npc(kind)
+	_spawn_personajes()
 
 
 ## Eventos del barrio: peleas entre yonkis, yonkis que vienen a pedirte y carteristas trabajando.

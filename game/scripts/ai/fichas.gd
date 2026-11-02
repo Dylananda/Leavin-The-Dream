@@ -60,3 +60,19 @@ static func has(kind: String) -> bool:
 
 static func of(kind: String) -> Dictionary:
 	return FICHAS.get(kind, {})
+
+
+## Si se puede hablar con `npc`: los de un tipo con ficha y los personajes del editor que
+## traen la suya.
+static func has_npc(npc: Npc) -> bool:
+	return has(npc.kind) or npc.personaje.get("ficha", {}).get("quien", "") != ""
+
+
+## La ficha de `npc`: la de su tipo con lo que haya escrito en el editor por encima.
+static func of_npc(npc: Npc) -> Dictionary:
+	var f: Dictionary = FICHAS.get(npc.kind, {"quien": "", "historia": "", "habla": "", "sabe": "", "no_sabe": "", "quiere": "", "datos": []}).duplicate()
+	var own: Dictionary = npc.personaje.get("ficha", {})
+	for k in own:
+		if str(own[k]).strip_edges() != "":
+			f[k] = own[k]
+	return f

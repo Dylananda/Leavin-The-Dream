@@ -108,6 +108,8 @@ func _test_looks(world) -> void:
 	var npc_script = load("res://scripts/actors/npc.gd")  # cargado aquí: usa los autoloads
 	_check(Defs.PROFILES.filter(func(p): return p["name"] == "Mari Loli")[0]["look"]["gender"] == "f", "Mari Loli no es mujer")
 	for npc in world.npcs:
+		if not npc.personaje.is_empty():
+			continue  # los del editor de personajes llevan el género que se les puso
 		var k: Dictionary = npc_script.KINDS[npc.kind]
 		if npc.display_name in k.get("women", []):
 			_check(npc.gender == "f" and npc.look["gender"] == "f", "%s no es mujer" % npc.display_name)
@@ -514,7 +516,8 @@ func _test_vision(gs, world) -> void:
 ## Un bot nuevo del tipo `kind`, sin pasado contigo.
 func _fresh(world, kind: String):
 	world._spawn_npc(kind)
-	var npc = world.npcs[-1]
+	# el último de ese tipo: detrás puede haber salido su perro
+	var npc = world.npcs.filter(func(n): return n.kind == kind)[-1]
 	npc.known = true
 	return npc
 

@@ -53,6 +53,17 @@ sí y una memoria poco fiable**, que puede ir creciendo hacia misiones de rol en
 8. **Trapicheo**: comprar y vender a más personajes, no solo a los camellos.
 9. **Minijuegos de habilidad** para las acciones (robar, distinguir a la gente).
 10. **Ciudad más grande y metro**
+11. **Diseñador de personajes**: herramienta aparte para crear personajes únicos con su
+    historia, aspecto, zona, rutina, estadísticas, ficha de IA y misiones, que el juego carga
+    solo. — hecha la fase 1 (rama `feat/editor-personajes`)
+    - [x] Fase 1: identidad, aspecto con el muñeco, zona (barrio, zona hecha o polígono),
+      casa y lugares con horas, estadísticas, ficha de conversación y frases; el juego los
+      saca a la calle y se puede hablar con ellos; botón «Probar en el juego»
+    - [ ] Que el juego use lo que se guarda y aún no usa (◌): fuerza en las peleas, valor,
+      agresividad, si llama a la policía, qué quiere, qué lleva y qué vende
+    - [ ] Fase 2: misiones en el editor (condiciones, objetivo con los encargos y minijuegos
+      que ya hay, plazo y resultados al cumplir o fallar)
+    - [ ] Fase 3: relaciones entre personajes y esquema de las cadenas de misiones
 
 ## 2. Estado del personaje
 
