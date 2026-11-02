@@ -69,7 +69,10 @@ sí y una memoria poco fiable**, que puede ir creciendo hacia misiones de rol en
     - [x] Dormir y despertar según la distancia, con lo que les pasó; no se duermen los que
       tienen asuntos contigo; olvidan con el tiempo (el rencor, más despacio)
     - [x] Medido: 2.600 en el censo a 60 FPS (unos 40–60 con cuerpo alrededor)
-    - [ ] Subir la población del barrio ahora que cabe (¿1 de cada 20 vecinos reales?)
+    - [x] Más población: unos 1.400 en el censo a mediodía (`Defs.CROWD`: sobre todo vecinos,
+      abuelos, niños y turistas; la policía y los camellos no cambian), 60 FPS estables
+    - [ ] Montar un cuerpo cuesta unos 3 ms: al llegar a una zona llena se nota algún tirón;
+      se podría reutilizar cuerpos dormidos en vez de montarlos de cero
     - [ ] «Despertadores»: que un latente con asuntos contigo actúe aunque esté lejos
       (el camello que viene a cobrar) en vez de quedarse con cuerpo todo el rato
     - [ ] Guardar el censo en la partida guardada (cuando haya partidas guardadas)

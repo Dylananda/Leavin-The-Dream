@@ -17,8 +17,8 @@ extends RefCounted
 ## y npc (su cuerpo, o null).
 
 const CADA := 0.25  ## segundos reales entre repasos
-const RADIO_ACTIVO := 75  ## casillas: los latentes que andan más cerca se materializan...
-const RADIO_DORMIR := 95  ## ... y los que se alejan más se duermen (margen para que no parpadeen)
+const RADIO_ACTIVO := 66  ## casillas: los latentes que andan más cerca se materializan...
+const RADIO_DORMIR := 80  ## ... y los que se alejan más se duermen (margen para que no parpadeen)
 const RADIO_VISTA := 62  ## casillas que se ven alrededor del jugador con todo el zoom: nadie aparece ahí de golpe
 const MAX_DESPERTAR := 3  ## cuerpos que se montan como mucho en cada repaso (unos 12 por segundo)
 const SALTO := 20  ## casillas entre dos repasos a partir de las que el jugador no ha andado, ha saltado

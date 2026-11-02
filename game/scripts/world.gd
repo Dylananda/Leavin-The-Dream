@@ -236,12 +236,14 @@ func _thousands(n: int) -> String:
 	return s + out
 
 
+## Cuántos de este tipo hay en el censo: la base, por el índice de criminalidad que toca y
+## por lo que se multiplica la gente (Defs.CROWD).
 func _target_count(kind: String) -> int:
-	var base: int = BASE_NPCS[kind][0]
+	var base: float = BASE_NPCS[kind][0] * Defs.CROWD.get(kind, 1.0)
 	var category: String = BASE_NPCS[kind][1]
-	if category == "":
-		return base
-	return roundi(base * city.crime_factor(category))
+	if category != "":
+		base *= city.crime_factor(category)
+	return roundi(base)
 
 
 func _place_markers() -> void:

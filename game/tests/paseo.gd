@@ -1,6 +1,6 @@
 extends SceneTree
 ## Paseo por el barrio para probar el censo (scripts/censo.gd): lleva al jugador a varios
-## sitios lejanos, espera y cuenta cuántos bots tienen cuerpo, cuántos están latentes y los FPS.
+## sitios lejanos, espera a que se monten los de alrededor y cuenta cuántos bots tienen cuerpo, cuántos están latentes y los FPS.
 ## Con `multiplica`, el censo tiene esas veces más gente (para ver cuánta aguanta).
 ## Uso: godot --path game --resolution 1600x900 --script res://tests/paseo.gd -- [multiplica]
 
@@ -12,9 +12,11 @@ func _initialize() -> void:
 	var mult := int(args[0]) if args.size() > 0 else 1
 	root.get_node("GameState").new_game("parado")
 	root.get_node("GameState").minute_of_day = 12 * 60.0
+	var t_load := Time.get_ticks_msec()
 	change_scene_to_file("res://scenes/world.tscn")
 	await process_frame
 	await process_frame
+	print("carga del barrio: %d ms" % (Time.get_ticks_msec() - t_load))
 	var w = current_scene
 	for i in mult - 1:
 		for kind in w.BASE_NPCS:
@@ -30,8 +32,12 @@ func _initialize() -> void:
 				w.player.setup(w.city, w.city.world_to_cell(Vector3(l["x"], 0, l["z"])))
 				w._camera_focus = w.player.position
 				break
-		var frames := 0
+		# primero, que se monten los cuerpos de los que hay alrededor; luego se mide
 		var t := Time.get_ticks_msec()
+		while Time.get_ticks_msec() - t < 3000:
+			await process_frame
+		var frames := 0
+		t = Time.get_ticks_msec()
 		while Time.get_ticks_msec() - t < 3000:
 			await process_frame
 			frames += 1
@@ -40,6 +46,8 @@ func _initialize() -> void:
 		var repaso_ms := (Time.get_ticks_usec() - t1) / 1000.0
 		var n: int = w.censo.registros.size()
 		print("  (un repaso con todo despierto: %.2f ms)" % repaso_ms)
-		print("%-18s %4d con cuerpo (%3d bots en escena)  %5d latentes  %5.1f FPS" % [
-			sitio, n - w.censo.latentes(), w.npcs.size(), w.censo.latentes(), frames / 3.0])
+		print("%-18s %4d con cuerpo (%3d bots en escena)  %5d latentes  %5.1f FPS  (lógica %.1f ms, %d draw calls)" % [
+			sitio, n - w.censo.latentes(), w.npcs.size(), w.censo.latentes(), frames / 3.0,
+			Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0,
+			Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)])
 	quit()

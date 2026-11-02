@@ -77,6 +77,17 @@ const MOSSOS_SWEEP := 0.12
 const UNDERCOVER_CATCH := 0.35
 ## El grupo de un free tour: turistas que siguen al guía (en Ciutat Vella, máximo 15).
 const GUIDE_GROUP := Vector2i(4, 8)
+## Cuántas veces más gente de cada tipo hay en el censo que en World.BASE_NPCS, ahora que los
+## lejanos están latentes (scripts/censo.gd) y no cuestan. Sube sobre todo la gente corriente:
+## el Raval tiene unos 47.000 vecinos y así hay en el censo uno de cada treinta y tantos. La
+## policía, los camellos y los que hacen el juego más difícil no cambian (los tipos que no
+## están aquí, x1). El límite lo pone la tarjeta gráfica con los que se ven a la vez: con esto,
+## unos 1.400 en el censo y 50-150 con cuerpo alrededor, a 60 FPS en una GTX 1060 (tests/paseo.gd).
+const CROWD := {
+	"vecino": 15.0, "anciano": 10.0, "nino": 8.0, "turista": 6.0, "pudiente": 4.0, "mensajero": 4.0,
+	"fiestero": 4.0, "skater": 3.0, "yonki": 2.0, "mendigo": 2.0, "chaval": 2.0, "musico": 2.0,
+	"rosero": 2.0, "chatarrero": 2.0,
+}
 ## Bots latentes (scripts/censo.gd): lo que se pone al día al volver a verlos.
 const LATENT_ROBBED_FORGET := 24.0 * 60.0  ## minutos tras los que al que robaron vuelve a llevar dinero
 const LATENT_MEMORY_FADE := 3.0 * 24.0 * 60.0  ## minutos latente por cada vez que olvida algo que le hiciste...
