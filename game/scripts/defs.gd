@@ -271,6 +271,7 @@ const ITEMS := {
 	# de los encargos (scripts/errands.gd)
 	"paquete": {"name": "Paquete del camello", "sell": 0},
 	"cartera_caliente": {"name": "Cartera caliente", "sell": 0},
+	"papeles_albergue": {"name": "Papeles del albergue", "sell": 0},  # de la cita en el CAS
 	# de la calle (scripts/street_items.gd)
 	"chatarra": {"name": "Chatarra", "sell": 3},
 	"bici": {"name": "Bici ajena", "sell": 25},

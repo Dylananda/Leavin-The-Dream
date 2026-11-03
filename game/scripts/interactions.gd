@@ -99,6 +99,7 @@ func for_npc(npc: Npc) -> Array:
 		"punki": acts = _punki(npc)
 	acts.append_array(world.trade.offers_for(npc))
 	acts.append_array(world.errands.offers_for(npc))
+	acts.append_array(world.misiones.for_npc(npc))
 	if npc.bio() != "":
 		acts.append(_act("Escuchar su historia", func():
 			GameState.advance(15)

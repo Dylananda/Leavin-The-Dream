@@ -34,6 +34,7 @@ var _mapa: MapaZona
 var _mapa_info: Label
 var _lugares_box: VBoxContainer
 var _horas_box: HBoxContainer
+var _misiones_box: VBoxContainer
 var _descartar: ConfirmationDialog
 var _pendiente: Callable  ## lo que se hará si se aceptan descartar los cambios
 
@@ -442,6 +443,7 @@ func _tab_stats() -> Control:
 	_slider(g, "Valor", ["stats", "valor"], "Si se enfrenta o huye cuando ve algo.")
 	_slider(g, "Agresividad", ["stats", "agresividad"], "Lo fácil que es que empiece él la pelea.")
 	_check(g, "Llama a la policía", ["stats", "llama_policia"])
+	_spin(g, "Le debes", ["stats", "le_debes"], 0, 1000, 1, " €", "Lo que le debes al empezar la partida. Se le paga en su menú; una misión puede saldarlo.")
 	tab.add_child(_titulo("Qué quiere" + NO_USADO))
 	var quiere := HFlowContainer.new()
 	for id in Defs.SUBSTANCES:
@@ -519,14 +521,32 @@ func _tab_conversacion() -> Control:
 
 func _tab_notas() -> Control:
 	var tab := _pagina("Misiones y notas")
-	var intro := _lbl("Las misiones con sus objetivos y resultados llegarán al editor en la siguiente fase. Mientras tanto, apúntalas aquí junto con todo lo que el editor aún no sabe expresar (cosas que solo hace este personaje, con quién se lleva bien o mal...): Claude lo lee y lo programa a mano.")
+	var intro := _lbl("Misiones que da este personaje: cuándo te la ofrece, qué hay que hacer (con los encargos y minijuegos que ya tiene el juego), en cuánto tiempo y qué pasa al cumplirla o al fallarla. En la partida sale en su menú («Misión «...»»), se apunta en la libreta y quien te la da lleva la «!» (y la «★» mientras está en marcha, igual que el otro personaje del objetivo).")
 	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	intro.add_theme_color_override("font_color", C_SUAVE)
 	tab.add_child(intro)
+	_misiones_box = VBoxContainer.new()
+	_misiones_box.add_theme_constant_override("separation", 12)
+	tab.add_child(_misiones_box)
+	var add := Button.new()
+	add.text = "Añadir misión"
+	add.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	add.pressed.connect(func():
+		var m := Misiones.nueva()
+		m["exito"]["efectos"].append(Misiones.efecto("dinero"))
+		_def["misiones"].append(m)
+		_rehacer_misiones()
+		_cambio())
+	tab.add_child(add)
+	_refrescos.append(_rehacer_misiones)
+	tab.add_child(_titulo("Notas"))
+	var nota := _lbl("Lo que el editor aún no sabe expresar (relaciones, cadenas de misiones, cosas que solo hace este personaje...): Claude lo lee y lo programa a mano.")
+	nota.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	nota.add_theme_color_override("font_color", C_SUAVE)
+	tab.add_child(nota)
 	var notas := TextEdit.new()
-	notas.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	notas.custom_minimum_size.y = 400
-	notas.placeholder_text = "Misión «La guitarra robada»: te pide que recuperes su guitarra, que tiene un yonki de la plaça de la Gardunya. Si se la traes, te da 20 € y te avisa cuando viene la Urbana..."
+	notas.custom_minimum_size.y = 200
+	notas.placeholder_text = "Le debe un carro de supermercado a Kofi. Choca con la Sra. Encarna..."
 	notas.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
 	notas.text_changed.connect(func():
 		if not _cargando:
@@ -535,6 +555,283 @@ func _tab_notas() -> Control:
 	tab.add_child(notas)
 	_refrescos.append(func(): notas.text = _def["notas"])
 	return tab
+
+
+## Un panel por misión (ver Misiones.nueva()). Se rehace entero al cambiar el tipo de objetivo
+## o de un resultado, porque cambian los campos que se ven.
+func _rehacer_misiones() -> void:
+	for c in _misiones_box.get_children():
+		c.queue_free()
+	if _def["misiones"].is_empty():
+		var l := _lbl("Sin misiones.")
+		l.add_theme_color_override("font_color", C_SUAVE)
+		_misiones_box.add_child(l)
+		return
+	for m in _def["misiones"]:
+		_misiones_box.add_child(_panel_mision(m))
+
+
+func _panel_mision(m: Dictionary) -> Control:
+	var panel := PanelContainer.new()
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(1, 1, 1, 0.05)
+	sb.set_corner_radius_all(6)
+	sb.set_content_margin_all(12)
+	panel.add_theme_stylebox_override("panel", sb)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 8)
+	panel.add_child(box)
+	var head := HBoxContainer.new()
+	var titulo := LineEdit.new()
+	titulo.text = m["titulo"]
+	titulo.placeholder_text = "Título: «El paquete para Txell»"
+	titulo.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	titulo.add_theme_font_size_override("font_size", 18)
+	titulo.text_changed.connect(func(t):
+		m["titulo"] = t
+		m["id"] = Personajes.slug(t)
+		_cambio())
+	head.add_child(titulo)
+	var quitar := Button.new()
+	quitar.text = "Quitar misión"
+	quitar.pressed.connect(func():
+		_def["misiones"].erase(m)
+		_rehacer_misiones()
+		_cambio())
+	head.add_child(quitar)
+	box.add_child(head)
+	var resumen := _lbl("→ " + Misiones.resumen(m, _nombres()))
+	resumen.add_theme_color_override("font_color", Color("e0a070"))
+	box.add_child(resumen)
+
+	var g := _rejilla(box)
+	_etiqueta(g, "Te dice")
+	g.add_child(_m_line(m, "dice", "Lo que te dice al dártela: «Llévale esto a Txell, y ni se te ocurra abrirlo»"))
+
+	# cuándo la ofrece
+	var c: Dictionary = m["condiciones"]
+	_etiqueta(g, "Te la ofrece")
+	var cuando := HFlowContainer.new()
+	for w in [_lbl("de"), _m_spin(c, "desde", 0, 24, 1, " h"), _lbl("a"), _m_spin(c, "hasta", 0, 24, 1, " h"),
+			_lbl("  desde el día"), _m_spin(c, "dia", 1, 99, 1), _lbl("  con dignidad de"), _m_spin(c, "dignidad", 0, 100, 1),
+			_m_check(c, "repetible", "Repetible (una vez al día)")]:
+		cuando.add_child(w)
+	g.add_child(cuando)
+	_etiqueta(g, "Después de")
+	var tras := {"": "nada: se puede hacer de entrada"}
+	for d in _guardados + [_def]:
+		var este := is_same(d, _def)
+		if not este and d["id"] == _id_cargado:
+			continue  # el guardado de este mismo: vale lo que se está editando
+		var pid: String = Personajes.slug(_def["nombre"]) if este else d["id"]
+		for otra in d.get("misiones", []):
+			if not is_same(otra, m) and otra["id"] != "":
+				tras[Misiones.clave(pid, otra)] = "%s · %s" % [d["nombre"], otra["titulo"]]
+	g.add_child(_m_option(c, "tras", tras))
+
+	# objetivo
+	var o: Dictionary = m["objetivo"]
+	_etiqueta(g, "Objetivo")
+	var tipos := {}
+	for k in Misiones.OBJETIVOS:
+		tipos[k] = Misiones.OBJETIVOS[k]["label"]
+	g.add_child(_m_option(o, "tipo", tipos, true))
+	var campos: Array = Misiones.OBJETIVOS[o["tipo"]]["campos"]
+	if "objeto" in campos:
+		_etiqueta(g, "Objeto")
+		var row := HBoxContainer.new()
+		row.add_child(_m_option(o, "objeto", _objetos()))
+		if "lo_da" in campos:
+			row.add_child(_m_check(o, "lo_da", "Te lo da él al aceptarla"))
+		g.add_child(row)
+	if "lugar" in campos:
+		_etiqueta(g, "Sitio")
+		var lugares := {}
+		for k in Misiones.LUGARES:
+			lugares[k] = Interactions.POI_LABELS.get(k, k)
+		var row := HBoxContainer.new()
+		row.add_child(_m_option(o, "lugar", lugares))
+		row.add_child(_suave("El juego elige uno de ese tipo, lejos de los otros encargos en marcha."))
+		g.add_child(row)
+	if "personaje" in campos:
+		_etiqueta(g, "Personaje")
+		g.add_child(_m_option(o, "personaje", _personajes_opciones("— elige —")))
+	if "prueba" in campos:
+		_etiqueta(g, "Con pruebas")
+		var row := HBoxContainer.new()
+		var pruebas := {"": "ninguna: hay que mentir"}
+		pruebas.merge(_objetos())
+		row.add_child(_m_option(o, "prueba", pruebas))
+		row.add_child(_suave("Con este objeto le convences seguro; sin él, mientes. Si no cuela, no vuelve a tratar contigo (la policía, además, te ficha)."))
+		g.add_child(row)
+	if "desde" in campos:
+		_etiqueta(g, "Mañana")
+		var row := HBoxContainer.new()
+		for w in [_lbl("de"), _m_spin(o, "desde", 0, 23, 1, " h"), _lbl("a"), _m_spin(o, "hasta", 1, 24, 1, " h")]:
+			row.add_child(w)
+		g.add_child(row)
+	if "minutos" in campos:
+		_etiqueta(g, "Cuánto rato")
+		g.add_child(_m_spin(o, "minutos", 15, 480, 15, " min"))
+	if "dificultad" in campos:
+		_etiqueta(g, "Dificultad")
+		var row := HBoxContainer.new()
+		row.add_child(_m_spin(o, "dificultad", 0.0, 1.0, 0.05))
+		row.add_child(_suave("De 0 (fácil) a 1 (casi imposible): la del minijuego, o la de colar la mentira (la ayudan tu dignidad y tu cabeza)."))
+		g.add_child(row)
+	if o["tipo"] != "cita":
+		_etiqueta(g, "Plazo")
+		var row := HBoxContainer.new()
+		row.add_child(_m_spin(m, "plazo", 0.0, 168.0, 0.5, " h"))
+		row.add_child(_suave("Horas de juego desde que la aceptas (una hora son 30 s); 0 = sin plazo."))
+		g.add_child(row)
+
+	for lado in [["exito", "Al cumplirla"], ["fallo", "Al fallarla (se pasa el plazo, pierdes el minijuego o no cuela)"]]:
+		box.add_child(_titulo(lado[1]))
+		box.add_child(_m_line(m[lado[0]], "texto", "Lo que pasa, en una frase para el registro"))
+		box.add_child(_resultados(m[lado[0]]["efectos"]))
+	return panel
+
+
+## Filas de resultados: tipo, cifra, qué y a quién.
+func _resultados(efectos: Array) -> Control:
+	var box := VBoxContainer.new()
+	var tipos := {}
+	for k in Misiones.EFECTOS:
+		tipos[k] = Misiones.EFECTOS[k]["label"]
+	for ef in efectos:
+		var row := HBoxContainer.new()
+		var spec: Dictionary = Misiones.EFECTOS.get(ef["tipo"], {})
+		var tipo := _m_option(ef, "tipo", tipos, true)
+		tipo.item_selected.connect(func(_i):
+			# (después de que _m_option cambie el tipo) lo que tenía del tipo anterior ya no vale
+			var nuevo: Dictionary = Misiones.EFECTOS[ef["tipo"]]
+			ef["que"] = _que_de(nuevo).keys()[0] if nuevo.has("que") else ""
+			if not nuevo.has("quien"):
+				ef["quien"] = "")
+		row.add_child(tipo)
+		if spec.has("valor"):
+			row.add_child(_m_spin(ef, "valor", -500, 500, 1, " " + spec["valor"]))
+		if spec.has("que"):
+			row.add_child(_m_option(ef, "que", _que_de(spec)))
+		if spec.has("quien"):
+			row.add_child(_lbl("a"))
+			row.add_child(_m_option(ef, "quien", _personajes_opciones("quien la da")))
+		var quitar := Button.new()
+		quitar.text = "✕"
+		quitar.pressed.connect(func():
+			efectos.erase(ef)
+			_rehacer_misiones()
+			_cambio())
+		row.add_child(quitar)
+		box.add_child(row)
+	var add := Button.new()
+	add.text = "Añadir resultado"
+	add.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	add.pressed.connect(func():
+		efectos.append(Misiones.efecto())
+		_rehacer_misiones()
+		_cambio())
+	box.add_child(add)
+	return box
+
+
+## Las opciones de "qué" de un tipo de resultado: objetos, favores o delitos.
+func _que_de(spec: Dictionary) -> Dictionary:
+	match spec.get("que", ""):
+		"favor": return Misiones.FAVORES
+		"delito": return Misiones.DELITOS
+	return _objetos()
+
+
+func _objetos() -> Dictionary:
+	var out := {}
+	for id in Defs.ITEMS.keys() + Defs.SUBSTANCES.keys():
+		out[id] = Defs.item_name(id)
+	return out
+
+
+## {id: nombre} de los personajes guardados (sin los perros), con `vacio` para "".
+func _personajes_opciones(vacio: String) -> Dictionary:
+	var out := {"": vacio}
+	for d in _guardados:
+		if d["tipo"] != "perro":
+			out[d["id"]] = d["nombre"]
+	return out
+
+
+func _nombres() -> Dictionary:
+	var out := {}
+	for d in _guardados:
+		out[d["id"]] = d["nombre"]
+	return out
+
+
+func _suave(text: String) -> Label:
+	var l := _lbl(text)
+	l.add_theme_font_size_override("font_size", 13)
+	l.add_theme_color_override("font_color", C_SUAVE)
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	l.custom_minimum_size.x = 200
+	return l
+
+
+# Controles atados a una clave de un diccionario de la misión (no a una ruta de _def, como
+# los de más abajo): se crean con su valor ya puesto, así que no hace falta _cargando.
+
+func _m_line(d: Dictionary, key: String, hint: String) -> LineEdit:
+	var e := LineEdit.new()
+	e.text = d[key]
+	e.placeholder_text = hint
+	e.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	e.text_changed.connect(func(t):
+		d[key] = t
+		_cambio())
+	return e
+
+
+func _m_spin(d: Dictionary, key: String, lo: float, hi: float, step: float, suffix := "") -> SpinBox:
+	var s := SpinBox.new()
+	s.min_value = lo
+	s.max_value = hi
+	s.step = step
+	s.suffix = suffix
+	s.value = d[key]
+	s.value_changed.connect(func(v):
+		d[key] = int(v) if step >= 1 else v
+		_cambio())
+	return s
+
+
+func _m_check(d: Dictionary, key: String, text: String) -> CheckBox:
+	var c := CheckBox.new()
+	c.text = text
+	c.button_pressed = d[key]
+	c.toggled.connect(func(v):
+		d[key] = v
+		_cambio())
+	return c
+
+
+## Desplegable con `items` ({valor: texto}). Con `rehacer`, al cambiar se rehacen los paneles
+## (cambian los campos que se ven).
+func _m_option(d: Dictionary, key: String, items: Dictionary, rehacer := false) -> OptionButton:
+	var o := OptionButton.new()
+	if not items.has(d[key]):
+		o.add_item("%s (no existe)" % d[key])
+		o.set_item_metadata(0, d[key])
+	for k in items:
+		o.add_item(items[k])
+		o.set_item_metadata(o.item_count - 1, k)
+		if k == d[key]:
+			o.select(o.item_count - 1)
+	o.item_selected.connect(func(i):
+		d[key] = o.get_item_metadata(i)
+		if rehacer:
+			_rehacer_misiones.call_deferred()
+		_cambio())
+	return o
 
 
 # ------------------------------------------------------------------ campos
@@ -955,6 +1252,9 @@ func _comprobar() -> Array:
 		if n > 1:
 			out.append([false, "A las %d h le tocan dos lugares a la vez: irá al primero de la lista." % h])
 			break
+	var con_id := _def.duplicate()
+	con_id["id"] = id
+	out.append_array(Misiones.comprobar(con_id, _guardados.map(func(d): return d["id"])))
 	if _def["historia"].strip_edges() == "":
 		out.append([false, "Sin historia: es lo que cuenta si le preguntas."])
 	if _def["fuentes"].strip_edges() == "" and _def["tipo"] != "perro":

@@ -76,7 +76,62 @@
 		"Yo servía cafés en la Boqueria.",
 		"Otra vez la Urbana..."
 	],
-	"misiones": [],
+	"misiones": [
+		{
+			"id": "el_cajero_de_antonio",
+			"titulo": "El cajero de Antonio",
+			"dice": "La agente Mas me despierta cada noche. Si le dijeras que tengo plaza en el albergue la semana que viene, igual me deja dormir unos días...",
+			"condiciones": {
+				"desde": 7,
+				"hasta": 23
+			},
+			"objetivo": {
+				"tipo": "convencer",
+				"personaje": "agent_mas",
+				"prueba": "papeles_albergue",
+				"dificultad": 0.5
+			},
+			"plazo": 48.0,
+			"exito": {
+				"texto": "La agente Mas se lo piensa y asiente: «Unos días, ¿eh? Ni uno más». Antonio duerme por fin una noche entera, y a ti tampoco te va a levantar ella.",
+				"efectos": [
+					{
+						"tipo": "favor",
+						"que": "vista_gorda",
+						"valor": 3,
+						"quien": "agent_mas"
+					},
+					{
+						"tipo": "favor",
+						"que": "soplo",
+						"valor": 0,
+						"quien": ""
+					},
+					{
+						"tipo": "amigo",
+						"quien": ""
+					},
+					{
+						"tipo": "dignidad",
+						"valor": 5
+					},
+					{
+						"tipo": "mente",
+						"valor": 5
+					}
+				]
+			},
+			"fallo": {
+				"texto": "Antonio sigue en su cajero, y la Urbana le sigue despertando cada noche.",
+				"efectos": [
+					{
+						"tipo": "mente",
+						"valor": -3
+					}
+				]
+			}
+		}
+	],
 	"relaciones": [],
-	"notas": "Ver «El cajero de Antonio» (Agent Mas). Si le ayudas a conseguir plaza en un albergue, te avisa de cosas que ve de noche (quién entra en el piso de Quique)."
+	"notas": "Misión «El cajero de Antonio» (en la pestaña de misiones): convencer a Agent Mas de que tiene plaza en el albergue (con los papeles de la cita en el CAS, o mintiendo). Si sale bien, te cuenta lo que ve. Pendiente (fase 3): que te avise de quién entra en el piso de Quique."
 }

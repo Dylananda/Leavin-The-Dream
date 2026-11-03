@@ -60,7 +60,58 @@
 		"Me debes, ¿eh?",
 		"Hoy no fío."
 	],
-	"misiones": [],
+	"misiones": [
+		{
+			"id": "el_paquete_para_txell",
+			"titulo": "El paquete para Txell",
+			"dice": "Llévale esto a Txell, que me lo ha pedido. Y ni se te ocurra abrirlo, tete.",
+			"objetivo": {
+				"tipo": "llevar_personaje",
+				"objeto": "paquete",
+				"lo_da": true,
+				"personaje": "txell"
+			},
+			"plazo": 4.0,
+			"exito": {
+				"texto": "Txell abre el paquete delante de ti: «Con esto estamos en paz». No piensa pagárselo a Quique: te lo va a cobrar a ti.",
+				"efectos": [
+					{
+						"tipo": "saldar",
+						"quien": "txell"
+					},
+					{
+						"tipo": "favor",
+						"que": "curar",
+						"valor": 0,
+						"quien": "txell"
+					},
+					{
+						"tipo": "amigo",
+						"quien": "txell"
+					},
+					{
+						"tipo": "deuda",
+						"valor": 40,
+						"quien": ""
+					}
+				]
+			},
+			"fallo": {
+				"texto": "El paquete no le ha llegado a Txell, y Quique ya lo sabe. Viene a por ti.",
+				"efectos": [
+					{
+						"tipo": "deuda_ya",
+						"valor": 60,
+						"quien": ""
+					},
+					{
+						"tipo": "busqueda",
+						"valor": 10
+					}
+				]
+			}
+		}
+	],
 	"relaciones": [],
-	"notas": "MISIÓN CLAVE «El paquete para Txell»: te da un paquete para llevárselo a Txell. A Txell le debes 40 €. Si se lo llevas, Txell se queda el paquete como pago de tu deuda y Quique te lo cobra a ti; si no se lo llevas, Quique viene a por ti. Elegir qué perder. Relacionado con Sra. Encarna (quiere pruebas de su piso) y Agent Serra."
+	"notas": "Misión «El paquete para Txell» (en la pestaña de misiones): si se lo llevas, Txell se queda el paquete como pago de lo que le debes y Quique te lo cobra a ti; si no, Quique viene a por ti. Elegir qué perder. Pendiente (fase 3): relacionado con Sra. Encarna (quiere pruebas de su piso) y Agent Serra."
 }

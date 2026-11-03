@@ -55,7 +55,7 @@ sí y una memoria poco fiable**, que puede ir creciendo hacia misiones de rol en
 10. **Ciudad más grande y metro**
 11. **Diseñador de personajes**: herramienta aparte para crear personajes únicos con su
     historia, aspecto, zona, rutina, estadísticas, ficha de IA y misiones, que el juego carga
-    solo. — hecha la fase 1 (rama `feat/editor-personajes`)
+    solo. — hechas las fases 1 (rama `feat/editor-personajes`) y 2 (misiones)
     - [x] Fase 1: identidad, aspecto con el muñeco, zona (barrio, zona hecha o polígono),
       casa y lugares con horas, estadísticas, ficha de conversación y frases; el juego los
       saca a la calle y se puede hablar con ellos; botón «Probar en el juego»
@@ -63,8 +63,27 @@ sí y una memoria poco fiable**, que puede ir creciendo hacia misiones de rol en
       el valor y la agresividad en cómo reacciona (enfrentarse, ir a por ti), si siempre llama
       a la policía; qué quiere (te lo compra), qué lleva (lo cambia) y qué vende (se lo compras)
     - [x] Perros del editor con su dueño («Va con»): salen y se duermen con él
-    - [ ] Fase 2: misiones en el editor (condiciones, objetivo con los encargos y minijuegos
-      que ya hay, plazo y resultados al cumplir o fallar)
+    - [x] Fase 2: misiones en el editor (`scripts/misiones.gd`, pestaña «Misiones y notas»).
+      Cada personaje guarda las suyas: **condiciones** (horas, desde qué día, dignidad mínima,
+      después de qué otra misión, repetible), **objetivo** con lo que ya hay (llevar algo a un
+      sitio o a otro personaje, conseguirle algo, una cita mañana, convencer a alguien con
+      pruebas o mintiendo, y los minijuegos de robar, vigilar y pelear), **plazo** y
+      **resultados** al cumplirla o fallarla (dinero, objetos, deudas con plazo o ya, saldar lo
+      que le debes, favores, amigo o enemigo, dignidad, mente, salud, búsqueda, fichado).
+      En la partida es un encargo más: se apunta (mal) en la libreta, vence, ancla al que la da
+      en el censo y lleva la «!» y la «★» (también el otro personaje del objetivo).
+      - Favores: curarte una vez al día, contarte por dónde anda la policía y, la policía, hacer
+        la vista gorda (no te persigue, no te multa, no te despierta) unos días.
+      - «Le debes» en las estadísticas: lo que debes a un personaje al empezar; se le paga en su
+        menú y una misión lo puede saldar.
+      - Hechas: **«El paquete para Txell»** (Quique te da un paquete para Txell, a la que debes
+        40 €: si se lo llevas, se lo queda por tu deuda, te cura cuando lo necesites y Quique te
+        lo cobra a ti; si no llega o lo abres, Quique viene a cobrar 60 €) y **«El cajero de
+        Antonio»** (convencer a la agente Mas de que Antonio tiene plaza en el albergue: con los
+        papeles de la cita en el CAS, seguro; mintiendo, según tu dignidad y tu cabeza, y si no
+        cuela te ficha. Si sale bien, hace la vista gorda tres días y Antonio te cuenta lo que ve).
+      - [ ] Pendiente: pasar a misiones las demás notas de los personajes de ejemplo; probarlas
+        jugando y ajustar plazos y premios; capturas de la pestaña en el PC (en la nube no hay pantalla).
     - [ ] Fase 3: relaciones entre personajes y esquema de las cadenas de misiones
 12. **Bots latentes (censo)**: todos los del barrio en un registro de datos y cuerpo solo para
     los que tienes cerca; al volver a verlos se ponen al día. — hecho lo básico (rama `feat/editor-personajes`)

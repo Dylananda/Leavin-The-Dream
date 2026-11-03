@@ -623,6 +623,11 @@ func wake_statue(seconds: float) -> void:
 	_still_until = _clock() + seconds
 
 
+## Si te hace la vista gorda (el favor de una misión del editor; ver Misiones.FAVORES).
+func vista_gorda() -> bool:
+	return Misiones.favor(personaje.get("id", ""), "vista_gorda")
+
+
 ## Si es de la policía (de uniforme o de paisano).
 func is_police() -> bool:
 	return POLICE.has(kind)
@@ -734,6 +739,8 @@ func add_debt(amount: int, hours: float) -> void:
 func grudge() -> String:
 	var gs := GameState
 	if is_police():
+		if vista_gorda():
+			return ""
 		return "persigue" if gs.is_wanted_by(corps()) or gs.heat > Defs.CHASE_HEAT else ""
 	if kind == "camello" and debt > 0 and gs.now() >= debt_due:
 		return "cobrar"

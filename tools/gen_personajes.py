@@ -93,6 +93,7 @@ def slug(s):
     return re.sub(r"_+", "_", re.sub(r"[^a-z0-9]", "_", s)).strip("_")
 
 FUENTES = {}
+MISIONES = {}
 exec(open(os.path.join(os.path.dirname(__file__), "personajes_datos.py"), encoding="utf-8").read())
 
 out_dir = os.path.join(G, "data/personajes")
@@ -111,9 +112,9 @@ for p in PERSONAJES:
         "stats": {"dinero": p.get("dinero", 10), "velocidad": KINDS.get(tipo, {}).get("speed", 10.0),
                   "fuerza": p.get("fuerza", 5), "valor": p.get("valor", 5), "agresividad": p.get("agresividad", 3),
                   "llama_policia": p.get("llama_policia", False), "quiere": p.get("quiere", []),
-                  "lleva": p.get("lleva", {}), "vende": p.get("vende", {})},
+                  "lleva": p.get("lleva", {}), "vende": p.get("vende", {}), "le_debes": p.get("le_debes", 0)},
         "ficha": {"quien": "", "habla": "", "sabe": "", "no_sabe": "", "quiere": ""},
-        "frases": p.get("frases", []), "misiones": [], "relaciones": [],
+        "frases": p.get("frases", []), "misiones": MISIONES.get(slug(nombre), []), "relaciones": [],
         "notas": p.get("notas", ""),
     }
     d["ficha"].update(p.get("ficha", {}))

@@ -48,6 +48,12 @@ var subs: Dictionary = {}
 ## Cada nota guarda lo que crees que te dijeron, que no siempre coincide con el encargo.
 var errands: Array = []
 var notes: Array = []
+## Misiones de los personajes del editor (ver Misiones): lo que pasó con cada una
+## ({"personaje/misión": {"estado": "hecho" o "fallado", "dia"}}), los favores que te hacen
+## ({personaje: {favor: now() hasta el que dura}}) y lo que debes a cada uno ({personaje: €}).
+var misiones: Dictionary = {}
+var favores: Dictionary = {}
+var debe_a: Dictionary = {}
 ## Minutos que adelanta (o retrasa) el reloj del HUD mientras miente; ver _update_clock_lie().
 var clock_skew := 0.0
 var _clock_lie_left := 0.0  ## minutos que le quedan a la mentira del reloj
@@ -117,6 +123,9 @@ func new_game(profile_id: String) -> void:
 	_last_methadone_day = -99
 	errands = []
 	notes = []
+	misiones = {}
+	favores = {}
+	debe_a = {}
 	clock_skew = 0.0
 	_clock_lie_left = 0.0
 	_clock_blank = false
