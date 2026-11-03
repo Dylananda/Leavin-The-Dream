@@ -547,7 +547,8 @@ personajes como tipo base. Zonas nuevas en `World.ZONE_STREETS` y `World.ZONE_LA
     mucho más rápido (`Defs.BIKE_SPEED`) sin gastar vitalidad, y llamas algo la atención.
   - [x] Los dueños reconocen su bici: yendo en una robada, quien te ve puede ser su dueño
     (`Defs.BIKE_OWNER_*`) y va a por ti o a por un agente; si te alcanza, se la lleva.
-  - [ ] Pendiente: más compradores (otros yonkis, chatarreros).
+  - [x] Los chatarreros ya compran la chatarra y el cobre (algo menos que el compraventa).
+  - [ ] Pendiente: que otros yonkis también compren objetos.
 
 **Minijuegos (punto 9)**
 - [x] Las acciones de habilidad pasan a un minijuego con otra vista (primer plano del
