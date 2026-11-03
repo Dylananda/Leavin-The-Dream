@@ -143,7 +143,12 @@ func _test_vitalidad(world) -> void:
 	world.toggle_bike()
 	world._update_player_input(0.016)
 	_check(gs.riding and world.player.look.get("bici", false) and world.player.run_factor == Defs.BIKE_SPEED, "bici: no te subes o no corre más")
-	gs.remove_item("bici")
+	# el dueño de la bici te ve, va a por ti y, si te alcanza, se la lleva
+	var owner = world._spawn_npc("vecino")
+	owner.set_meta("dueno_bici", true)
+	owner.chase_reason = "venganza"
+	world._on_caught(owner)
+	_check(not gs.has_item("bici"), "bici: el dueño no se la lleva al alcanzarte")
 	world._update_player_input(0.016)
 	_check(not gs.riding and not world.player.look.get("bici", false), "bici: sigues montado en una bici que ya no tienes")
 	print("  vitalidad, pausa y mapa: OK")

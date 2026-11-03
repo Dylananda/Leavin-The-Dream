@@ -532,8 +532,9 @@ personajes como tipo base. Zonas nuevas en `World.ZONE_STREETS` y `World.ZONE_LA
   «cartera» o al volver a estar sereno. Lo que nadie recoge desaparece a las 10 h.
   - [x] La bici sirve para moverse: con una en el inventario, B (o «Usar») para montar; vas
     mucho más rápido (`Defs.BIKE_SPEED`) sin gastar vitalidad, y llamas algo la atención.
-  - [ ] Pendiente: más compradores (otros yonkis, chatarreros) y que los dueños de las bicis
-    las reconozcan.
+  - [x] Los dueños reconocen su bici: yendo en una robada, quien te ve puede ser su dueño
+    (`Defs.BIKE_OWNER_*`) y va a por ti o a por un agente; si te alcanza, se la lleva.
+  - [ ] Pendiente: más compradores (otros yonkis, chatarreros).
 
 **Minijuegos (punto 9)**
 - [x] Las acciones de habilidad pasan a un minijuego con otra vista (primer plano del

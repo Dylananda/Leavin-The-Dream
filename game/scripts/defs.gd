@@ -100,7 +100,10 @@ const STAT_BRAVE := 0.05  ## lo que suma cada punto de valor sobre 5 a que se en
 const STAT_AVENGE := 0.06  ## ... y cada punto de valor o agresividad a que vaya a por ti si le robas
 const STAT_HOTHEAD := 7  ## desde esta agresividad, al que pegas o pides demasiado va a por ti en vez de apartarse
 ## Vitalidad: el aguante para correr y pelear (GameState.vitality). Se gasta en segundos reales.
-const BIKE_SPEED := 1.8  ## en bici (B, si llevas una): multiplicador de velocidad, sin gastar vitalidad
+const BIKE_SPEED := 1.8
+## Yendo en una bici robada, la probabilidad de que alguien que te ve (de estos tipos) sea su dueño.
+const BIKE_OWNER_CHANCE := 0.03
+const BIKE_OWNERS := ["vecino", "pudiente", "turista", "mensajero", "skater"]  ## en bici (B, si llevas una): multiplicador de velocidad, sin gastar vitalidad
 const VITALITY_RUN_COST := 11.0  ## por segundo corriendo (con el máximo lleno, unos 9 s seguidos)
 const VITALITY_REGEN_STILL := 9.0  ## por segundo parado...
 const VITALITY_REGEN_WALK := 4.0  ## ... y andando

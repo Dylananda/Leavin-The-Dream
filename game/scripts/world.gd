@@ -454,6 +454,7 @@ func _process(delta: float) -> void:
 	if _street_timer <= 0.0:
 		_street_timer = 0.4
 		_update_street()
+		_check_bike_owners()
 	_event_timer -= delta
 	if _event_timer <= 0.0:
 		_event_timer = randf_range(15.0, 35.0) / city.crime_factor("peleas")
@@ -1091,6 +1092,13 @@ func _on_caught(npc: Npc) -> void:
 			npc.memory.erase("robado")
 			npc.memory.erase("timado")
 			var loot := ""
+			if npc.has_meta("dueno_bici") and gs.has_item("bici"):
+				npc.remove_meta("dueno_bici")
+				gs.remove_item("bici")
+				npc.say("¡Mi bici! ¡Ladrón!", 3.0)
+				gs.log_msg("%s te alcanza y se lleva su bici. (−dignidad)" % npc.display_name, GameState.C_BAD)
+				gs.change_dignity(-4)
+				return
 			for id in ["cartera", "movil"]:
 				if gs.has_item(id):
 					loot = id
@@ -1271,6 +1279,24 @@ func _respawn() -> void:
 		var missing: int = _npc_targets[kind] - censo.registros.filter(func(r): return r["kind"] == kind and r["personaje"].is_empty()).size()
 		for i in missing:
 			censo.nuevo(kind)
+
+
+## Yendo en una bici robada, quien te ve puede ser su dueño (Defs.BIKE_OWNER_*): va a por ti
+## para recuperarla o busca a un agente. Cada uno se mira una sola vez.
+func _check_bike_owners() -> void:
+	if not GameState.riding:
+		return
+	for npc in npcs:
+		if not npc.kind in Defs.BIKE_OWNERS or npc.mode != "" or not npc.sees_player or npc.has_meta("visto_en_bici"):
+			continue
+		npc.set_meta("visto_en_bici", true)
+		if randf() >= Defs.BIKE_OWNER_CHANCE:
+			continue
+		npc.set_meta("dueno_bici", true)
+		npc.remember("robado")
+		GameState.log_msg("%s se te queda mirando: esa bici es suya." % npc.display_name, GameState.C_BAD)
+		npc.react("venganza" if npc.avenger() else "denuncia")
+		return
 
 
 ## Subirte o bajarte de la bici que llevas en el inventario (una robada, o la que encuentres).
