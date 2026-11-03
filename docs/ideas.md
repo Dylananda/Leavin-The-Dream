@@ -545,6 +545,11 @@ El barrio entero tiende a engancharse, también el jugador, y salir de ahí es l
 - [ ] **Equilibrio**: consumo, enganche, precios y premios de las misiones. Ahora mismo es
   demasiado fácil hacer mucho dinero (lo ha notado el usuario jugando): repasar lo que dan
   pedir, robar, trapichear, los encargos y las misiones, y lo que cuesta vivir.
+  - [x] Primer ajuste (3 de noviembre): carteras con poco efectivo (`Defs.WALLET_*`: 0–35 €,
+    una de cada diez 60–140 €), reventa más barata (móvil 18 €, patinete 28 €, bici 15 €),
+    menos margen al trapichear (despedidas ×1,7, guiris ×2,5, pijos ×2) y pagas de los
+    perfiles más realistas (paro 120 € y pensión 140 € por semana; papá, 150 € cada 4 días).
+  - [ ] Jugarlo y seguir: comida, precio de la droga según la hora y el barrio, premios.
 
 ### Lo que sale de jugar las misiones (3 de noviembre de 2026)
 
@@ -558,6 +563,10 @@ El barrio entero tiende a engancharse, también el jugador, y salir de ahí es l
   `Defs.VITALITY_*`; el mapa, en `ui/mapa_barrio.gd`.
 - [ ] **Más gente con la que vale la pena tratar**: ahora hay mucho bot de relleno; que
   los personajes con historia, misiones o trato se encuentren más a menudo.
+  - [x] Primer paso: **peticiones** de la gente corriente (solo algunos de cada tipo, con
+    «!»): la receta de un abuelo en la farmacia, llevar a un turista perdido a una iglesia y
+    la compra de una vecina, que te da 20 € por adelantado y no olvida si te los quedas.
+    En `Defs.ERRANDS` (`share`). Faltan más (perros perdidos, la pelota de los niños...).
 
 ### Finales
 

@@ -19,6 +19,9 @@ const WHAT := {
 	"cartera": "dejar la cartera caliente en",
 	"juerga": "llevar a la despedida de fiesta a",
 	"cita": "cita en",
+	"receta": "recoger la receta en",
+	"camino": "llevar al turista a",
+	"compra": "hacer la compra en",
 }
 ## Cómo se puede apuntar mal un dato: sin sitio, sin hora, otra hora u otro sitio.
 const SLIPS := ["sin_sitio", "sin_hora", "otra_hora", "otro_sitio"]
@@ -46,7 +49,7 @@ func offers_for(npc: Npc) -> Array:
 	var acts := []
 	for id in Defs.ERRANDS:
 		var d: Dictionary = Defs.ERRANDS[id]
-		if d["giver"] != npc.kind or not active(id).is_empty() or npc.has_meta("enemigo"):
+		if d["giver"] != npc.kind or not active(id).is_empty() or npc.has_meta("enemigo") or not _asks(npc, id):
 			continue
 		if npc.get_meta("encargo_dia", -1) == GameState.day:
 			continue
@@ -55,6 +58,11 @@ func offers_for(npc: Npc) -> Array:
 			continue
 		acts.append(Interactions._act("Encargo: " + _offer_text(id, plan), func(): accept(npc, id, plan)))
 	return acts
+
+
+## Si `npc` es de los de su tipo que piden el encargo `id` (Defs.ERRANDS[id]["share"]).
+func _asks(npc: Npc, id: String) -> bool:
+	return npc._trait("encargo") < Defs.ERRANDS[id].get("share", 1.0)
 
 
 ## Sitio y horas de un encargo nuevo, o {} si el mapa no tiene dónde.
@@ -130,6 +138,13 @@ func accept(npc: Npc, id: String, plan: Dictionary) -> void:
 			npc.say("Bro! A las %s en el %s, ¿vale? ¡Tú eres el guía!" % [gs.time_text(e["from"]), place_name(e["poi"])], 5.0)
 		"cita":
 			npc.say("Mañana a las %s en el Baluard. Te espero, ¿eh?" % gs.time_text(e["from"]).left(5), 5.0)
+		"receta":
+			npc.say("Ay, hijo, que no llego. La receta está a mi nombre en %s" % place_name(e["poi"]), 5.0)
+		"camino":
+			npc.say("%s? Yes, yes, please, I follow you!" % place_name(e["poi"]), 5.0)
+		"compra":
+			gs.add_money(Defs.ERRANDS["compra"]["advance"])
+			npc.say("Toma %d €: pan, leche y fruta del %s. Y me traes el cambio, ¿eh?" % [Defs.ERRANDS["compra"]["advance"], place_name(e["poi"])], 5.0)
 	jot(e)
 	world.highlight_poi(e["poi"])
 	gs.log_msg("Apuntas el encargo de %s en la libreta (L)." % e["who"])
@@ -146,6 +161,12 @@ func _offer_text(id: String, plan: Dictionary) -> String:
 			return "dejar una cartera caliente en %s antes de las %s (%d €)" % [where, gs.time_text(plan["until"]), d["money"]]
 		"juerga":
 			return "llevarlos de fiesta al %s, de %s a %s (%d €)" % [where, gs.time_text(plan["from"]), gs.time_text(plan["until"]), d["money"]]
+		"receta":
+			return "recogerle la receta en %s antes de las %s (%d €)" % [where, gs.time_text(plan["until"]), d["money"]]
+		"camino":
+			return "llevarle a %s, que se ha perdido, antes de las %s (propina)" % [where, gs.time_text(plan["until"])]
+		"compra":
+			return "hacerle la compra en %s antes de las %s (te da %d € para ella)" % [where, gs.time_text(plan["until"]), d["advance"]]
 		"cita":
 			return "cita mañana en el CAS Baluard de %s a %s por lo del albergue" % [
 				gs.time_text(plan["from"]).left(5), gs.time_text(plan["until"]).left(5)]
@@ -166,7 +187,7 @@ func marker_for(npc: Npc) -> String:
 	if not npc.known and Npc.KINDS[npc.kind].has("disguise"):
 		return ""
 	for id in Defs.ERRANDS:
-		if Defs.ERRANDS[id]["giver"] == npc.kind and active(id).is_empty():
+		if Defs.ERRANDS[id]["giver"] == npc.kind and active(id).is_empty() and _asks(npc, id):
 			return "!"
 	return ""
 
@@ -200,6 +221,8 @@ func actions_for_poi(poi: Dictionary) -> Array:
 			continue
 		if (e["id"] == "paquete" and not gs.has_item("paquete")) or (e["id"] == "cartera" and not gs.has_item("cartera_caliente")):
 			continue
+		if e["id"] == "compra" and gs.money < Defs.ERRANDS["compra"]["advance"]:
+			continue  # el dinero de la compra ya no lo tienes
 		var errand: Dictionary = e
 		if gs.now() < e["from"]:
 			acts.append(Interactions._act("Esperar a %s (hasta las %s)" % [e["who"], gs.time_text(e["from"])], func():
@@ -217,6 +240,9 @@ func _deliver_label(e: Dictionary) -> String:
 		"cartera": return "Dejar la cartera de %s" % e["who"]
 		"juerga": return "Llevar a la despedida de %s de fiesta (1 h)" % e["who"]
 		"cita": return "Tu cita con %s" % e["who"]
+		"receta": return "Recoger la receta de %s" % e["who"]
+		"camino": return "Dejar al turista (%s) en la puerta" % e["who"]
+		"compra": return "Hacer la compra de %s" % e["who"]
 	return e["id"]
 
 
@@ -255,6 +281,18 @@ func complete(e: Dictionary) -> void:
 			gs.add_item("papeles_albergue")
 			gs.log_msg("%s te estaba esperando. Café, papeles para el albergue y un bocadillo para luego." % e["who"], G.C_GOOD)
 			gs.change_dignity(d["dignity"], "Alguien cuenta contigo")
+		"receta", "camino", "compra":
+			gs.advance(15)
+			if e["id"] == "compra":
+				gs.add_money(-d["advance"])
+			var tip: int = d["money"] if e["id"] != "camino" else randi_range(2, d["money"])
+			gs.add_money(tip)
+			gs.change_dignity(d["dignity"], "Hacer un favor")
+			_remember_giver(e, "ayudado")
+			match e["id"]:
+				"receta": gs.log_msg("La farmacéutica te da la bolsa de %s. Se la dejas en el portal: %d € y un «Dios te lo pague»." % [e["who"], tip], G.C_GOOD)
+				"camino": gs.log_msg("%s hace una foto a la iglesia y te da %d € de propina." % [e["who"], tip], G.C_GOOD)
+				"compra": gs.log_msg("Le subes la compra a %s. Te da %d € por las molestias." % [e["who"], tip], G.C_GOOD)
 
 
 ## Abrir el paquete del camello: dos rayas para ti y una deuda más gorda. Si es el de una
@@ -327,6 +365,23 @@ func _fail(e: Dictionary, opened := false) -> void:
 			gs.log_msg("%s te esperó una hora en el Baluard." % e["who"], G.C_BAD)
 			gs.change_sanity(d["sanity_fail"])
 			gs.change_dignity(d["dignity_fail"], "Dejar plantada a quien te ayuda")
+		"receta":
+			gs.log_msg("%s se ha quedado sin sus pastillas." % e["who"], G.C_BAD)
+			gs.change_dignity(d["dignity_fail"], "Dejar tirada a una abuela")
+		"camino":
+			gs.log_msg("El turista (%s) se ha cansado de esperarte." % e["who"])
+		"compra":
+			# te quedaste los 20 €: no se le olvida
+			_remember_giver(e, "timado")
+			gs.log_msg("%s se ha quedado sin compra y tú con sus %d €." % [e["who"], d["advance"]], G.C_BAD)
+			gs.change_dignity(d["dignity_fail"], "Quedarte el dinero de la compra de una vecina")
+
+
+## Que quien te dio el encargo se acuerde de `what` («ayudado», «timado»...), si sigue por ahí.
+func _remember_giver(e: Dictionary, what: String) -> void:
+	var giver = e["giver"]
+	if is_instance_valid(giver):
+		giver.remember(what)
 
 
 # ------------------------------------------------------------------- libreta

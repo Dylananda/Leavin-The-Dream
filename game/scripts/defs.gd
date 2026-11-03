@@ -108,6 +108,11 @@ const VITALITY_FATIGUE := 0.7
 const VITALITY_MONO := 0.4
 const VITALITY_HEALTH := 0.4
 const VITALITY_MIN_MAX := 15.0
+## Lo que lleva una cartera robada: casi siempre poco efectivo (se paga con tarjeta) y, alguna
+## vez, una buena (los primeros días, el dinero del viaje).
+const WALLET_CASH := Vector2i(0, 35)
+const WALLET_FAT_CHANCE := 0.1
+const WALLET_FAT := Vector2i(60, 140)
 ## Bots latentes (scripts/censo.gd): lo que se pone al día al volver a verlos.
 const LATENT_ROBBED_FORGET := 24.0 * 60.0  ## minutos tras los que al que robaron vuelve a llevar dinero
 const LATENT_MEMORY_FADE := 3.0 * 24.0 * 60.0  ## minutos latente por cada vez que olvida algo que le hiciste...
@@ -152,8 +157,8 @@ const PROFILES := [
 		"desc": "52 años, 30 cotizando en una fábrica que ahora es un hotel boutique. Le queda el paro y la litrona de las once.",
 		"money": 60, "health": 65, "dignity": 60, "sanity": 55,
 		"knows": {"litrona": 25, "porro": 5},
-		"income": {"amount": 150, "every_days": 3, "label": "el paro"},
-		"perk": "Cobra el paro cada 3 días en el cajero.",
+		"income": {"amount": 120, "every_days": 7, "label": "el paro"},  # subsidio: unos 500 € al mes
+		"perk": "Cobra el paro cada semana en el cajero.",
 		"items": {"litrona": 1},
 		"look": {"skin": Color("d9a77c"), "shirt": Color("8a8f5a"), "pants": Color("4a3f35"), "hair": Color("6b6b6b"),
 			"gender": "m", "hair_style": "calvo", "facial": "bigote", "jacket": Color("2e3e6e")},  # chaqueta de chándal
@@ -165,7 +170,7 @@ const PROFILES := [
 		"desc": "Viudo, 71 años. Descubrió las tragaperras, después los carajillos, después lo demás. Los nietos ya no llaman.",
 		"money": 120, "health": 45, "dignity": 85, "sanity": 50,
 		"knows": {"litrona": 15},
-		"income": {"amount": 220, "every_days": 4, "label": "la pensión"},
+		"income": {"amount": 140, "every_days": 7, "label": "la pensión"},  # no contributiva: unos 600 € al mes
 		"perk": "La policía no sospecha de un abuelo. Da mucha pena pidiendo.",
 		"items": {"bocadillo": 1},
 		"look": {"skin": Color("e8bfa0"), "shirt": Color("5b4a3a"), "pants": Color("6e6658"), "hair": Color("e8e8e8"),
@@ -204,7 +209,7 @@ const PROFILES := [
 		"desc": "Bajó al Raval 'a conocer la Barcelona auténtica'. Papá le pasa una paga. Tiene muchísima dignidad que perder.",
 		"money": 600, "health": 95, "dignity": 100, "sanity": 85,
 		"knows": {"farlopa": 3, "litrona": 0},
-		"income": {"amount": 200, "every_days": 3, "label": "la paga de papá"},
+		"income": {"amount": 150, "every_days": 4, "label": "la paga de papá"},
 		"perk": "Papá le ingresa dinero... hasta que su dignidad baje de 40 y alguien se lo cuente.",
 		"items": {"movil": 1},
 		"look": {"skin": Color("f0cfb0"), "shirt": Color("e8e2d0"), "pants": Color("2a3a5a"), "hair": Color("d8b060"),
@@ -272,7 +277,7 @@ const BODY_FX := {
 const DEALER_STOCK := ["porro", "pastillas", "farlopa", "base", "caballo"]
 
 const ITEMS := {
-	"movil": {"name": "Móvil", "sell": 30},
+	"movil": {"name": "Móvil", "sell": 18},  # robado y bloqueado: el compraventa paga poco
 	"movil_roto": {"name": "Móvil con la pantalla rota", "sell": 6},
 	"cartera": {"name": "Cartera ajena", "sell": 0},
 	"anillo": {"name": "Anillo de boda", "sell": 60},
@@ -288,8 +293,8 @@ const ITEMS := {
 	"papeles_albergue": {"name": "Papeles del albergue", "sell": 0},  # de la cita en el CAS
 	# de la calle (scripts/street_items.gd)
 	"chatarra": {"name": "Chatarra", "sell": 3},
-	"bici": {"name": "Bici ajena", "sell": 25},
-	"patinete": {"name": "Patinete eléctrico", "sell": 45},
+	"bici": {"name": "Bici ajena", "sell": 15},
+	"patinete": {"name": "Patinete eléctrico", "sell": 28},
 }
 
 ## Objetos tirados por la calle (scripts/street_items.gd). `weight` = lo a menudo que aparece;
@@ -333,10 +338,10 @@ const FAKE_REVEAL_BELOW := 0.12
 ## cliente: `wants` = lo que te compra; `markup` = cuánto paga sobre el precio del camello.
 ## Solo compra si lleva bastante dinero encima (los yonkis, para poco más que unas pastillas).
 const CLIENTS := {
-	"fiestero": {"wants": ["farlopa", "porro", "pastillas"], "markup": 2.0},
-	"turista": {"wants": ["porro"], "markup": 3.0},
+	"fiestero": {"wants": ["farlopa", "porro", "pastillas"], "markup": 1.7},
+	"turista": {"wants": ["porro"], "markup": 2.5},
 	"yonki": {"wants": ["pastillas", "porro", "litrona"], "markup": 1.5},
-	"pudiente": {"wants": ["farlopa", "porro"], "markup": 2.5},
+	"pudiente": {"wants": ["farlopa", "porro"], "markup": 2.0},
 }
 const REGULAR_BONUS := 0.1  ## lo que paga de más un cliente por cada vez que ya te compró...
 const REGULAR_MAX := 3  ## ... hasta este número de veces
@@ -364,6 +369,14 @@ const ERRANDS := {
 	"juerga": {"giver": "fiestero", "place": "bar", "window": [1.0, 2.0], "money": 40},
 	"cita": {"giver": "educador", "place": "cas", "at": [10, 11],
 		"dignity": 8, "sanity": 10, "mono": 15, "dignity_fail": -3, "sanity_fail": -5},
+	# peticiones de la gente corriente; `share` = parte de los de ese tipo que te la piden
+	# (siempre los mismos), para que la calle no se llene de «!»
+	"receta": {"giver": "anciano", "place": "farmacia", "window": [0.0, 1.5], "share": 0.25,
+		"money": 6, "dignity": 4, "dignity_fail": -2},
+	"camino": {"giver": "turista", "place": "iglesia", "window": [0.0, 1.0], "share": 0.15,
+		"money": 8, "dignity": 1},
+	"compra": {"giver": "vecino", "place": "super", "window": [0.0, 1.5], "share": 0.15,
+		"advance": 20, "money": 5, "dignity": 3, "dignity_fail": -4},
 }
 const ERRAND_MIN_DISTANCE := 60  ## casillas: el sitio del encargo no está a la vuelta de la esquina
 const ERRAND_MAX_DISTANCE := 300  ## ... ni más lejos de lo que se anda en hora y media

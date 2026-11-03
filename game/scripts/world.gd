@@ -796,9 +796,13 @@ func use_item(id: String) -> void:
 		if street_items.take_fake("cartera", "La abres: es %s. Ni una moneda."):
 			return
 		GameState.remove_item("cartera")
-		var n := randi_range(5, 90)
+		var cash := Defs.WALLET_FAT if randf() < Defs.WALLET_FAT_CHANCE else Defs.WALLET_CASH
+		var n := randi_range(cash.x, cash.y)
 		GameState.add_money(n)
-		GameState.log_msg("La cartera tenía %d €. Las fotos de sus hijos las tiras a la papelera." % n, GameState.C_GOOD)
+		if n == 0:
+			GameState.log_msg("La cartera solo tiene tarjetas y un abono de metro. Las fotos de sus hijos las tiras a la papelera.", GameState.C_BAD)
+		else:
+			GameState.log_msg("La cartera tenía %d €. Las fotos de sus hijos las tiras a la papelera." % n, GameState.C_GOOD)
 		GameState.change_dignity(-1)
 		return
 	if Defs.SUBSTANCES.has(id):

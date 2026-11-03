@@ -320,10 +320,17 @@ func _test_errands(gs, world) -> void:
 	var givers := {}
 	for id in Defs.ERRANDS:
 		var kind: String = Defs.ERRANDS[id]["giver"]
-		var npc = world.npcs.filter(func(n): return n.kind == kind and is_instance_valid(n))
+		# solo algunos de cada tipo piden encargos (Defs.ERRANDS[...]["share"])
+		var npc = world.npcs.filter(func(n): return n.kind == kind and is_instance_valid(n) and errands._asks(n, id))
+		var tries := 0
+		while npc.is_empty() and tries < 60:
+			var fresh = world._spawn_npc(kind)
+			if errands._asks(fresh, id):
+				npc = [fresh]
+			tries += 1
 		if npc.is_empty():
-			world._spawn_npc(kind)
-			npc = [world.npcs[-1]]
+			_check(false, "%s: ninguno pide su encargo" % kind)
+			continue
 		npc = npc[0]
 		npc.remove_meta("encargo_dia")
 		npc.remove_meta("enemigo")
@@ -340,9 +347,18 @@ func _test_errands(gs, world) -> void:
 		_check(world.interactions.for_npc(npc).all(func(a): return not a["label"].begins_with("Encargo:")), "%s: ofrece el encargo dos veces" % id)
 	world._update_pointers()
 	_check(errands.noted_places().size() == gs.notes.filter(func(n): return not n["poi"].is_empty()).size(), "las flechas no siguen a la libreta")
-	_check(gs.notes.size() == 4 and gs.has_item("paquete") and gs.has_item("cartera_caliente"), "no se apuntan los encargos o no te dan lo que hay que llevar")
+	_check(gs.notes.size() == Defs.ERRANDS.size() and gs.has_item("paquete") and gs.has_item("cartera_caliente"), "no se apuntan los encargos o no te dan lo que hay que llevar")
 	_check(errands.active("paquete")["poi"] != errands.active("juerga")["poi"], "dos encargos en el mismo bar")
 	print("  encargos: %s" % " | ".join(gs.notes.map(func(n): return errands.note_text(n))))
+	# las peticiones de la gente corriente se cumplen en su sitio y pagan algo
+	for id in ["receta", "camino", "compra"]:
+		var pe: Dictionary = errands.active(id)
+		var before: int = gs.money
+		var pacts = world.interactions.for_poi(pe["poi"]).filter(func(a): return a["label"] == errands._deliver_label(pe))
+		_check(pacts.size() == 1, "%s: no se puede cumplir en su sitio" % id)
+		if not pacts.is_empty():
+			pacts[0]["do"].call()
+		_check(pe["state"] == "hecho" and gs.money > before - Defs.ERRANDS[id].get("advance", 0), "%s: cumplirla no paga" % id)
 	# cumplir: el paquete en su bar, la despedida esperando a que llegue la hora
 	var money: int = gs.money
 	var e: Dictionary = errands.active("paquete")
