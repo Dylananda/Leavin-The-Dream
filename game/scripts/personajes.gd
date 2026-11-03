@@ -60,7 +60,7 @@ static func nuevo(tipo := "yonki") -> Dictionary:
 		"fuentes": "",
 		"aspecto": {
 			"skin": "d9a77c", "shirt": "6a6a70", "pants": "3a3a40", "hair": "3a2418", "jacket": "",
-			"hair_style": "corto", "facial": "", "glasses": false, "skirt": false,
+			"hair_style": "corto", "facial": "", "glasses": false, "skirt": false, "build": "",
 			"accesorio": "", "tamano": 1.0,
 		},
 		"zona": {"tipo": "barrio", "poligono": [], "casa": []},
@@ -196,7 +196,7 @@ static func slug(nombre: String) -> String:
 static func look_de(d: Dictionary) -> Dictionary:
 	var a: Dictionary = d["aspecto"]
 	var look := {"gender": d["genero"]}
-	for k in ["hair_style", "facial", "glasses", "skirt"]:
+	for k in ["hair_style", "facial", "glasses", "skirt", "build"]:
 		look[k] = a[k]
 	for k in COLORES:
 		if a.get(k, "") != "":
@@ -210,7 +210,7 @@ static func look_de(d: Dictionary) -> Dictionary:
 ## El aspecto de Actor.look en el formato del archivo (colores en hexadecimal).
 static func aspecto_de(look: Dictionary, accesorio: String, tamano: float) -> Dictionary:
 	var a := {"accesorio": accesorio, "tamano": tamano, "jacket": ""}
-	for k in ["hair_style", "facial", "glasses", "skirt"]:
+	for k in ["hair_style", "facial", "glasses", "skirt", "build"]:
 		a[k] = look.get(k, nuevo()["aspecto"][k])
 	for k in COLORES:
 		if look.has(k):

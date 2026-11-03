@@ -76,6 +76,7 @@ const ACCESORIOS := {
 const PEINADOS := {"corto": "Corto", "rapado": "Rapado", "calvo": "Calvo", "tupe": "Tupé", "rizos": "Rizos",
 	"coleta": "Coleta", "melena": "Melena", "moño": "Moño", "corta": "Media melena"}
 const VELLO := {"": "Nada", "barba": "Barba", "bigote": "Bigote"}
+const COMPLEXION := {"": "Normal", "delgado": "Delgada", "grueso": "Gruesa"}
 
 
 ## Si el juego ya tiene este tipo de bot (si no, el personaje se guarda pero no sale).

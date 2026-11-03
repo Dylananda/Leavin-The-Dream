@@ -420,10 +420,19 @@ de ruta:
     La unidad de paisano de la Urbana que detiene a captadores y carteristas en la Rambla:
     [3Cat](https://www.3cat.cat/3catinfo/preocupacio-a-ciutat-vella-per-la-presencia-de-captadors-de-clubs-cannabics/noticia/3254458/),
     [betevé](https://beteve.cat/societat/operacio-contra-captadors-associacions-cannabiques/).
-  - [ ] Pendiente: comprobar con el texto oficial de la ordenanza qué sanciona cada cuerpo (las
-    cifras de las multas varían según el medio); que los Mossos vayan en pareja; la comisaría de
-    los Mossos frente a la de la Urbana en el mapa; que la Urbana pida el permiso a músicos y
-    estatuas; jugarlo y ajustar `Defs.SLEEP_WAKE` y las rondas.
+  - [x] Comprobado (3 de noviembre de 2026), sin el texto oficial del BOPB:
+    - **Dormir en la calle**: no he encontrado que la ordenanza de 2026 lo multe. Lo documentado
+      es que se ha denunciado a la Urbana por levantar y multar a gente sin hogar con la excusa
+      de la limpieza ([Ara](https://es.ara.cat/sociedad/emergencia-social/guardia-urbana-robado-tienda-campana-vivo-cinco-veces-anos_1_5059654.html)).
+      El juego ya hace eso: te despierta y te echa, sin multa.
+    - **Drogas en la calle**: en la práctica actúan los dos cuerpos juntos. La Urbana tiene su
+      propio plan contra el menudeo (Plan Druida) y las operaciones contra narcopisos son conjuntas,
+      con la investigación en manos de los Mossos ([betevé](https://beteve.cat/societat/7-detinguts-punt-venda-drogues-consum-raval/),
+      [El Debate, 2026](https://www.eldebate.com/espana/cataluna/barcelona/20260804/barcelona-aumenta-presion-policial-contra-menudeo-droga-calle-preocupante_446629.html)).
+      En el juego, cualquier agente que te vea vender interviene, pero fichado por drogas solo te
+      persiguen los Mossos (`Defs.CRIME_CORPS`): **por decidir** si la Urbana también.
+    - La ordenanza nueva entró en vigor en febrero de 2026 y se centra en beber y orinar en la
+      calle ([Ara](https://es.ara.cat/sociedad/barcelona/claves-nueva-ordenanza-convivencia-barcelona_1_5649264.html)).
 
 **Fauna de la calle** (rama `feat/policia-y-fauna`). Once tipos nuevos, con nombres, historias,
 zona, horario, frases, sus acciones y ficha para hablar con ellos (menos la estatua). Los

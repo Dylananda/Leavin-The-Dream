@@ -221,6 +221,7 @@ func _tab_aspecto() -> Control:
 	_color(g, "Pelo (y barba)", ["aspecto", "hair"], Npc.HAIR_COLORS + [Color("d8d8d8"), Color("ff7ac0")])
 	_option(g, "Peinado", ["aspecto", "hair_style"], TiposPersonaje.PEINADOS)
 	_option(g, "Barba", ["aspecto", "facial"], TiposPersonaje.VELLO)
+	_option(g, "Complexión", ["aspecto", "build"], TiposPersonaje.COMPLEXION)
 	_check(g, "Gafas", ["aspecto", "glasses"])
 	_color(g, "Camiseta (o pelaje)", ["aspecto", "shirt"])
 	_color(g, "Pantalón o falda", ["aspecto", "pants"])
