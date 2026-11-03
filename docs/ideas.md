@@ -546,6 +546,18 @@ El barrio entero tiende a engancharse, también el jugador, y salir de ahí es l
   demasiado fácil hacer mucho dinero (lo ha notado el usuario jugando): repasar lo que dan
   pedir, robar, trapichear, los encargos y las misiones, y lo que cuesta vivir.
 
+### Lo que sale de jugar las misiones (3 de noviembre de 2026)
+
+- [x] Los plazos de «El paquete para Txell» y «El cajero de Antonio» parecen bien.
+- [ ] **Barra de vitalidad**: correr no puede salir gratis. Se gasta al correr (y pelear) y
+  se recupera parado; su máximo y lo que tarda en volver dependen del hambre, el sueño, el
+  colocón, el mono y la salud.
+- [ ] **Mapa** del barrio (una tecla): calles, dónde estás, los sitios que conoces y los de
+  la libreta.
+- [ ] **Pausa** (botón y tecla).
+- [ ] **Más gente con la que vale la pena tratar**: ahora hay mucho bot de relleno; que
+  los personajes con historia, misiones o trato se encuentren más a menudo.
+
 ### Finales
 
 - [ ] **Redención (perder, el más difícil)**: subir tanto la dignidad y bajar el enganche a 0
