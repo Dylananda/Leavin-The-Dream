@@ -265,6 +265,7 @@ está en `Defs.ERRANDS` y en las constantes de memoria de `defs.gd`):
 - [ ] Pendiente: que el **log de conversaciones** se apunte también en la libreta (pistas de
   los personajes, tratos) y se degrade igual.
 - [x] La placa de la calle también miente cuando vas ido (`Defs.STREET_LIE`).
+- [x] Muy ido, el dinero del HUD es una cuenta a ojo («¿unos 45?», `Defs.MONEY_LIE*`).
 - [ ] Pendiente: que mientan otros datos del HUD.
 - [ ] Pendiente: más encargos, también encadenados (misiones de rol), y otras situaciones que
   compitan entre sí: las fiestas de otro barrio a las que va a ir una yonki que te gusta.
@@ -308,7 +309,9 @@ de ruta:
   americana de Don Ramón...). Etiquetas en femenino (Vecina, Educadora social, Trilera).
   Los perfiles del jugador también (`look` en `Defs.PROFILES`). `tests/retratos.gd` saca a
   todos en fila para revisarlos.
-  - [ ] Pendiente: forma de andar propia; más variedad de cuerpos (edad, altura, gordura).
+  - [x] Más variedad de cuerpos: complexión (delgados y gruesos, con barriga) y algo de altura
+    (`Defs.BUILD_*`, `HEIGHT_RANGE`; `Actor.BUILDS`).
+  - [ ] Pendiente: forma de andar propia.
 - [x] **Moverse con WASD** choca con las paredes porque las calles no siguen las direcciones
   de las teclas y no se ven bien. Hecho: si de frente hay pared, el muñeco sigue la dirección
   libre más parecida a la pedida (hasta 70° a cada lado; `Actor._steer`), así que toma la

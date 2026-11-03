@@ -268,6 +268,18 @@ func _build_log() -> void:
 	p.add_child(_log)
 
 
+## El dinero que crees llevar: la cifra exacta o, muy ido (Defs.MONEY_LIE_FROM), una cuenta
+## a ojo que a veces se equivoca (la misma durante una hora de juego, para que no baile).
+func _money_shown() -> String:
+	var gs := GameState
+	if gs.befuddlement() < Defs.MONEY_LIE_FROM:
+		return str(gs.money)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash([int(gs.now() / 60.0), gs.money])
+	var guess := gs.money * rng.randf_range(1.0 - Defs.MONEY_LIE, 1.0 + Defs.MONEY_LIE)
+	return "¿unos %d?" % (snappedi(int(guess), 5))
+
+
 func _build_help() -> void:
 	var l := Label.new()
 	l.text = "WASD: andar (Shift: correr)  ·  Clic: ir / interactuar  ·  I: inventario  ·  L: libreta  ·  M: mapa  ·  R: rebuscar  ·  Z: dormir aquí  ·  V: conos de visión  ·  B: bici  ·  Q/E: girar cámara  ·  Rueda: zoom  ·  P: pausa"
@@ -342,7 +354,7 @@ func refresh() -> void:
 	_bars["vitality"].get_parent().tooltip_text = BARS[1][4] + "
 Máximo ahora: %d." % int(gs.vitality_max())
 	_refresh_subs()
-	var money_text := "Dinero: %d €   Banco: %d €" % [gs.money, gs.bank]
+	var money_text := "Dinero: %s €   Banco: %d €" % [_money_shown(), gs.bank]
 	if gs.debt > 0:
 		money_text += "   Debes: %d €" % gs.debt
 	_money_label.text = money_text

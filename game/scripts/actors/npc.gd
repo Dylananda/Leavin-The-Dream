@@ -479,6 +479,10 @@ func init_kind(p_kind: String, p_name := "") -> void:
 		"hair": HAIR_COLORS[rng.randi_range(0, HAIR_COLORS.size() - 1)],
 	}
 	_roll_traits(rng)
+	# complexión y algo de altura, para que no sean todos iguales (fijas por nombre)
+	var r := rng.randf()
+	look["build"] = "delgado" if r < Defs.BUILD_THIN else ("grueso" if r < Defs.BUILD_THIN + Defs.BUILD_HEAVY else "")
+	body_size *= rng.randf_range(Defs.HEIGHT_RANGE.x, Defs.HEIGHT_RANGE.y)
 	match kind:
 		"urbano":
 			# azul de la Guàrdia Urbana, con la banda de cuadros blancos en la gorra

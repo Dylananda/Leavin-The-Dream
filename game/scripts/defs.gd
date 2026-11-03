@@ -78,6 +78,10 @@ const UNDERCOVER_CATCH := 0.35
 ## El grupo de un free tour: turistas que siguen al guía (en Ciutat Vella, máximo 15).
 const GUIDE_GROUP := Vector2i(4, 8)
 const PARTY_GROUP := Vector2i(2, 4)
+## Variedad de cuerpos de los bots (Npc.init_kind): delgados, gruesos y altura.
+const BUILD_THIN := 0.2
+const BUILD_HEAVY := 0.2
+const HEIGHT_RANGE := Vector2(0.93, 1.07)
 const RIDER_BIKE := 0.75  ## repartidores que van en bici (el resto, a pie y con prisa)  ## los que van detrás de cada despedida de soltero
 ## Vecinos y abuelos que van con niños (de la mano: los niños les siguen), y cuántos.
 const KIDS_WITH := {"vecino": 0.12, "anciano": 0.15}
@@ -438,6 +442,8 @@ const SLIP_PER_BEFUDDLEMENT := 0.45  ## lo que suma a esa probabilidad ir del to
 const FORGET_PER_HOUR := 0.04  ## probabilidad por hora y entrada (del todo ido) de que se borre un dato
 const BLUR_FROM := 0.25  ## por debajo, la libreta se lee bien
 const BLUR_MAX := 0.4  ## proporción máxima de palabras que no se leen
+const MONEY_LIE_FROM := 0.6  ## ido de aquí para arriba, el HUD solo dice «¿unos X?» € (y a veces se equivoca)
+const MONEY_LIE := 0.4  ## lo que se puede desviar esa cuenta (proporción)
 const STREET_LIE := 0.6  ## (del todo ido) probabilidad de que la placa diga otra calle al cambiar de calle
 ## Pistas de las conversaciones en la libreta: las que se ven y cuánto duran (la policía se mueve).
 const PISTAS_SHOWN := 5

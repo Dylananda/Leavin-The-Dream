@@ -16,6 +16,8 @@ const HAIR_STYLES := {
 }
 ## Silueta a través de las paredes: color y opacidad por defecto (ver set_silhouette).
 const SILHOUETTE := Color(0.85, 0.88, 1.0, 0.35)
+## Anchura del cuerpo según la complexión (look["build"]); sin ella, 1.
+const BUILDS := {"delgado": 0.85, "grueso": 1.3}
 const MARKER_Y := 6.2  ## altura del icono flotante, por encima del bocadillo de texto
 ## Holgura del giro hacia la calle con WASD: se prueban direcciones hasta este ángulo
 ## a cada lado de la pedida y se elige la libre más parecida.
@@ -31,7 +33,7 @@ var display_name := ""
 ## Colores y rasgos. Además de skin, shirt, pants y hair, admite (todos opcionales):
 ## gender ("m"/"f"), hair_style (ver HAIR_STYLES), facial ("", "barba", "bigote"),
 ## glasses (bool), jacket (color de la chaqueta abierta), skirt (bool, falda en vez de pantalón)
-## y bici (bool, va montado en una).
+## bici (bool, va montado en una) y build ("delgado", "" o "grueso": la complexión).
 var look := {
 	"skin": Color("d9a77c"), "shirt": Color.GRAY, "pants": Color.DIM_GRAY, "hair": Color.BLACK,
 }
@@ -438,8 +440,9 @@ func _build_person() -> void:
 	var jacket: Color = look.get("jacket", Color.TRANSPARENT)
 	var sleeves := jacket if jacket.a > 0.0 else shirt.darkened(0.12)
 	var skirt: bool = look.get("skirt", false)
-	var shoulders := 0.54 if female else 0.64
-	var leg_w := 0.19 if female else 0.22
+	var build: float = BUILDS.get(look.get("build", ""), 1.0)
+	var shoulders := (0.54 if female else 0.64) * build
+	var leg_w := (0.19 if female else 0.22) * lerpf(1.0, build, 0.6)
 	# con falda, las piernas van al aire (el color de la piel, algo más oscuro, como unas medias)
 	var legs_color: Color = look["skin"].darkened(0.1) if skirt else look["pants"]
 	_legs = [
@@ -450,10 +453,13 @@ func _build_person() -> void:
 		_part(_body, CityProps.cylinder(0.27, 0.38, 0.48), look["pants"], Vector3(0, 0.66, 0))
 	if female:
 		# talle: el cuerpo se estrecha en la cintura y se abre en la cadera
-		_part(_body, CityProps.box(Vector3(shoulders, 0.42, 0.34)), shirt, Vector3(0, 1.27, 0))
-		_part(_body, CityProps.cylinder(0.25, 0.3, 0.28), shirt, Vector3(0, 0.93, 0))
+		_part(_body, CityProps.box(Vector3(shoulders, 0.42, 0.34 * build)), shirt, Vector3(0, 1.27, 0))
+		_part(_body, CityProps.cylinder(0.25 * build, 0.3 * build, 0.28), shirt, Vector3(0, 0.93, 0))
 	else:
-		_part(_body, CityProps.box(Vector3(shoulders, 0.7, 0.36)), shirt, Vector3(0, 1.13, 0))
+		_part(_body, CityProps.box(Vector3(shoulders, 0.7, 0.36 * build)), shirt, Vector3(0, 1.13, 0))
+	if build > 1.1:
+		# barriga
+		_part(_body, CityProps.sphere(0.3), shirt, Vector3(0, 1.0, 0.1 * build), Vector3(1.0, 0.85, 0.8))
 	if jacket.a > 0.0:
 		# chaqueta abierta: por delante se ve una franja de la camiseta
 		_part(_body, CityProps.box(Vector3(shoulders + 0.06, 0.74, 0.42)), jacket, Vector3(0, 1.13, 0))
