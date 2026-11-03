@@ -1072,7 +1072,7 @@ func _on_caught(npc: Npc) -> void:
 			else:
 				npc.say("¿No tienes nada? Pues toma.", 3.0)
 				_beating(npc, func():
-					gs.change_health(-15, "Una paliza por una deuda")
+					gs.change_health(-15, "Te mataron a palos por una deuda con un camello")
 					gs.change_dignity(-3)
 					gs.log_msg("No llevas nada. %s te da una paliza para que no se te olvide." % npc.display_name, GameState.C_BAD)
 					gs.milestone("pelea_perdida"))
@@ -1096,7 +1096,7 @@ func _on_caught(npc: Npc) -> void:
 				gs.log_msg("%s te alcanza y se cobra lo suyo: %d €." % [npc.display_name, n], GameState.C_BAD)
 			else:
 				npc.say("Asshole!", 3.0)
-				gs.change_health(-8, "El puño de alguien a quien robaste")
+				gs.change_health(-8, "Te mató a golpes alguien a quien habías robado")
 				gs.log_msg("No llevas nada que devolverle. %s te suelta un puñetazo." % npc.display_name, GameState.C_BAD)
 			gs.change_dignity(-3)
 		"territorio":
@@ -1115,7 +1115,7 @@ func _on_caught(npc: Npc) -> void:
 			else:
 				npc.say("Que no te vuelva a ver por aquí.", 3.0)
 				_beating(npc, func():
-					gs.change_health(-12, "Vender en la esquina de otro")
+					gs.change_health(-12, "Te mataron a palos por vender en la esquina de otro")
 					gs.log_msg("%s te alcanza y te da una paliza por vender en su esquina." % npc.display_name, GameState.C_BAD))
 			gs.change_dignity(-3)
 		"parar":
@@ -1263,8 +1263,33 @@ func _respawn() -> void:
 			censo.nuevo(kind)
 
 
+## Ajuste de cuentas: si hay mucha gente a la que la has liado (Defs.AMBUSH_*), uno de ellos y
+## unos cuantos más te cortan el paso. Una pelea muy cuesta arriba: si la pierdes, te dejan
+## tirado y sin la mitad del dinero, o muerto. false si no hay bastantes enemigos.
+func ambush() -> bool:
+	var enemies := censo.rencorosos()
+	if enemies.size() < Defs.AMBUSH_ENEMIES or not GameState.alive:
+		return false
+	var r: Dictionary = enemies.pick_random()
+	var npc: Npc = r["npc"]
+	if npc == null or not is_instance_valid(npc):
+		npc = censo.despertar(r, player.cell)
+	var gs := GameState
+	gs.log_msg("%s y unos cuantos a los que la has liado te cortan el paso en un callejón." % npc.display_name, gs.C_BAD)
+	npc.say("Ahora vas a ver.", 3.0)
+	_beating(npc, func():
+		gs.change_health(-25, "Te mataron a palos entre varios a los que la habías liado")
+		if gs.alive:
+			var lost := int(gs.money * 0.5)
+			gs.add_money(-lost)
+			gs.log_msg("Te dejan en el suelo, sangrando y sin %d €." % lost, gs.C_BAD))
+	return true
+
+
 ## Eventos del barrio: peleas entre yonkis, yonkis que vienen a pedirte y carteristas trabajando.
 func _random_event() -> void:
+	if randf() < Defs.AMBUSH_CHANCE and ambush():
+		return
 	if randf() < 0.2 and pickpocket_event():
 		return
 	if randf() < Defs.URBANA_SWEEP + Defs.MOSSOS_SWEEP and police_event():

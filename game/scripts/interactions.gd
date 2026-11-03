@@ -545,7 +545,7 @@ func _fiestero(npc: Npc) -> Array:
 			func():
 				_heat(40)
 				_caught_stealing(npc, "OI! ¡Chicos, a por él!")
-				gs.change_health(-15, "Una paliza de despedida")
+				gs.change_health(-15, "Te mató a patadas una despedida de soltero")
 				gs.log_msg("Sus colegas te rodean. Te llevas una buena.", G.C_BAD)
 				gs.change_dignity(-3))))
 	return acts

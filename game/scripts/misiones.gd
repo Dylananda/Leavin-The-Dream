@@ -425,7 +425,7 @@ func _pelear(npc: Npc, e: Dictionary) -> void:
 			gs.change_health(-randf_range(3, 10), "Una pelea de más")
 			cumplir(e)
 		else:
-			gs.change_health(-randf_range(10, 20), "Perder una pelea")
+			gs.change_health(-randf_range(10, 20), "Te mataron en una pelea")
 			gs.log_msg("%s te tumba. La lección te la llevas tú." % npc.display_name, G.C_BAD)
 			fallar(e))
 

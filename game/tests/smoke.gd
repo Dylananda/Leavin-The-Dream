@@ -101,6 +101,7 @@ func _initialize() -> void:
 		print("  día %d, caída %d, dignidad %d, salud %d, hambre %d, sueño %d, mente %d, vivo=%s, hitos=%s" % [
 			gs.day, gs.caida, gs.dignity, gs.health, gs.hunger, gs.fatigue, gs.sanity, gs.alive, gs.milestones])
 		get_root().get_tree().paused = false
+	await _test_finales()
 	await _test_editor()
 	print("FALLOS: %d" % _failures if _failures > 0 else "OK")
 	quit(1 if _failures > 0 else 0)
@@ -236,6 +237,50 @@ func _test_censo(world) -> void:
 	_check(back.remembers("pedido") == 0, "censo: no olvida con el tiempo")
 	var n: int = censo.registros.size()
 	print("  censo: OK (%d registros, %d con cuerpo, %d latentes)" % [n, n - censo.latentes(), censo.latentes()])
+
+
+## Finales: el hambre mata en días (no de golpe) y se nota antes; la cárcel a la quinta
+## detención; con muchos enemigos en el barrio te esperan entre varios.
+func _test_finales() -> void:
+	var gs = root.get_node("GameState")
+	gs.new_game("parado")
+	change_scene_to_file("res://scenes/world.tscn")
+	await process_frame
+	await process_frame
+	var world = current_scene
+	world.censo.pausado = true
+	var reason := [""]
+	gs.game_over.connect(func(r): reason[0] = r)
+	# no come nunca (y sin sustancias, para que no mate el mono)
+	gs.subs = {}
+	gs.hunger = 95.0
+	var start: float = gs.now()
+	gs.advance(12 * 60)
+	_check(gs.alive and gs.starving > 6.0, "hambre: no se acumula la inanición, o mata de golpe")
+	_check(gs.effects()["causes"].any(func(c): return c[0].begins_with("Inanición")), "hambre: la inanición no se nota")
+	while gs.alive and gs.now() - start < 24 * 60 * 10:
+		gs.hunger = maxf(gs.hunger, 90.0)
+		gs.advance(60)
+	var hours := int((gs.now() - start) / 60.0)
+	_check(not gs.alive and "hambre" in reason[0] and hours >= 48, "hambre: no mata en días (%d h: %s)" % [hours, reason[0]])
+	print("  hambre: muere a las %d h sin comer: %s" % [hours, reason[0]])
+	# la cárcel
+	gs.new_game("parado")
+	reason[0] = ""
+	gs.subs = {}
+	for i in Defs.PRISON_ARRESTS:
+		gs.hunger = 0.0
+		gs.fatigue = 0.0
+		gs.arrest()
+	_check(not gs.alive and "Brians" in reason[0], "cárcel: no entras a la quinta detención (%s)" % reason[0])
+	# el ajuste de cuentas
+	gs.new_game("parado")
+	_check(not world.ambush(), "ajuste de cuentas: te esperan sin tener enemigos")
+	for i in Defs.AMBUSH_ENEMIES:
+		world._spawn_npc("vecino").remember("robado")
+	_check(world.ambush(), "ajuste de cuentas: no te esperan con tantos enemigos")
+	get_root().get_tree().paused = false
+	print("  finales: OK")
 
 
 ## Género según el nombre, etiquetas en femenino y el mismo aspecto para el mismo nombre.

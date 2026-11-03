@@ -288,6 +288,18 @@ func olvidar(h: int) -> void:
 			registros.erase(r)
 
 
+## Los que te tienen ganas (les robaste, pegaste, timaste o les pisaste la esquina), tengan
+## cuerpo o no.
+func rencorosos() -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	for r in registros:
+		var npc: Npc = r["npc"]
+		var mem: Dictionary = npc.memory if npc != null and is_instance_valid(npc) else r["estado"].get("memory", {})
+		if Defs.LATENT_GRUDGES.any(func(g): return mem.get(g, 0) > 0):
+			out.append(r)
+	return out
+
+
 func latentes() -> int:
 	return registros.filter(func(r): return r["npc"] == null).size()
 

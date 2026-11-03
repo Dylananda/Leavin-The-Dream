@@ -108,6 +108,21 @@ const VITALITY_FATIGUE := 0.7
 const VITALITY_MONO := 0.4
 const VITALITY_HEALTH := 0.4
 const VITALITY_MIN_MAX := 15.0
+## Inanición: con el hambre por encima de STARVE_FROM se acumulan horas sin comer de verdad
+## (GameState.starving). Cuantas más, más rápido baja la salud: se muere de hambre en unos
+## días, no de golpe. Al comer se recupera el doble de deprisa.
+const STARVE_FROM := 90.0
+const STARVE_HEALTH := 0.012  ## salud por minuto con hambre de más de 85...
+const STARVE_WORSEN := 24.0  ## ... que se dobla cada tantas horas de inanición
+const STARVE_SANITY := 0.01  ## salud mental por minuto y día de inanición
+const VITALITY_STARVE := 0.8  ## vitalidad máxima que quita cada hora de inanición
+const FAINT_RESCUE := 0.5  ## al desmayarte de hambre, probabilidad de que alguien llame a una ambulancia
+## La cárcel: con estas detenciones entras en prisión (fin de la partida); con una menos, aviso.
+const PRISON_ARRESTS := 5
+## Ajuste de cuentas: con estos enemigos en el barrio (a los que robaste, pegaste o timaste),
+## a veces te esperan entre varios. Probabilidad en cada evento del barrio.
+const AMBUSH_ENEMIES := 6
+const AMBUSH_CHANCE := 0.15
 ## Lo que lleva una cartera robada: casi siempre poco efectivo (se paga con tarjeta) y, alguna
 ## vez, una buena (los primeros días, el dinero del viaje).
 const WALLET_CASH := Vector2i(0, 35)
@@ -271,6 +286,9 @@ const BODY_FX := {
 		"fx": {"speed": -0.2, "tunnel": 0.6}},
 	"sanity": {"from": 30.0, "to": 0.0, "name": "Salud mental", "text": "la realidad se descuadra y oyes cosas",
 		"fx": {"paranoia": 1.0}},
+	# horas pasando hambre de verdad (GameState.starving)
+	"starving": {"from": 4.0, "to": 48.0, "name": "Inanición", "text": "te fallan las piernas, tiemblas y todo se apaga",
+		"fx": {"speed": -0.35, "tunnel": 0.8, "shake": 0.35, "drowsy": 0.5, "clumsy": 0.6}},
 }
 
 ## Lo que vende cada camello (el resto se consigue por otras vías).

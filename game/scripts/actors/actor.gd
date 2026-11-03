@@ -57,6 +57,10 @@ var _silhouette: ShaderMaterial  ## pasada que pinta al personaje donde lo tapa 
 var _marker: Label3D  ## icono flotante (encargos)
 
 static var _materials := {}
+## Mallas ya montadas por aspecto (ver _build_body): hay muchos bots iguales (mismo tipo y
+## nombre) y montar uno de cero cuesta unos milisegundos; así, el segundo sale casi gratis.
+static var _mesh_cache := {}
+const MESH_CACHE_MAX := 600
 static var _toon_material: StandardMaterial3D
 static var _silhouette_shader: Shader = preload("res://shaders/silhouette.gdshader")
 
@@ -291,6 +295,44 @@ func _merge_parts() -> void:
 		holder.add_child(merged)
 
 
+## Lo que se guarda de un cuerpo montado: la malla del tronco y, de cada extremidad, dónde
+## va el pivote y su malla.
+func _to_cache() -> Dictionary:
+	var limbs := func(list: Array[Node3D]) -> Array:
+		return list.map(func(j): return [j.position, _merged_of(j)])
+	return {"body": _merged_of(_body), "legs": limbs.call(_legs), "arms": limbs.call(_arms)}
+
+
+## Monta el cuerpo con mallas ya hechas (ver _to_cache).
+func _from_cache(c: Dictionary) -> void:
+	_add_merged(_body, c["body"])
+	for list in [["legs", _legs], ["arms", _arms]]:
+		for entry in c[list[0]]:
+			var j := Node3D.new()
+			j.position = entry[0]
+			_body.add_child(j)
+			_add_merged(j, entry[1])
+			list[1].append(j)
+
+
+func _add_merged(holder: Node3D, mesh: Mesh) -> void:
+	if mesh == null:
+		return
+	var mi := MeshInstance3D.new()
+	mi.mesh = mesh
+	mi.material_override = _toon()
+	mi.material_overlay = _silhouette
+	holder.add_child(mi)
+
+
+## La malla juntada de una parte (su único MeshInstance3D), o null.
+static func _merged_of(holder: Node3D) -> Mesh:
+	for c in holder.get_children():
+		if c is MeshInstance3D:
+			return c.mesh
+	return null
+
+
 ## Una malla con todas las `parts` (en el espacio de su padre), con su color en los vértices.
 static func _merged_mesh(parts: Array[MeshInstance3D]) -> ArrayMesh:
 	var verts := PackedVector3Array()
@@ -362,11 +404,17 @@ func _build_body() -> void:
 	_body = Node3D.new()
 	_body.scale = Vector3.ONE * SCALE * body_size
 	add_child(_body)
-	if look.get("species", "") == "perro":
-		_build_dog()
+	var key := "%d|%s|%s" % [var_to_str(look).hash(), accessory, body_size]
+	if _mesh_cache.has(key):
+		_from_cache(_mesh_cache[key])
 	else:
-		_build_person()
-	_merge_parts()
+		if look.get("species", "") == "perro":
+			_build_dog()
+		else:
+			_build_person()
+		_merge_parts()
+		if _mesh_cache.size() < MESH_CACHE_MAX:
+			_mesh_cache[key] = _to_cache()
 
 	_bubble = Label3D.new()
 	_bubble.billboard = BaseMaterial3D.BILLBOARD_ENABLED

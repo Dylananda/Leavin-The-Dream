@@ -92,8 +92,10 @@ sí y una memoria poco fiable**, que puede ir creciendo hacia misiones de rol en
     - [x] Medido: 2.600 en el censo a 60 FPS (unos 40–60 con cuerpo alrededor)
     - [x] Más población: unos 1.400 en el censo a mediodía (`Defs.CROWD`: sobre todo vecinos,
       abuelos, niños y turistas; la policía y los camellos no cambian), 60 FPS estables
-    - [ ] Montar un cuerpo cuesta unos 3 ms: al llegar a una zona llena se nota algún tirón;
-      se podría reutilizar cuerpos dormidos en vez de montarlos de cero
+    - [x] Montar un cuerpo cuesta unos 3 ms: al llegar a una zona llena se notaba algún tirón.
+      Hecho: las mallas se guardan por aspecto (`Actor._mesh_cache`) y los bots repetidos
+      salen casi gratis. Con el triple de gente (unos 4.200 en el censo, hasta 370 con
+      cuerpo), 60 FPS; el repaso del censo, 1,5–4 ms.
     - [ ] «Despertadores»: que un latente con asuntos contigo actúe aunque esté lejos
       (el camello que viene a cobrar) en vez de quedarse con cuerpo todo el rato
     - [ ] Guardar el censo en la partida guardada (cuando haya partidas guardadas)
@@ -577,13 +579,20 @@ El barrio entero tiende a engancharse, también el jugador, y salir de ahí es l
   familia. Has salido... y has perdido.
 - [ ] **Revolución (difícil)**: comandas un ejército de yonkis, os organizáis y tomáis el
   poder de un barrio (ver «Legado»).
-- [ ] **Morir de hambre, pero de verdad**: no al vaciarse la barra, sino días después; con la
-  barra vacía se nota mucho en la fuerza, la salud mental, la vista y el manejo.
+- [x] **Morir de hambre, pero de verdad**: no al vaciarse la barra, sino días después; con la
+  barra vacía se nota mucho en la fuerza, la salud mental, la vista y el manejo. Hecho: las
+  horas con el hambre al límite se acumulan (`GameState.starving`, «Inanición» en los efectos:
+  túnel, temblor, torpeza, sueño), bajan la vitalidad y la salud cada vez más deprisa, y al
+  desmayarte solo a veces te recoge una ambulancia (`Defs.STARVE_*`, `FAINT_RESCUE`). Sin
+  comer nada, se muere en unos cuatro días de juego.
 - [ ] **Sobredosis** (común): el enganche puede subir muy deprisa, por consumo o por las
   putadas que te pasan en la partida (te roban la metadona, te cortan la droga, un susto...).
-- [ ] **A palos** (eventual): si enfadas a demasiada gente.
-- [ ] Propuestas de Claude, por valorar: **la cárcel** (una condena larga si acumulas
-  fichajes), **el psiquiátrico** (la salud mental a cero), **el capo** (te haces con el
+- [x] **A palos** (eventual): si enfadas a demasiada gente. Hecho: con `Defs.AMBUSH_ENEMIES`
+  enemigos en el censo (robados, pegados, timados), a veces te esperan entre varios
+  (`World.ambush`); y cada paliza mortal dice quién y por qué.
+- [x] **La cárcel**: a la quinta detención, dos años en Brians (`Defs.PRISON_ARRESTS`); a la
+  cuarta, el juez avisa.
+- [ ] Propuestas de Claude, por valorar: **el psiquiátrico** (la salud mental a cero), **el capo** (te haces con el
   menudeo del barrio y dejas de consumir: has caído hacia arriba), **te llevan de vuelta a
   casa** (un familiar te encuentra y te saca del barrio) y **leyenda del barrio** (la caída más
   honda: tu historia la cuentan los guías de los free tours).

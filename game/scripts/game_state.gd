@@ -24,6 +24,7 @@ var bank := 0
 var health := 100.0
 var hunger := 0.0
 var fatigue := 0.0  ## Sueño
+var starving := 0.0  ## horas pasando hambre de verdad (ver Defs.STARVE_*)
 var vitality := 100.0  ## aguante para correr y pelear (ver vitality_max y Defs.VITALITY_*)
 var exhausted := false  ## agotado: no se corre hasta recuperar Defs.VITALITY_RECOVER
 var sanity := 100.0  ## Salud mental
@@ -102,6 +103,7 @@ func new_game(profile_id: String) -> void:
 	fatigue = 20.0
 	vitality = 100.0
 	exhausted = false
+	starving = 0.0
 	subs = {}
 	for id in profile["knows"]:
 		_learn(id, float(profile["knows"][id]))
@@ -322,8 +324,13 @@ func _update_body(m: float) -> void:
 		health -= 0.03 * m
 	if high > 90.0:
 		health -= 0.04 * m
+	if hunger >= Defs.STARVE_FROM:
+		starving += m / 60.0
+	else:
+		starving = maxf(0.0, starving - m / 30.0)
 	if hunger > 85.0:
-		health -= 0.03 * m
+		health -= Defs.STARVE_HEALTH * m * (1.0 + starving / Defs.STARVE_WORSEN)
+		sanity -= Defs.STARVE_SANITY * m * starving / 24.0
 	if fatigue > 90.0:
 		health -= 0.015 * m
 	if worst_mono < 30.0 and high < 30.0 and hunger < 60.0:
@@ -419,7 +426,7 @@ func remove_item(id: String, count := 1) -> void:
 
 ## Vitalidad máxima ahora: la bajan el hambre y el sueño altos, el mono y la salud perdida.
 func vitality_max() -> float:
-	var m := 100.0 - maxf(0.0, hunger - 50.0) * Defs.VITALITY_HUNGER 		- maxf(0.0, fatigue - 50.0) * Defs.VITALITY_FATIGUE 		- mono * Defs.VITALITY_MONO - (100.0 - health) * Defs.VITALITY_HEALTH
+	var m := 100.0 - maxf(0.0, hunger - 50.0) * Defs.VITALITY_HUNGER 		- maxf(0.0, fatigue - 50.0) * Defs.VITALITY_FATIGUE 		- mono * Defs.VITALITY_MONO - (100.0 - health) * Defs.VITALITY_HEALTH 		- starving * Defs.VITALITY_STARVE
 	return clampf(m, Defs.VITALITY_MIN_MAX, 100.0)
 
 
@@ -689,15 +696,23 @@ func _pass_out() -> void:
 	milestone("frito")
 
 
+## Te desmayas de hambre. Si alguien llama a una ambulancia, despiertas en urgencias con
+## algo en el cuerpo; si no, en el mismo portal y con el mismo hambre (Defs.FAINT_RESCUE).
 func _faint() -> void:
-	log_msg("Te desmayas de hambre. Te despiertas en urgencias con un zumo y un sermón.", C_BAD)
-	advance(4 * 60)
-	hunger = 55.0
-	change_health(-8, "Desnutrición")
-	change_dignity(-3)
 	milestone("desmayo")
-	if alive:
-		relocated.emit("cap")
+	change_dignity(-3)
+	if randf() < Defs.FAINT_RESCUE:
+		log_msg("Te desmayas de hambre. Te despiertas en urgencias con un zumo y un sermón.", C_BAD)
+		advance(4 * 60)
+		hunger = 55.0
+		change_health(-4, "Desnutrición")
+		if alive:
+			relocated.emit("cap")
+	else:
+		log_msg("Te desmayas de hambre en un portal. Nadie llama a nadie. Te despiertas horas después, más débil.", C_BAD)
+		advance(3 * 60)
+		hunger = 90.0  # el mismo hambre: hay un par de horas para buscar algo antes de volver a caer
+		change_health(-3, _starve_cause())
 
 
 ## Brote: dos días de ingreso. Sales desintoxicado, pero sin nada de lo que llevabas.
@@ -784,15 +799,24 @@ func arrest() -> void:
 	change_sanity(-5)
 	if profile.get("id") == "sin_papeles" and arrests >= 3 and alive:
 		_end("Orden de expulsión. Te deportan. El Raval no se acuerda de ti.")
+	elif arrests >= Defs.PRISON_ARRESTS and alive:
+		_end("A la %sª detención, el juez ya no te suelta. Te caen dos años en Brians. Cuando sales, el Raval ya no es tu barrio." % arrests)
+	elif arrests == Defs.PRISON_ARRESTS - 1:
+		log_msg("El juez te mira por encima de las gafas: «A la próxima, entras».", C_BAD)
 
 
 ## La causa de muerte más probable según lo que más está tirando de la salud.
 func _worst_cause() -> String:
 	if hunger > 85.0:
-		return "Te has muerto de hambre en un portal"
+		return _starve_cause()
 	if mono > 70.0:
 		return "El mono te ha consumido"
 	return "Tu cuerpo dijo basta"
+
+
+func _starve_cause() -> String:
+	var days := maxi(1, ceili(starving / 24.0))
+	return "Te has muerto de hambre en un portal, tras %d %s casi sin comer" % [days, "día" if days == 1 else "días"]
 
 
 func _check_death(cause: String) -> void:
