@@ -13,6 +13,8 @@ signal find_place_requested(poi: Dictionary)
 const BARS := [
 	["health", "Salud", Color("4fbf5a"), false,
 		"Baja con el mono, el hambre, las peleas y los excesos. A 0 te mueres."],
+	["vitality", "Vitalidad", Color("e8704a"), false,
+		"Aguante para correr y pelear. Se gasta corriendo (Shift) y peleando y se recupera andando o parado. El hambre, el sueño, el mono y la salud perdida bajan su máximo. Vacía, estás agotado y no corres hasta recuperarte."],
 	["hunger", "Hambre", Color("d0a040"), true,
 		"Sube con las horas (el porro abre el apetito; la farlopa y la base lo quitan). Baja comiendo. Al 100 te desmayas."],
 	["fatigue", "Sueño", Color("8a7ad8"), true,
@@ -71,6 +73,9 @@ var _chat_send: Button
 var _chat_npc: Npc
 var _chat_conv: Conversation
 var _minigame: Minigame  ## Minijuego en marcha (robar, vigilar...), si lo hay
+var _pause: PanelContainer  ## Panel de la pausa (P o el botón)
+var _map: MapaBarrio  ## Mapa del barrio abierto (M), si lo está
+var _map_from_pause := false  ## al cerrar el mapa se vuelve a la pausa
 
 
 func _ready() -> void:
@@ -92,6 +97,7 @@ func _ready() -> void:
 	_build_inventory()
 	_build_notebook()
 	_build_chat()
+	_build_pause()
 	_pointers = Control.new()
 	_pointers.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_pointers.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -264,7 +270,7 @@ func _build_log() -> void:
 
 func _build_help() -> void:
 	var l := Label.new()
-	l.text = "WASD: andar (Shift: correr)  ·  Clic: ir / interactuar  ·  I: inventario  ·  L: libreta  ·  R: rebuscar  ·  Z: dormir aquí  ·  V: conos de visión  ·  Q/E: girar cámara  ·  Rueda: zoom"
+	l.text = "WASD: andar (Shift: correr)  ·  Clic: ir / interactuar  ·  I: inventario  ·  L: libreta  ·  M: mapa  ·  R: rebuscar  ·  Z: dormir aquí  ·  V: conos de visión  ·  Q/E: girar cámara  ·  Rueda: zoom  ·  P: pausa"
 	l.add_theme_font_size_override("font_size", 15)
 	l.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -331,6 +337,10 @@ func refresh() -> void:
 		_bars[b[0]].value = value
 		var bad := value if b[3] else 100.0 - value
 		_bar_labels[b[0]].add_theme_color_override("font_color", C_DANGER if bad >= DANGER else Color.WHITE)
+	# la vitalidad tiene un máximo que baja con el hambre, el sueño, el mono y la salud
+	_bar_labels["vitality"].text = "Agotado" if gs.exhausted else "Vitalidad"
+	_bars["vitality"].get_parent().tooltip_text = BARS[1][4] + "
+Máximo ahora: %d." % int(gs.vitality_max())
 	_refresh_subs()
 	var money_text := "Dinero: %d €   Banco: %d €" % [gs.money, gs.bank]
 	if gs.debt > 0:
@@ -447,7 +457,100 @@ func _draw_pointers() -> void:
 
 func is_menu_open() -> bool:
 	return _menu.visible or _chat.visible or (_game_over != null and _game_over.visible) \
-		or is_instance_valid(_minigame)
+		or is_instance_valid(_minigame) or _pause.visible or is_instance_valid(_map)
+
+
+# ------------------------------------------------------------- pausa y mapa
+
+## Botones de pausa y mapa (arriba a la derecha, bajo la ayuda) y el panel de la pausa.
+func _build_pause() -> void:
+	var row := HBoxContainer.new()
+	for b in [["Mapa (M)", toggle_map], ["Pausa (P)", toggle_pause]]:
+		var btn := Button.new()
+		btn.text = b[0]
+		btn.focus_mode = Control.FOCUS_NONE
+		btn.pressed.connect(b[1])
+		row.add_child(btn)
+	add_child(row)
+	row.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT, Control.PRESET_MODE_MINSIZE, 10)
+	row.offset_top += 30
+	row.offset_bottom += 30
+	_pause = _panel(Vector2(380, 0))
+	_pause.visible = false
+	add_child(_pause)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 10)
+	_pause.add_child(v)
+	var t := Label.new()
+	t.text = "PAUSA"
+	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	t.add_theme_font_size_override("font_size", 30)
+	t.add_theme_color_override("font_color", Color("e07a30"))
+	v.add_child(t)
+	var sub := Label.new()
+	sub.text = "El barrio se ha parado. Nadie te mira."
+	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	sub.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
+	v.add_child(sub)
+	for b in [["Seguir (P)", toggle_pause], ["Mapa del barrio (M)", toggle_map]]:
+		var btn := Button.new()
+		btn.text = b[0]
+		btn.custom_minimum_size.y = 40
+		btn.pressed.connect(b[1])
+		v.add_child(btn)
+
+
+## Para o sigue el juego (no con otro menú abierto: esos ya lo paran).
+func toggle_pause() -> void:
+	if _pause.visible:
+		_pause.visible = false
+		get_tree().paused = false
+	elif not is_menu_open():
+		_pause.visible = true
+		_pause.reset_size()
+		_pause.position = (get_viewport().get_visible_rect().size - _pause.size) / 2.0
+		get_tree().paused = true
+
+
+## Abre o cierra el mapa del barrio, con el juego en pausa mientras está abierto.
+func toggle_map() -> void:
+	if is_instance_valid(_map):
+		_close_map()
+		return
+	if is_menu_open() and not _pause.visible:
+		return
+	_map_from_pause = _pause.visible
+	_pause.visible = false
+	_map = MapaBarrio.new(get_parent())
+	_map.closed.connect(_close_map)
+	add_child(_map)
+	get_tree().paused = true
+
+
+func _close_map() -> void:
+	if is_instance_valid(_map):
+		_map.queue_free()
+	_map = null
+	if _map_from_pause:
+		_pause.visible = true
+	else:
+		get_tree().paused = false
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not (event is InputEventKey and event.pressed and not event.echo):
+		return
+	match event.keycode:
+		KEY_P:
+			toggle_pause()
+			get_viewport().set_input_as_handled()
+		KEY_M:
+			toggle_map()
+			get_viewport().set_input_as_handled()
+		KEY_ESCAPE:
+			if _pause.visible:
+				toggle_pause()
+				get_viewport().set_input_as_handled()
 
 
 ## Pone encima de todo un minijuego (World.play_minigame lo quita al terminar).

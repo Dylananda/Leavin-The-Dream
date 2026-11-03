@@ -94,6 +94,20 @@ const STAT_FIGHT := 0.06  ## probabilidad de ganarle una pelea que quita cada pu
 const STAT_BRAVE := 0.05  ## lo que suma cada punto de valor sobre 5 a que se enfrente en un escándalo...
 const STAT_AVENGE := 0.06  ## ... y cada punto de valor o agresividad a que vaya a por ti si le robas
 const STAT_HOTHEAD := 7  ## desde esta agresividad, al que pegas o pides demasiado va a por ti en vez de apartarse
+## Vitalidad: el aguante para correr y pelear (GameState.vitality). Se gasta en segundos reales.
+const VITALITY_RUN_COST := 11.0  ## por segundo corriendo (con el máximo lleno, unos 9 s seguidos)
+const VITALITY_REGEN_STILL := 9.0  ## por segundo parado...
+const VITALITY_REGEN_WALK := 4.0  ## ... y andando
+const VITALITY_RECOVER := 30.0  ## agotado, no vuelves a correr hasta tener esto
+const VITALITY_FIGHT := 30.0  ## lo que gasta una pelea...
+const VITALITY_FIGHT_CHANCE := 0.25  ## ... y lo que baja la probabilidad de ganarla ir sin nada de vitalidad
+## Lo que baja el máximo: cada punto de hambre y de sueño por encima de 50, cada punto de mono
+## y cada punto de salud perdido. El máximo nunca baja de VITALITY_MIN_MAX.
+const VITALITY_HUNGER := 0.7
+const VITALITY_FATIGUE := 0.7
+const VITALITY_MONO := 0.4
+const VITALITY_HEALTH := 0.4
+const VITALITY_MIN_MAX := 15.0
 ## Bots latentes (scripts/censo.gd): lo que se pone al día al volver a verlos.
 const LATENT_ROBBED_FORGET := 24.0 * 60.0  ## minutos tras los que al que robaron vuelve a llevar dinero
 const LATENT_MEMORY_FADE := 3.0 * 24.0 * 60.0  ## minutos latente por cada vez que olvida algo que le hiciste...

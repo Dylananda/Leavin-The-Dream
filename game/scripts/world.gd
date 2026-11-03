@@ -497,7 +497,19 @@ func _update_player_input(delta: float) -> void:
 	if GameState.alive and not hud.is_menu_open():
 		v.x = float(_held(KEY_D, KEY_RIGHT)) - float(_held(KEY_A, KEY_LEFT))
 		v.y = float(_held(KEY_S, KEY_DOWN)) - float(_held(KEY_W, KEY_UP))
-	player.run_factor = RUN_FACTOR if Input.is_key_pressed(KEY_SHIFT) else 1.0
+	# correr gasta vitalidad; agotado, no se corre hasta recuperarla (Defs.VITALITY_*)
+	var gs := GameState
+	var moving := v != Vector2.ZERO or player.is_moving()
+	var wants_run := Input.is_key_pressed(KEY_SHIFT) and moving and not gs.exhausted
+	player.run_factor = RUN_FACTOR if wants_run else 1.0
+	if wants_run:
+		gs.change_vitality(-Defs.VITALITY_RUN_COST * delta)
+	elif moving:
+		gs.change_vitality(Defs.VITALITY_REGEN_WALK * delta)
+	else:
+		gs.change_vitality(Defs.VITALITY_REGEN_STILL * delta)
+	if gs.exhausted and Input.is_key_pressed(KEY_SHIFT) and moving and randf() < delta * 0.4:
+		player.say(["*jadea*", "No puedo más...", "Un momento, un momento"].pick_random(), 1.5)
 	var target := Vector3.ZERO
 	if v != Vector2.ZERO:
 		_pending = null
@@ -1115,6 +1127,8 @@ func _on_caught(npc: Npc) -> void:
 ## Fight), cuesta arriba. Si ganas, te lo quitas de encima con algún golpe; si no, `lose`.
 func _beating(npc: Npc, lose: Callable) -> void:
 	var chance := Defs.BEATING_FIGHT_CHANCE - (npc.stat("fuerza") - 5) * Defs.STAT_FIGHT
+	chance -= (1.0 - GameState.vitality / 100.0) * Defs.VITALITY_FIGHT_CHANCE
+	GameState.change_vitality(-Defs.VITALITY_FIGHT)
 	play_minigame(Fight.new(npc), chance, func(result: String, _stats: Dictionary):
 		if result != "ok":
 			lose.call()

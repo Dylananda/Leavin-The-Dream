@@ -24,6 +24,8 @@ var bank := 0
 var health := 100.0
 var hunger := 0.0
 var fatigue := 0.0  ## Sueño
+var vitality := 100.0  ## aguante para correr y pelear (ver vitality_max y Defs.VITALITY_*)
+var exhausted := false  ## agotado: no se corre hasta recuperar Defs.VITALITY_RECOVER
 var sanity := 100.0  ## Salud mental
 var dignity := 100.0
 ## Lo que llamas la atención y lo buscada que te tiene la policía. La barra de Discreción es su inverso.
@@ -98,6 +100,8 @@ func new_game(profile_id: String) -> void:
 	sanity = profile["sanity"]
 	hunger = 30.0
 	fatigue = 20.0
+	vitality = 100.0
+	exhausted = false
 	subs = {}
 	for id in profile["knows"]:
 		_learn(id, float(profile["knows"][id]))
@@ -411,6 +415,21 @@ func remove_item(id: String, count := 1) -> void:
 		else:
 			fakes[id] = n
 	changed.emit()
+
+
+## Vitalidad máxima ahora: la bajan el hambre y el sueño altos, el mono y la salud perdida.
+func vitality_max() -> float:
+	var m := 100.0 - maxf(0.0, hunger - 50.0) * Defs.VITALITY_HUNGER 		- maxf(0.0, fatigue - 50.0) * Defs.VITALITY_FATIGUE 		- mono * Defs.VITALITY_MONO - (100.0 - health) * Defs.VITALITY_HEALTH
+	return clampf(m, Defs.VITALITY_MIN_MAX, 100.0)
+
+
+## Gasta (negativo) o recupera vitalidad, sin pasar del máximo. Al vaciarse quedas agotado.
+func change_vitality(amount: float) -> void:
+	vitality = clampf(vitality + amount, 0.0, vitality_max())
+	if vitality <= 0.0:
+		exhausted = true
+	elif exhausted and vitality >= minf(Defs.VITALITY_RECOVER, vitality_max()):
+		exhausted = false
 
 
 func add_caida(points: float) -> void:

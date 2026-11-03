@@ -549,12 +549,13 @@ El barrio entero tiende a engancharse, también el jugador, y salir de ahí es l
 ### Lo que sale de jugar las misiones (3 de noviembre de 2026)
 
 - [x] Los plazos de «El paquete para Txell» y «El cajero de Antonio» parecen bien.
-- [ ] **Barra de vitalidad**: correr no puede salir gratis. Se gasta al correr (y pelear) y
+- [x] **Barra de vitalidad**: correr no puede salir gratis. Se gasta al correr (y pelear) y
   se recupera parado; su máximo y lo que tarda en volver dependen del hambre, el sueño, el
   colocón, el mono y la salud.
-- [ ] **Mapa** del barrio (una tecla): calles, dónde estás, los sitios que conoces y los de
+- [x] **Mapa** del barrio (una tecla): calles, dónde estás, los sitios que conoces y los de
   la libreta.
-- [ ] **Pausa** (botón y tecla).
+- [x] **Pausa** (botón y tecla). Hechas las tres (rama `feat/vitalidad-mapa-pausa`): medidas en
+  `Defs.VITALITY_*`; el mapa, en `ui/mapa_barrio.gd`.
 - [ ] **Más gente con la que vale la pena tratar**: ahora hay mucho bot de relleno; que
   los personajes con historia, misiones o trato se encuentren más a menudo.
 

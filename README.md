@@ -9,7 +9,8 @@ Abre `game/project.godot` con Godot 4.7 y pulsa F5.
 
 - WASD o flechas: andar (Shift: correr)
 - Clic: ir a un sitio, o hablar con un bot / entrar en un lugar
-- I: inventario · L: libreta · R: rebuscar en la basura · Z: dormir donde estés
+- I: inventario · L: libreta · M: mapa del barrio · P: pausa (también con los botones de arriba a la derecha)
+- R: rebuscar en la basura · Z: dormir donde estés
 - V: ver los conos de visión de todos los que tienes cerca
 - Q/E: girar la cámara · Rueda: zoom
 
@@ -63,7 +64,9 @@ cierra los párpados y, con paranoia, cualquiera parece que se toca la oreja.
 ### El estado del personaje
 
 Arriba a la izquierda, las barras del cuerpo (pasa el ratón por encima para ver qué las mueve):
-**Salud**, **Hambre**, **Sueño**, **Mente** (salud mental), **Dignidad** y **Discreción**
+**Salud**, **Vitalidad** (el aguante para correr y pelear: se gasta corriendo y peleando, se
+recupera andando o parado, y su máximo baja con el hambre, el sueño, el mono y la salud
+perdida; vacía, estás agotado y no corres hasta recuperarte), **Hambre**, **Sueño**, **Mente** (salud mental), **Dignidad** y **Discreción**
 (lo poco que llamas la atención; con poca, la policía va a por ti si te ve). La etiqueta se pone roja
 cuando una barra está en zona de peligro. En los extremos pasan cosas: con el hambre al
 máximo te desmayas y despiertas en urgencias, con el sueño al máximo te quedas frito en la
@@ -233,7 +236,8 @@ python tools/make_textures.py
   En la partida son encargos con la clave `mision`
 - `game/scripts/world.gd` — escena de juego, entrada, eventos del barrio y cómo los efectos
   cambian la cámara y el movimiento
-- `game/scripts/ui/hud.gd` — barras, panel de sustancias y efectos, registro, menús, libreta, conversación
+- `game/scripts/ui/hud.gd` — barras, panel de sustancias y efectos, registro, menús, libreta,
+  conversación y pausa; el mapa del barrio, en `ui/mapa_barrio.gd`
 - `game/scripts/minigames/` — minijuegos de habilidad: la base (`minigame.gd`: vista 3D propia
   con marionetas de los personajes y capa 2D encima), robar al descuido (`pickpocket.gd`) y
   hacer de vigía (`lookout.gd`) y pelear (`fight.gd`). Se lanzan con `World.play_minigame`; sin pantalla (test de
@@ -281,6 +285,8 @@ python tools/make_textures.py
   `godot --path game --resolution 1600x900 --script res://tests/minijuego.gd -- out.png robo|movil|vigia|aguador|pelea [hora] [sustancias]`
 - `game/tests/editor_captura.gd` — captura de cada pestaña del diseñador de personajes:
   `godot --path game --resolution 1600x900 --script res://tests/editor_captura.gd -- out.png [id]`
+- `game/tests/hud_captura.gd` — captura del mapa del barrio o de la pausa:
+  `godot --path game --resolution 1600x900 --script res://tests/hud_captura.gd -- out.png mapa|pausa [rótulo]`
 - `game/tests/screenshot.gd` — capturas sin abrir el editor; el sexto argumento consume
   sustancias antes (p. ej. `... -- res://scenes/world.tscn shot.png parado "" 12 caballo,litrona`)
 

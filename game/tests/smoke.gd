@@ -15,6 +15,7 @@ func _initialize() -> void:
 		world.censo.pausado = true  # que no se duerma nadie a media prueba (el censo se prueba aparte)
 		_test_censo(world)
 		_test_personajes(world)
+		_test_vitalidad(world)
 		# los que no salen a esta hora (despedidas, lateros...) se crean a mano para probarlos
 		for kind in world.BASE_NPCS:
 			if world.npcs.filter(func(n): return n.kind == kind).is_empty():
@@ -110,6 +111,34 @@ var _failures := 0
 ## Conversación con IA sin depender de Ollama: contra un puerto en el que no escucha nadie
 ## (el juego debe seguir y avisar en el registro) y con una respuesta inventada que usa
 ## todas las acciones de juego.
+## Vitalidad: correr la gasta hasta agotarte, el hambre baja su máximo y pelear la gasta.
+## La pausa y el mapa se abren y se cierran.
+func _test_vitalidad(world) -> void:
+	var gs = root.get_node("GameState")
+	gs.vitality = gs.vitality_max()
+	gs.change_vitality(-1000.0)
+	_check(gs.exhausted and gs.vitality == 0.0, "vitalidad: vaciarla no te deja agotado")
+	gs.change_vitality(Defs.VITALITY_RECOVER + 1.0)
+	_check(not gs.exhausted, "vitalidad: no te recuperas")
+	var full: float = gs.vitality_max()
+	gs.hunger = 95.0
+	_check(gs.vitality_max() < full, "vitalidad: el hambre no baja el máximo")
+	gs.hunger = 30.0
+	gs.vitality = 100.0
+	world.interactions._fight(world._spawn_npc("yonki"))
+	_check(gs.vitality < 100.0, "vitalidad: pelear no la gasta")
+	gs.vitality = 100.0
+	gs.exhausted = false
+	world.hud.toggle_pause()
+	_check(world.get_tree().paused and world.hud.is_menu_open(), "pausa: no para el juego")
+	world.hud.toggle_map()
+	_check(is_instance_valid(world.hud._map), "mapa: no se abre desde la pausa")
+	world.hud.toggle_map()
+	world.hud.toggle_pause()
+	_check(not world.get_tree().paused and not world.hud.is_menu_open(), "pausa: no se quita")
+	print("  vitalidad, pausa y mapa: OK")
+
+
 ## Personajes del editor: su fuerza cuenta en las peleas, venden lo que pone su ficha y los
 ## perros salen con su dueño.
 func _test_personajes(world) -> void:

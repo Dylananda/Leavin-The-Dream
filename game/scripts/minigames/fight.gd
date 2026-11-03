@@ -6,7 +6,7 @@ extends Minigame
 ## pégale con el clic. Si le pegas con la guardia puesta apenas le haces nada; si le cortas
 ## mientras levanta el brazo, algo. Gana quien deja sin aguante al otro.
 ## El alcohol retrasa la esquiva, el colocón da fuerza y el mono la quita; el sueño cierra
-## los párpados (y no ves venir el golpe).
+## los párpados (y no ves venir el golpe). Sin vitalidad, pegas más flojo.
 ## Resultados: "ok" (ganas) o "mal" (pierdes, o te rindes con Esc).
 
 const WINDUP := Vector2(0.95, 0.45)  ## segundos que tarda en soltar el puño (fácil, difícil)
@@ -54,6 +54,7 @@ func _setup_stage() -> void:
 	_place_camera()
 	var gs := GameState
 	_strength = clampf(0.6 + gs.health / 200.0 + gs.high * 0.003 - gs.mono * 0.004, 0.4, 1.4)
+	_strength *= lerpf(0.6, 1.0, gs.vitality / 100.0)  # sin aliento, los golpes pesan menos
 	_state_left = lerpf(PAUSE.x, PAUSE.y, difficulty)
 
 

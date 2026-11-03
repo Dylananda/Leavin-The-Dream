@@ -386,7 +386,9 @@ func _fight(npc: Npc) -> void:
 	npc.remember("pegado")
 	if world.police_watching() > 0:
 		gs.mark_wanted("un agente te ha visto pelearte", "violencia")
-	world.play_minigame(Fight.new(npc), _fight_chance(npc), func(result: String, _stats: Dictionary):
+	var chance := _fight_chance(npc)
+	gs.change_vitality(-Defs.VITALITY_FIGHT)
+	world.play_minigame(Fight.new(npc), chance, func(result: String, _stats: Dictionary):
 		_fight_done(npc, result == "ok"))
 
 
@@ -396,6 +398,7 @@ func _fight(npc: Npc) -> void:
 func _fight_chance(npc: Npc) -> float:
 	var gs := GameState
 	var p := 0.5 + (gs.health + gs.high * 0.3 - gs.mono * 0.3 - 50.0) / 80.0
+	p -= (1.0 - gs.vitality / 100.0) * Defs.VITALITY_FIGHT_CHANCE  # sin aliento se pelea peor
 	return clampf(p - (npc.stat("fuerza") - 5) * Defs.STAT_FIGHT, 0.05, 0.95)
 
 
