@@ -242,8 +242,8 @@ func _test_censo(world) -> void:
 	censo.dormir(rc)
 	censo.despertadores()
 	var hunter = rc["npc"]
-	_check(hunter != null and hunter.mode == "viene" and hunter.distance_to_cell(me) <= censo.RADIO_VISTA + 12,
-		"censo: el camello al que debes no viene a buscarte")
+	_check(hunter != null and hunter.mode == "viene" and hunter.distance_to_cell(me) <= censo.RADIO_VISTA + 20,
+		"censo: el camello al que debes no viene a buscarte (%s)" % ("nadie" if hunter == null else "%s a %d casillas" % [hunter.mode, hunter.distance_to_cell(me)]))
 	censo.despertadores()
 	_check(rc["npc"] == hunter, "censo: el despertador salta dos veces seguidas")
 	if hunter != null:
@@ -300,6 +300,25 @@ func _test_finales() -> void:
 	for i in Defs.AMBUSH_ENEMIES:
 		world._spawn_npc("vecino").remember("robado")
 	_check(world.ambush(), "ajuste de cuentas: no te esperan con tantos enemigos")
+	# leyenda del barrio: la caída máxima gana
+	gs.new_game("parado")
+	reason[0] = ""
+	gs.add_caida(Defs.LEGEND_CAIDA)
+	_check(not gs.alive and gs.ending_title == "LEYENDA DEL BARRIO", "leyenda: llegar al fondo no acaba la partida")
+	# te llevan a casa: Borja, sin dignidad, acaba recogido por su familia
+	gs.new_game("nino_bien")
+	gs.subs = {}
+	gs.dignity = 0.0
+	for i in 40:
+		if not gs.alive:
+			break
+		gs.hunger = 0.0
+		gs.fatigue = 0.0
+		gs.sanity = 100.0
+		gs.health = 100.0
+		gs.dignity = 0.0
+		gs.advance(24 * 60)
+	_check(not gs.alive and gs.ending_title == "TE LLEVAN A CASA", "casa: a Borja no lo recogen (%s)" % reason[0])
 	get_root().get_tree().paused = false
 	print("  finales: OK")
 

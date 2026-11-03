@@ -30,7 +30,8 @@ var speed := 14.0  ## metros por segundo
 var display_name := ""
 ## Colores y rasgos. Además de skin, shirt, pants y hair, admite (todos opcionales):
 ## gender ("m"/"f"), hair_style (ver HAIR_STYLES), facial ("", "barba", "bigote"),
-## glasses (bool), jacket (color de la chaqueta abierta) y skirt (bool, falda en vez de pantalón).
+## glasses (bool), jacket (color de la chaqueta abierta), skirt (bool, falda en vez de pantalón)
+## y bici (bool, va montado en una).
 var look := {
 	"skin": Color("d9a77c"), "shirt": Color.GRAY, "pants": Color.DIM_GRAY, "hair": Color.BLACK,
 }
@@ -412,6 +413,8 @@ func _build_body() -> void:
 			_build_dog()
 		else:
 			_build_person()
+			if look.get("bici", false):
+				_build_bike()
 		_merge_parts()
 		if _mesh_cache.size() < MESH_CACHE_MAX:
 			_mesh_cache[key] = _to_cache()
@@ -585,6 +588,23 @@ func _build_person() -> void:
 				var a := PI * (0.15 + 0.7 * i / 5.0)
 				_part(_body, CityProps.box(Vector3(0.07, 0.24, 0.1)), look["hair"], Vector3(0, 1.86 + sin(a) * 0.4, cos(a) * 0.36))
 
+
+
+## Una bici bajo el personaje (los repartidores): dos ruedas, cuadro, sillín y manillar.
+## Las piernas van por encima, como si pedaleara.
+func _build_bike() -> void:
+	var tyre := Color("1a1a1e")
+	var frame := Color("2a2e36")
+	for z in [-0.55, 0.55]:
+		var w := _part(_body, CityProps.cylinder(0.34, 0.34, 0.07, 16), tyre, Vector3(0, 0.34, z))
+		w.rotation.z = PI / 2.0
+		_part(_body, CityProps.cylinder(0.08, 0.08, 0.09, 8), Color("8a8a90"), Vector3(0, 0.34, z)).rotation.z = PI / 2.0
+	_part(_body, CityProps.box(Vector3(0.06, 0.06, 1.0)), frame, Vector3(0, 0.62, 0))
+	var seat_tube := _part(_body, CityProps.box(Vector3(0.06, 0.45, 0.06)), frame, Vector3(0, 0.55, -0.2))
+	seat_tube.rotation.x = deg_to_rad(-15.0)
+	_part(_body, CityProps.box(Vector3(0.14, 0.05, 0.24)), Color("111111"), Vector3(0, 0.8, -0.24))
+	_part(_body, CityProps.box(Vector3(0.06, 0.5, 0.06)), frame, Vector3(0, 0.8, 0.5))
+	_part(_body, CityProps.box(Vector3(0.6, 0.05, 0.05)), frame, Vector3(0, 1.05, 0.5))
 
 
 ## Un perro: cuerpo, cabeza con hocico y orejas, cola y cuatro patas (las de delante hacen

@@ -569,6 +569,7 @@ func init_kind(p_kind: String, p_name := "") -> void:
 			money = randi_range(5, 25)
 			look["shirt"] = [Color("ffc81e"), Color("00c8b4")][rng.randi_range(0, 1)]
 			look.erase("jacket")
+			look["bici"] = rng.randf() < Defs.RIDER_BIKE
 		"pudiente":
 			money = randi_range(100, 400)
 			look["jacket"] = [Color("1e2430"), Color("3a2e26"), Color("e8e2d4")][rng.randi_range(0, 2)]

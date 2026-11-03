@@ -372,7 +372,8 @@ de ruta:
     [Ara](https://es.ara.cat/economia/efecto-expat-vivienda-alquileres-caros-temporales_1_4809421.amp.html).
   - [x] Niños con un adulto (algunos vecinos y abuelos, `Defs.KIDS_WITH`) y despedidas en
     grupo (`Defs.PARTY_GROUP`).
-  - [ ] Pendiente: repartidores en bici; que los perros
+  - [x] Repartidores en bici (tres de cada cuatro, `Defs.RIDER_BIKE`).
+  - [ ] Pendiente: que los perros
     ladren al que les cae mal; jugarlo y ajustar cuántos hay de cada.
 
 **Policía dividida: Guàrdia Urbana y Mossos d'Esquadra** (rama `feat/policia-y-fauna`)
@@ -596,6 +597,10 @@ El barrio entero tiende a engancharse, también el jugador, y salir de ahí es l
   (`World.ambush`); y cada paliza mortal dice quién y por qué.
 - [x] **La cárcel**: a la quinta detención, dos años en Brians (`Defs.PRISON_ARRESTS`); a la
   cuarta, el juez avisa.
+- [x] **Leyenda del barrio** (ganar): con la caída máxima (`Defs.LEGEND_CAIDA`, el último
+  título), tu historia la cuentan los guías de los free tours.
+- [x] **Te llevan a casa** (Borja): con la dignidad por los suelos, cada día puede aparecer su
+  familia a recogerlo (`Defs.HOME_RESCUE_*`). Para él, eso es perder.
 - [ ] Propuestas de Claude, por valorar: **el psiquiátrico** (la salud mental a cero), **el capo** (te haces con el
   menudeo del barrio y dejas de consumir: has caído hacia arriba), **te llevan de vuelta a
   casa** (un familiar te encuentra y te saca del barrio) y **leyenda del barrio** (la caída más

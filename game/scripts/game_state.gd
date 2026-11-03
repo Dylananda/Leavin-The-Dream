@@ -65,6 +65,7 @@ var _clock_blank := false  ## el reloj no se lee en absoluto
 var day := 1
 var minute_of_day := 9.0 * 60.0  ## Se empieza a las 9:00
 var alive := true
+var ending_title := ""  ## título de la pantalla final ("" = «Fin de la partida»)
 var papa_cut := false
 var sleeping := false
 var _sleep_quality := 1.0
@@ -111,6 +112,7 @@ func new_game(profile_id: String) -> void:
 	wanted_until = -1.0
 	wanted_crime = ""
 	caida = 0.0
+	ending_title = ""
 	debt = 0
 	inventory = profile["items"].duplicate()
 	fakes = {}
@@ -352,6 +354,11 @@ func _update_body(m: float) -> void:
 
 func _new_day() -> void:
 	day += 1
+	# Borja: si cae demasiado, su familia viene a por él (y eso, aquí, es perder)
+	if profile.get("id") == "nino_bien" and dignity < Defs.HOME_RESCUE_DIGNITY and alive and randf() < Defs.HOME_RESCUE_CHANCE:
+		_end("Un domingo aparece tu madre con el chófer y una psicóloga. Te meten en el coche sin preguntar. Una clínica en Suiza, luego un máster. En las cenas de Navidad, lo del Raval es «aquella etapa».",
+			"TE LLEVAN A CASA")
+		return
 	if dignity < 20.0:
 		add_caida(5.0)
 		log_msg("Otro día más en lo más hondo. (+5 de caída)", C_FALL)
@@ -442,6 +449,9 @@ func change_vitality(amount: float) -> void:
 func add_caida(points: float) -> void:
 	caida += points
 	changed.emit()
+	if alive and caida >= Defs.LEGEND_CAIDA:
+		_end("Has caído tan hondo que ya formas parte del paisaje. Los guías de los free tours paran delante de tu portal y cuentan tu historia, cada vez con más detalles inventados. Lo has conseguido: eres patrimonio del Raval.",
+			"LEYENDA DEL BARRIO")
 
 
 ## Perder dignidad es caer: cada punto perdido suma un punto de caída. También pesa en la cabeza.
@@ -824,7 +834,8 @@ func _check_death(cause: String) -> void:
 		_end(cause if cause != "" else "Tu cuerpo dijo basta")
 
 
-func _end(reason: String) -> void:
+func _end(reason: String, title := "") -> void:
 	alive = false
+	ending_title = title
 	changed.emit()
 	game_over.emit(reason)

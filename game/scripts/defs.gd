@@ -77,7 +77,8 @@ const MOSSOS_SWEEP := 0.12
 const UNDERCOVER_CATCH := 0.35
 ## El grupo de un free tour: turistas que siguen al guía (en Ciutat Vella, máximo 15).
 const GUIDE_GROUP := Vector2i(4, 8)
-const PARTY_GROUP := Vector2i(2, 4)  ## los que van detrás de cada despedida de soltero
+const PARTY_GROUP := Vector2i(2, 4)
+const RIDER_BIKE := 0.75  ## repartidores que van en bici (el resto, a pie y con prisa)  ## los que van detrás de cada despedida de soltero
 ## Vecinos y abuelos que van con niños (de la mano: los niños les siguen), y cuántos.
 const KIDS_WITH := {"vecino": 0.12, "anciano": 0.15}
 const KIDS_GROUP := Vector2i(1, 2)
@@ -121,6 +122,12 @@ const STARVE_WORSEN := 36.0  ## ... que se dobla cada tantas horas de inanición
 const STARVE_SANITY := 0.01  ## salud mental por minuto y día de inanición
 const VITALITY_STARVE := 0.8  ## vitalidad máxima que quita cada hora de inanición
 const FAINT_RESCUE := 0.5  ## al desmayarte de hambre, probabilidad de que alguien llame a una ambulancia
+## Leyenda del barrio: con esta caída (el último título de TITLES) se gana la partida.
+const LEGEND_CAIDA := 800.0
+## Te llevan a casa (Borja, el niño bien): con la dignidad por debajo de esto, cada día puede
+## aparecer su familia a recogerlo.
+const HOME_RESCUE_DIGNITY := 15.0
+const HOME_RESCUE_CHANCE := 0.3
 ## La cárcel: con estas detenciones entras en prisión (fin de la partida); con una menos, aviso.
 const PRISON_ARRESTS := 5
 ## Ajuste de cuentas: con estos enemigos en el barrio (a los que robaste, pegaste o timaste),
