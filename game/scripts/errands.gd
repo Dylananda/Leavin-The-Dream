@@ -533,6 +533,17 @@ func notebook_entries() -> Array:
 		elif state == "fallado":
 			text = "[color=#a08080][s]%s[/s] se te pasó[/color]" % text
 		entries.append({"text": text, "poi": note["poi"] if state == "activo" else {}})
+	# las pistas de las conversaciones, las más nuevas primero; caducan (Defs.PISTA_HOURS)
+	var shown := 0
+	for i in range(gs.pistas.size() - 1, -1, -1):
+		var p: Dictionary = gs.pistas[i]
+		var hours: float = (gs.now() - p["time"]) / 60.0
+		if hours > Defs.PISTA_HOURS or shown >= Defs.PISTAS_SHOWN:
+			break
+		var when := "ahora mismo" if hours < 1.0 else "hace %d h" % int(hours)
+		var text := garble("Pista de %s (%s): %s" % [p["who"], when, p["text"]], amount, mono_share, hash([hour_seed, "pista", i]))
+		entries.append({"text": "[color=#a8c8e8]%s[/color]" % text, "poi": p["poi"]})
+		shown += 1
 	return entries
 
 

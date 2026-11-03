@@ -51,6 +51,9 @@ var subs: Dictionary = {}
 ## Cada nota guarda lo que crees que te dijeron, que no siempre coincide con el encargo.
 var errands: Array = []
 var notes: Array = []
+## Lo que te han contado en las conversaciones (pistas para la libreta):
+## [{"time": now(), "who", "text", "poi" ({} si no señala un sitio)}]
+var pistas: Array = []
 ## Misiones de los personajes del editor (ver Misiones): lo que pasó con cada una
 ## ({"personaje/misión": {"estado": "hecho" o "fallado", "dia"}}), los favores que te hacen
 ## ({personaje: {favor: now() hasta el que dura}}) y lo que debes a cada uno ({personaje: €}).
@@ -113,6 +116,7 @@ func new_game(profile_id: String) -> void:
 	wanted_crime = ""
 	caida = 0.0
 	ending_title = ""
+	pistas = []
 	debt = 0
 	inventory = profile["items"].duplicate()
 	fakes = {}
@@ -444,6 +448,13 @@ func change_vitality(amount: float) -> void:
 		exhausted = true
 	elif exhausted and vitality >= minf(Defs.VITALITY_RECOVER, vitality_max()):
 		exhausted = false
+
+
+## Apunta una pista que te ha dado `who` (ver Errands.notebook_entries).
+func add_pista(who: String, text: String, poi := {}) -> void:
+	pistas.append({"time": now(), "who": who, "text": text, "poi": poi})
+	while pistas.size() > 20:
+		pistas.pop_front()
 
 
 func add_caida(points: float) -> void:

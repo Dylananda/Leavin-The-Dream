@@ -108,6 +108,8 @@ var _pending_tries := 0
 var _npc_targets := {}
 var _personajes: Array[Dictionary] = []  ## personajes del editor (ver Personajes)
 var censo: Censo  ## todos los bots del barrio, con cuerpo o latentes (ver Censo)
+var _street_real := ""  ## la calle en la que estás de verdad
+var _street_shown := ""  ## la que dice la placa (ido, a veces otra)
 var _event_timer := 20.0
 var _respawn_timer := 30.0
 var _last_rummage := -999.0
@@ -451,7 +453,7 @@ func _process(delta: float) -> void:
 	_street_timer -= delta
 	if _street_timer <= 0.0:
 		_street_timer = 0.4
-		hud.set_street(city.street_name_near(player.cell, 12))
+		_update_street()
 	_event_timer -= delta
 	if _event_timer <= 0.0:
 		_event_timer = randf_range(15.0, 35.0) / city.crime_factor("peleas")
@@ -1261,6 +1263,22 @@ func _respawn() -> void:
 		var missing: int = _npc_targets[kind] - censo.registros.filter(func(r): return r["kind"] == kind and r["personaje"].is_empty()).size()
 		for i in missing:
 			censo.nuevo(kind)
+
+
+## La placa con el nombre de la calle. Ido, al cambiar de calle a veces dice otra (otra de las
+## mentiras de la cabeza, como el reloj y la libreta; Defs.STREET_LIE), hasta la siguiente.
+func _update_street() -> void:
+	var real := city.street_name_near(player.cell, 12)
+	if real != _street_real:
+		_street_real = real
+		_street_shown = real
+		if real != "" and randf() < Defs.STREET_LIE * GameState.befuddlement():
+			for i in 20:
+				var other: String = city.streets.pick_random()["name"]
+				if other != real:
+					_street_shown = other
+					break
+	hud.set_street(_street_shown)
 
 
 ## Ajuste de cuentas: si hay mucha gente a la que la has liado (Defs.AMBUSH_*), uno de ellos y

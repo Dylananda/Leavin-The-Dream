@@ -37,7 +37,7 @@ Lee la sección 8 de `docs/ideas.md` («Todo el mundo está yonki a su manera»)
 Ahora cada partida empieza de cero al cerrar el juego. Hace falta guardar y cargar:
 
 - Todo `GameState`: barras, vitalidad, sustancias, inventario, dinero, banco, deudas, hitos,
-  caída, día y hora, búsqueda y fichajes, encargos, libreta y misiones (también sus resultados
+  caída, día y hora, búsqueda y fichajes, encargos, libreta (con las pistas) y misiones (también sus resultados
   y favores).
 - **El censo** (`scripts/censo.gd`): todos los registros con su estado y lo que recuerdan,
   incluidos los personajes del editor; los que tienen cuerpo se guardan como si se durmieran.

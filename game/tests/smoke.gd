@@ -170,6 +170,35 @@ func _test_peticiones(world) -> void:
 		if not acts.is_empty():
 			acts[0]["do"].call()
 		_check(e["state"] == "hecho" and gs.money >= before - Defs.ERRANDS[id].get("advance", 0), "%s: cumplirla no paga" % id)
+	# pistas de las conversaciones en la libreta, que caducan; y la placa de la calle, que
+	# miente cuando vas ido
+	gs.pistas = []
+	var before: int = errands.notebook_entries().size()
+	gs.add_pista("Toni", "dos agentes en la Rambla")
+	_check(errands.notebook_entries().size() == before + 1, "pistas: no salen en la libreta")
+	gs.advance((Defs.PISTA_HOURS + 1.0) * 60.0)
+	_check(errands.notebook_entries().size() <= before, "pistas: no caducan")
+	world.player.setup(world.city, world.city.street_cells("La Rambla")[0])
+	var count_lies := func() -> int:
+		var lies := 0
+		for i in 60:
+			world._street_real = "?"
+			world._update_street()
+			if world._street_shown != world._street_real:
+				lies += 1
+		return lies
+	var was_fatigue: float = gs.fatigue
+	var was_sanity: float = gs.sanity
+	for id in gs.subs:
+		gs.subs[id]["high"] = 0.0
+		gs.subs[id]["mono"] = 0.0
+	gs.fatigue = 0.0
+	gs.sanity = 100.0
+	_check(gs.befuddlement() > 0.0 or count_lies.call() == 0, "calle: la placa miente estando sereno")
+	gs.fatigue = 95.0  # ido de sueño (sin pasar el tiempo, para no quedarse frito)
+	_check(count_lies.call() > 0, "calle: la placa no miente nunca aunque vayas ido")
+	gs.fatigue = was_fatigue
+	gs.sanity = was_sanity
 	print("  peticiones: OK")
 
 

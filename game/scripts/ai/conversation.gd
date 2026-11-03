@@ -132,11 +132,13 @@ func handle_reply(npc: Npc, content: String) -> Dictionary:
 	var fact: String = _turn["data"].get(data["cuenta"], "")
 	if fact != "":
 		GameState.log_msg("Pista de %s: %s" % [npc.display_name, fact], G.C_GOOD)
+		GameState.add_pista(npc.display_name, fact)
 		_fact(npc, "Le contaste: " + fact)
 	var poi: Dictionary = _turn["sites"].get(data["senala"], {})
 	if not poi.is_empty():
 		world.highlight_poi(poi)
 		GameState.log_msg("%s te señala %s." % [npc.display_name, _site_text(poi)], G.C_GOOD)
+		GameState.add_pista(npc.display_name, "te señala " + _site_text(poi), poi)
 		_fact(npc, "Le señalaste " + _site_text(poi))
 	var ended := true
 	match data["reaccion"]:

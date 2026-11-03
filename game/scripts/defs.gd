@@ -426,6 +426,10 @@ const SLIP_PER_BEFUDDLEMENT := 0.45  ## lo que suma a esa probabilidad ir del to
 const FORGET_PER_HOUR := 0.04  ## probabilidad por hora y entrada (del todo ido) de que se borre un dato
 const BLUR_FROM := 0.25  ## por debajo, la libreta se lee bien
 const BLUR_MAX := 0.4  ## proporción máxima de palabras que no se leen
+const STREET_LIE := 0.6  ## (del todo ido) probabilidad de que la placa diga otra calle al cambiar de calle
+## Pistas de las conversaciones en la libreta: las que se ven y cuánto duran (la policía se mueve).
+const PISTAS_SHOWN := 5
+const PISTA_HOURS := 6.0
 const CLOCK_LIE_PER_HOUR := 0.3  ## probabilidad por hora (del todo ido) de que el reloj mienta un rato
 
 ## Los bots fuera de la pantalla que no tienen nada contigo se actualizan cada tantos frames

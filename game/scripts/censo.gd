@@ -215,7 +215,7 @@ func _fuera_de_vista(me: Vector2i) -> Vector2i:
 		if c.x < 0 or c.y < 0 or c.x >= city.width or c.y >= city.height:
 			continue
 		var spot := city.nearest_walkable(c, 10)
-		if _dist(spot, me) > RADIO_VISTA and _dist(spot, me) <= RADIO_VISTA + 14:
+		if city.is_walkable(spot) and _dist(spot, me) > RADIO_VISTA and _dist(spot, me) <= RADIO_VISTA + 14:
 			return spot
 	return city.random_walkable_near(me, RADIO_VISTA)
 

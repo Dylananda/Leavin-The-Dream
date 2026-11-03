@@ -258,9 +258,12 @@ está en `Defs.ERRANDS` y en las constantes de memoria de `defs.gd`):
   - Al leer, muy ido, algunas palabras no se distinguen (borrosas o, con mono, temblando).
 - [x] **El reloj del HUD miente** a ratos cuando vas ido: con porro se atrasa, con farlopa o base
   se adelanta, y con mono o sueño fuertes a veces ni lo lees («Día ? · --:--»).
+- [x] Hecho: las **pistas** de las conversaciones (lo que te cuentan y los sitios que te
+  señalan) se apuntan en la libreta, caducan a las `Defs.PISTA_HOURS` y se leen peor ido.
 - [ ] Pendiente: que el **log de conversaciones** se apunte también en la libreta (pistas de
   los personajes, tratos) y se degrade igual.
-- [ ] Pendiente: que mientan también los nombres de calles y otros datos del HUD.
+- [x] La placa de la calle también miente cuando vas ido (`Defs.STREET_LIE`).
+- [ ] Pendiente: que mientan otros datos del HUD.
 - [ ] Pendiente: más encargos, también encadenados (misiones de rol), y otras situaciones que
   compitan entre sí: las fiestas de otro barrio a las que va a ir una yonki que te gusta.
 - [ ] Pendiente: que los encargos a medias, las deudas y las enemistades pasen al siguiente

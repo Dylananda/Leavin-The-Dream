@@ -820,7 +820,7 @@ func _fill_notebook() -> void:
 	_notebook_box.add_child(t)
 	if entries.is_empty():
 		var e := Label.new()
-		e.text = "Nada apuntado. Aquí apuntas los encargos que te hace la gente."
+		e.text = "Nada apuntado. Aquí apuntas los encargos que te hace la gente y lo que te cuentan."
 		e.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
 		_notebook_box.add_child(e)
 	for entry in entries.slice(0, 8):
