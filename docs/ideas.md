@@ -225,7 +225,9 @@ nombre, historia y motivos, no estereotipos por nacionalidad.
     Claude por la API de Anthropic (`proveedor="anthropic"` en `ia.cfg`, con structured
     outputs para el esquema, esfuerzo bajo y reintento con otro modelo si lo rechazan los
     filtros). Pendiente: probarlo con una clave y comparar con el local.
-- [ ] Pendiente: más personajes con ficha (camellos, educadoras, chavales: con estos, solo ayudar).
+- [x] Más personajes con ficha: camellos, yonkis, educadoras, chavales, vecinos, abuelos, manteros,
+  repartidores, pijos, turistas, estatuas, Urbana y Mossos (y sus secretas, que fingen ser lo que
+  parecen). Se puede hablar con la IA con 29 tipos; los niños y los perros, no.
 - [ ] Pendiente: que las pistas sirvan de algo más (p. ej. un log de conversaciones para el punto 5)
   y que los tratos tengan consecuencias más allá del momento (deudas, encargos con plazo).
 - [ ] Pendiente: que lo que se cuentan entre ellos circule (si te chivas de uno, los demás lo saben).
@@ -456,6 +458,10 @@ personajes como tipo base. Zonas nuevas en `World.ZONE_STREETS` y `World.ZONE_LA
   bar cierra tarde. Fuentes: la Urbana decomisa las rosas de los vendedores sin licencia y multa
   por encima de 150 € ([betevé](https://beteve.cat/economia/floristes-critiquen-intrusisme-sant-jordi-2026-menys-venda-roses-prevista/)).
   - [ ] Pendiente: buscar fuentes sobre la venta de rosas de noche por los bares (lo encontrado es de Sant Jordi).
+    Buscado otra vez el 3 de noviembre de 2026: sigue sin salir nada concreto de la venta
+    nocturna; solo Sant Jordi y que los vendedores de la calle se surten en Mercabarna-flor
+    ([betevé](https://beteve.cat/economia/floristes-critiquen-intrusisme-sant-jordi-2026-menys-venda-roses-prevista/),
+    en un comentario de lector, no verificado). Habría que buscar en hemeroteca o preguntar en el barrio.
 - [x] **Chatarreros** (7–22 h, por todo el barrio), con su carro de supermercado: venderles la
   chatarra o el cobre sin ir al compraventa, o ayudarles a empujar. Fuentes: los asentamientos de
   chatarreros del Poblenou y su papel en el reciclaje ([Público](https://www.publico.es/especiales/el-quinze/malvivir-chatarra-barcelona.html)),
@@ -474,7 +480,11 @@ personajes como tipo base. Zonas nuevas en `World.ZONE_STREETS` y `World.ZONE_LA
   15 como máximo y sin megáfono en Ciutat Vella ([NacióDigital](https://naciodigital.cat/societat/grups-de-maxim-15-turistes-i-sense-megafon-barcelona-vol-reduir-limpacte-al-centre_251100_102.html)),
   los free tours, en un vacío legal ([Ara](https://en.ara.cat/society/one-way-system-barcelona-old-town-tourist-groups-good-practices-limits_1_4410574.html)),
   el decreto prorrogado hasta 2028 ([Ajuntament](https://ajuntament.barcelona.cat/turisme/en/noticia/el-decret-de-limitacio-de-grups-turistics-a-ciutat-vella-es-prorroga-un-any-mes_1308739)).
-  - [ ] Pendiente: confirmar con una fuente que las plataformas de free tours cobran a los guías por turista.
+  - [x] Las plataformas de free tours cobran comisiones a los guías, no a los turistas, y quien
+    paga sale mejor colocado y recibe más clientes
+    ([Hosteltur, 2019, sobre GuruWalk](https://www.hosteltur.com/133244_guruwalk-startup-espanola-de-free-tours-capta-1-m-de-inversores.html)).
+    Que sea una cantidad fija por turista (se habla de unos 2 €) solo aparece en un comentario de
+    lector: no confirmado. Estudio académico: [Ara, revista de la UB](https://revistes.ub.edu/index.php/ara/article/view/47538).
 - [x] **Caricaturistas** (10–20 h, la Rambla y las plazas del Pi y de Sant Josep Oriol): que te
   hagan una caricatura o posar de modelo. Fuentes: la Mostra de Pintors, Caricaturistes i
   Retratistes de les Rambles ([Ajuntament](https://www.barcelona.cat/barcelonacultura/en/detail/99400322599)),
@@ -483,7 +493,12 @@ personajes como tipo base. Zonas nuevas en `World.ZONE_STREETS` y `World.ZONE_LA
   (`DOG_OWNERS` por encima de 1). Compartir el litro (si te ve la Urbana, multa), pedirles un
   cigarro o dar de comer a los perros. Que los albergues no admitan perros es una de las razones
   por las que hay quien prefiere la calle.
-  - [ ] Pendiente: buscar fuentes sobre los albergues y los perros en Barcelona.
+  - [x] Albergues y perros: una mujer sin hogar entrevistada en 2025 lo da como una de sus razones
+    para no ir («tampoco me dejan entrar con mis perras»,
+    [Ara](https://es.ara.cat/sociedad/emergencia-social/albergues-prefiero-calle_1_5426926.html));
+    desde 2016 los perros han ganado sitio en albergues y pisos sociales, los gatos no
+    ([El Español, 2026](https://www.elespanol.com/mascotario/20260416/espana-da-paso-historico-centro-residencial-acoge-primera-vez-persona-tercera-edad-gato/1003744207794_0.amp.html)).
+    No hay una norma de Barcelona que diga qué centros los admiten hoy.
 
 **Trapicheo (punto 8)**
 - [x] Un sistema de tráfico: comprar y vender a más personajes (yonkis, fiesteros, turistas,
