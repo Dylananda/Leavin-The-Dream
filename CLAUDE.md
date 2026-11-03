@@ -41,6 +41,17 @@ Godot_v4.7.2-stable_win64_console.exe --path game --resolution 1600x900 --script
 El test de humo ejecuta todas las acciones con los 6 perfiles; no debe haber `SCRIPT ERROR`.
 Redirige la entrada desde `/dev/null` al lanzarlo desde Bash.
 
+## En la nube (sesiones desde el móvil)
+
+Si `CLAUDE_CODE_REMOTE` es `true`, estás en una sesión en la nube (Linux, sin pantalla):
+
+- Godot es `godot` (lo instala `tools/cloud_setup.sh`, el script de preparación del entorno).
+  Antes de la primera prueba: `godot --headless --path game --import`.
+- Solo se puede pasar el test de humo (`godot --headless --path game --script res://tests/smoke.gd`);
+  las capturas necesitan pantalla: déjalas para cuando el usuario esté en su PC y díselo.
+- Trabaja en una rama nueva y súbela a GitHub al terminar (en la nube es como llega el
+  trabajo al usuario); no toques `main`.
+
 ## Mapa (datos de OpenStreetMap)
 
 - `python tools/fetch_osm.py` descarga por partes y se niega a guardar si falta algo
