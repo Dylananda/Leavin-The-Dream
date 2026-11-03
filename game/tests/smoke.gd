@@ -56,6 +56,7 @@ func _initialize() -> void:
 		if profile == Defs.PROFILES[0]:
 			await _test_conversation(gs, world)
 		await _test_errands(gs, world)
+		_test_peticiones(world)
 		_test_misiones(gs, world)
 		if profile == Defs.PROFILES[0]:
 			_test_vision(gs, world)
@@ -137,6 +138,38 @@ func _test_vitalidad(world) -> void:
 	world.hud.toggle_pause()
 	_check(not world.get_tree().paused and not world.hud.is_menu_open(), "pausa: no se quita")
 	print("  vitalidad, pausa y mapa: OK")
+
+
+## Peticiones de la gente corriente: alguien de cada tipo las pide, se apuntan y se cumplen
+## en su sitio (algunas pagan, todas dan algo de dignidad).
+func _test_peticiones(world) -> void:
+	var gs = root.get_node("GameState")
+	var errands = world.errands
+	gs.errands = []
+	gs.notes = []
+	gs.money = 100
+	for id in ["receta", "camino", "compra", "perro", "pelota", "direccion"]:
+		var kind: String = Defs.ERRANDS[id]["giver"]
+		var npc = null
+		for tries in 150:
+			var fresh = world._spawn_npc(kind)
+			if errands._asks(fresh, id):
+				npc = fresh
+				break
+		if npc == null:
+			_check(false, "%s: nadie pide la petición" % id)
+			continue
+		npc.known = true
+		_check(errands.offers_for(npc).size() >= 1, "%s: no la ofrece en su menú" % id)
+		errands.accept(npc, id, errands._plan(id))
+		var e: Dictionary = errands.active(id)
+		var before: int = gs.money
+		var acts = world.interactions.for_poi(e["poi"]).filter(func(a): return a["label"] == errands._deliver_label(e))
+		_check(acts.size() == 1, "%s: no se puede cumplir en su sitio" % id)
+		if not acts.is_empty():
+			acts[0]["do"].call()
+		_check(e["state"] == "hecho" and gs.money >= before - Defs.ERRANDS[id].get("advance", 0), "%s: cumplirla no paga" % id)
+	print("  peticiones: OK")
 
 
 ## Personajes del editor: su fuerza cuenta en las peleas, venden lo que pone su ficha y los
@@ -320,12 +353,16 @@ func _test_errands(gs, world) -> void:
 	var givers := {}
 	for id in Defs.ERRANDS:
 		var kind: String = Defs.ERRANDS[id]["giver"]
-		# solo algunos de cada tipo piden encargos (Defs.ERRANDS[...]["share"])
-		var npc = world.npcs.filter(func(n): return n.kind == kind and is_instance_valid(n) and errands._asks(n, id))
+		# solo algunos de cada tipo piden encargos (Defs.ERRANDS[...]["share"]); se busca uno que
+		# pida este y ningún otro de su tipo, para contar bien lo que ofrece
+		var only_this := func(n) -> bool:
+			return n.kind == kind and is_instance_valid(n) and Defs.ERRANDS.keys().all(func(other):
+				return (other == id) == (Defs.ERRANDS[other]["giver"] == kind and errands._asks(n, other)) or Defs.ERRANDS[other]["giver"] != kind)
+		var npc = world.npcs.filter(only_this)
 		var tries := 0
-		while npc.is_empty() and tries < 60:
+		while npc.is_empty() and tries < 150:
 			var fresh = world._spawn_npc(kind)
-			if errands._asks(fresh, id):
+			if only_this.call(fresh):
 				npc = [fresh]
 			tries += 1
 		if npc.is_empty():
@@ -350,15 +387,6 @@ func _test_errands(gs, world) -> void:
 	_check(gs.notes.size() == Defs.ERRANDS.size() and gs.has_item("paquete") and gs.has_item("cartera_caliente"), "no se apuntan los encargos o no te dan lo que hay que llevar")
 	_check(errands.active("paquete")["poi"] != errands.active("juerga")["poi"], "dos encargos en el mismo bar")
 	print("  encargos: %s" % " | ".join(gs.notes.map(func(n): return errands.note_text(n))))
-	# las peticiones de la gente corriente se cumplen en su sitio y pagan algo
-	for id in ["receta", "camino", "compra"]:
-		var pe: Dictionary = errands.active(id)
-		var before: int = gs.money
-		var pacts = world.interactions.for_poi(pe["poi"]).filter(func(a): return a["label"] == errands._deliver_label(pe))
-		_check(pacts.size() == 1, "%s: no se puede cumplir en su sitio" % id)
-		if not pacts.is_empty():
-			pacts[0]["do"].call()
-		_check(pe["state"] == "hecho" and gs.money > before - Defs.ERRANDS[id].get("advance", 0), "%s: cumplirla no paga" % id)
 	# cumplir: el paquete en su bar, la despedida esperando a que llegue la hora
 	var money: int = gs.money
 	var e: Dictionary = errands.active("paquete")
@@ -373,10 +401,11 @@ func _test_errands(gs, world) -> void:
 	if not acts.is_empty():
 		acts[0]["do"].call()
 	_check(e["state"] == "hecho", "esperar a la despedida no cumple el encargo")
-	# fallar por el plazo: la cartera y la cita con la educadora
+	# fallar por el plazo: la cartera, la cita con la educadora y las peticiones sin cumplir
 	gs.alive = true
-	for id in ["cartera", "cita"]:
-		errands.active(id)["until"] = gs.now() - 1.0
+	for x in gs.errands:
+		if x["state"] == "activo":
+			x["until"] = gs.now() - 1.0
 	errands.update()
 	_check(gs.errands.all(func(x): return x["state"] != "activo"), "los plazos vencidos no fallan el encargo")
 	_check(givers["cartera"].has_meta("enemigo") and gs.heat >= 40.0, "fallarle a la carterista no tiene consecuencias")

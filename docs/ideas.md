@@ -566,7 +566,9 @@ El barrio entero tiende a engancharse, también el jugador, y salir de ahí es l
   - [x] Primer paso: **peticiones** de la gente corriente (solo algunos de cada tipo, con
     «!»): la receta de un abuelo en la farmacia, llevar a un turista perdido a una iglesia y
     la compra de una vecina, que te da 20 € por adelantado y no olvida si te los quedas.
-    En `Defs.ERRANDS` (`share`). Faltan más (perros perdidos, la pelota de los niños...).
+    En `Defs.ERRANDS` (`share`, tirada por persona y no por nombre). Luego tres más: el
+    perro escapado de un vecino, la pelota de los niños en la terraza de un bar y el
+    repartidor que no encuentra la dirección.
 
 ### Finales
 

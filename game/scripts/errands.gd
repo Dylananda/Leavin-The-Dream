@@ -22,6 +22,9 @@ const WHAT := {
 	"receta": "recoger la receta en",
 	"camino": "llevar al turista a",
 	"compra": "hacer la compra en",
+	"perro": "buscar al perro junto a",
+	"pelota": "recuperar la pelota en",
+	"direccion": "llevar al repartidor a",
 }
 ## Cómo se puede apuntar mal un dato: sin sitio, sin hora, otra hora u otro sitio.
 const SLIPS := ["sin_sitio", "sin_hora", "otra_hora", "otro_sitio"]
@@ -61,8 +64,15 @@ func offers_for(npc: Npc) -> Array:
 
 
 ## Si `npc` es de los de su tipo que piden el encargo `id` (Defs.ERRANDS[id]["share"]).
+## Va por persona, no por nombre (hay muchos con el mismo): una tirada que se guarda en el
+## bot (y el censo la conserva al dormirlo), distinta para cada encargo.
 func _asks(npc: Npc, id: String) -> bool:
-	return npc._trait("encargo") < Defs.ERRANDS[id].get("share", 1.0)
+	var share: float = Defs.ERRANDS[id].get("share", 1.0)
+	if share >= 1.0:
+		return true
+	if not npc.has_meta("pide"):
+		npc.set_meta("pide", randf())
+	return fposmod(npc.get_meta("pide") + hash(id) * 0.6180339, 1.0) < share
 
 
 ## Sitio y horas de un encargo nuevo, o {} si el mapa no tiene dónde.
@@ -145,6 +155,12 @@ func accept(npc: Npc, id: String, plan: Dictionary) -> void:
 		"compra":
 			gs.add_money(Defs.ERRANDS["compra"]["advance"])
 			npc.say("Toma %d €: pan, leche y fruta del %s. Y me traes el cambio, ¿eh?" % [Defs.ERRANDS["compra"]["advance"], place_name(e["poi"])], 5.0)
+		"perro":
+			npc.say("Se me ha soltado el perro. Me han dicho que ronda por %s, por el olor..." % place_name(e["poi"]), 5.0)
+		"pelota":
+			npc.say("¡Se nos ha colado la pelota en la terraza de %s! ¿Nos la traes?" % place_name(e["poi"]), 5.0)
+		"direccion":
+			npc.say("¿%s? La app me lleva en círculos. ¡Corre, que me penalizan!" % place_name(e["poi"]), 5.0)
 	jot(e)
 	world.highlight_poi(e["poi"])
 	gs.log_msg("Apuntas el encargo de %s en la libreta (L)." % e["who"])
@@ -167,6 +183,12 @@ func _offer_text(id: String, plan: Dictionary) -> String:
 			return "llevarle a %s, que se ha perdido, antes de las %s (propina)" % [where, gs.time_text(plan["until"])]
 		"compra":
 			return "hacerle la compra en %s antes de las %s (te da %d € para ella)" % [where, gs.time_text(plan["until"]), d["advance"]]
+		"perro":
+			return "buscar a su perro, que ronda por %s, antes de las %s (%d €)" % [where, gs.time_text(plan["until"]), d["money"]]
+		"pelota":
+			return "recuperar la pelota de la terraza de %s antes de las %s" % [where, gs.time_text(plan["until"])]
+		"direccion":
+			return "llevarle a %s, que se ha perdido, antes de las %s (propina)" % [where, gs.time_text(plan["until"])]
 		"cita":
 			return "cita mañana en el CAS Baluard de %s a %s por lo del albergue" % [
 				gs.time_text(plan["from"]).left(5), gs.time_text(plan["until"]).left(5)]
@@ -243,6 +265,9 @@ func _deliver_label(e: Dictionary) -> String:
 		"receta": return "Recoger la receta de %s" % e["who"]
 		"camino": return "Dejar al turista (%s) en la puerta" % e["who"]
 		"compra": return "Hacer la compra de %s" % e["who"]
+		"perro": return "Buscar al perro de %s" % e["who"]
+		"pelota": return "Recuperar la pelota de %s" % e["who"]
+		"direccion": return "Dejar al repartidor (%s) en la puerta" % e["who"]
 	return e["id"]
 
 
@@ -281,11 +306,11 @@ func complete(e: Dictionary) -> void:
 			gs.add_item("papeles_albergue")
 			gs.log_msg("%s te estaba esperando. Café, papeles para el albergue y un bocadillo para luego." % e["who"], G.C_GOOD)
 			gs.change_dignity(d["dignity"], "Alguien cuenta contigo")
-		"receta", "camino", "compra":
+		"receta", "camino", "compra", "perro", "pelota", "direccion":
 			gs.advance(15)
 			if e["id"] == "compra":
 				gs.add_money(-d["advance"])
-			var tip: int = d["money"] if e["id"] != "camino" else randi_range(2, d["money"])
+			var tip: int = randi_range(1, d["money"]) if e["id"] in ["camino", "direccion"] else d["money"]
 			gs.add_money(tip)
 			gs.change_dignity(d["dignity"], "Hacer un favor")
 			_remember_giver(e, "ayudado")
@@ -293,6 +318,11 @@ func complete(e: Dictionary) -> void:
 				"receta": gs.log_msg("La farmacéutica te da la bolsa de %s. Se la dejas en el portal: %d € y un «Dios te lo pague»." % [e["who"], tip], G.C_GOOD)
 				"camino": gs.log_msg("%s hace una foto a la iglesia y te da %d € de propina." % [e["who"], tip], G.C_GOOD)
 				"compra": gs.log_msg("Le subes la compra a %s. Te da %d € por las molestias." % [e["who"], tip], G.C_GOOD)
+				"perro": gs.log_msg("El perro estaba royendo un hueso detrás de %s. %s te da %d € y un abrazo." % [place_name(e["poi"]), e["who"], tip], G.C_GOOD)
+				"pelota":
+					gs.change_sanity(d["sanity"])
+					gs.log_msg("El camarero te mira raro, pero te da la pelota. Los niños (%s) gritan «¡gracias!» y siguen jugando." % e["who"], G.C_GOOD)
+				"direccion": gs.log_msg("El repartidor (%s) entrega el pedido a tiempo y te da %d €." % [e["who"], tip], G.C_GOOD)
 
 
 ## Abrir el paquete del camello: dos rayas para ti y una deuda más gorda. Si es el de una
@@ -370,6 +400,12 @@ func _fail(e: Dictionary, opened := false) -> void:
 			gs.change_dignity(d["dignity_fail"], "Dejar tirada a una abuela")
 		"camino":
 			gs.log_msg("El turista (%s) se ha cansado de esperarte." % e["who"])
+		"perro":
+			gs.log_msg("El perro de %s sigue sin aparecer." % e["who"])
+		"pelota":
+			gs.log_msg("Los niños (%s) se han ido a casa sin la pelota." % e["who"])
+		"direccion":
+			gs.log_msg("Al repartidor (%s) le han penalizado el pedido." % e["who"])
 		"compra":
 			# te quedaste los 20 €: no se le olvida
 			_remember_giver(e, "timado")

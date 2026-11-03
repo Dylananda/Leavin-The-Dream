@@ -377,6 +377,12 @@ const ERRANDS := {
 		"money": 8, "dignity": 1},
 	"compra": {"giver": "vecino", "place": "super", "window": [0.0, 1.5], "share": 0.15,
 		"advance": 20, "money": 5, "dignity": 3, "dignity_fail": -4},
+	"perro": {"giver": "vecino", "place": "kebab", "window": [0.0, 2.0], "share": 0.1,
+		"money": 10, "dignity": 3},
+	"pelota": {"giver": "nino", "place": "bar", "window": [0.0, 1.0], "share": 0.3,
+		"money": 0, "dignity": 2, "sanity": 4},
+	"direccion": {"giver": "mensajero", "place": "farmacia", "window": [0.0, 0.5], "share": 0.3,
+		"money": 3, "dignity": 1},
 }
 const ERRAND_MIN_DISTANCE := 60  ## casillas: el sitio del encargo no está a la vuelta de la esquina
 const ERRAND_MAX_DISTANCE := 300  ## ... ni más lejos de lo que se anda en hora y media

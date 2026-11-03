@@ -711,7 +711,17 @@ func _resultados(efectos: Array) -> Control:
 				ef["quien"] = "")
 		row.add_child(tipo)
 		if spec.has("valor"):
-			row.add_child(_m_spin(ef, "valor", -500, 500, 1, " " + spec["valor"]))
+			# la unidad va en la casilla; la aclaración entre paréntesis, al lado (si no, no cabe)
+			var unidad: String = spec["valor"].get_slice(" (", 0)
+			var sp := _m_spin(ef, "valor", -500, 500, 1, " " + unidad)
+			sp.custom_minimum_size.x = 110
+			row.add_child(sp)
+			if " (" in spec["valor"]:
+				var nota := Label.new()
+				nota.text = "(" + spec["valor"].get_slice(" (", 1)
+				nota.add_theme_font_size_override("font_size", 13)
+				nota.add_theme_color_override("font_color", C_SUAVE)
+				row.add_child(nota)
 		if spec.has("que"):
 			row.add_child(_m_option(ef, "que", _que_de(spec)))
 		if spec.has("quien"):
