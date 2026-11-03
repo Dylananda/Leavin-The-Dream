@@ -499,11 +499,14 @@ func _update_player_input(delta: float) -> void:
 	if GameState.alive and not hud.is_menu_open():
 		v.x = float(_held(KEY_D, KEY_RIGHT)) - float(_held(KEY_A, KEY_LEFT))
 		v.y = float(_held(KEY_S, KEY_DOWN)) - float(_held(KEY_W, KEY_UP))
-	# correr gasta vitalidad; agotado, no se corre hasta recuperarla (Defs.VITALITY_*)
+	# correr gasta vitalidad; agotado, no se corre hasta recuperarla (Defs.VITALITY_*). En bici
+	# se va más rápido sin gastarla (y sin correr: no se pedalea más fuerte con Shift)
 	var gs := GameState
+	if gs.riding and not gs.has_item("bici"):
+		toggle_bike()  # la has vendido o te la han quitado
 	var moving := v != Vector2.ZERO or player.is_moving()
-	var wants_run := Input.is_key_pressed(KEY_SHIFT) and moving and not gs.exhausted
-	player.run_factor = RUN_FACTOR if wants_run else 1.0
+	var wants_run := Input.is_key_pressed(KEY_SHIFT) and moving and not gs.exhausted and not gs.riding
+	player.run_factor = Defs.BIKE_SPEED if gs.riding else (RUN_FACTOR if wants_run else 1.0)
 	if wants_run:
 		gs.change_vitality(-Defs.VITALITY_RUN_COST * delta)
 	elif moving:
@@ -710,6 +713,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				_rummage()
 			KEY_Z:
 				_sleep_here()
+			KEY_B:
+				toggle_bike()
 			KEY_V:
 				_all_cones = not _all_cones
 				_update_markers()
@@ -793,6 +798,9 @@ func use_item(id: String) -> void:
 		return
 	if id == "paquete":
 		errands.open_package()
+		return
+	if id == "bici":
+		toggle_bike()
 		return
 	if id == "cartera":
 		if street_items.take_fake("cartera", "La abres: es %s. Ni una moneda."):
@@ -1263,6 +1271,25 @@ func _respawn() -> void:
 		var missing: int = _npc_targets[kind] - censo.registros.filter(func(r): return r["kind"] == kind and r["personaje"].is_empty()).size()
 		for i in missing:
 			censo.nuevo(kind)
+
+
+## Subirte o bajarte de la bici que llevas en el inventario (una robada, o la que encuentres).
+## En bici vas mucho más rápido y no te cansas, pero se te ve: llamas un poco la atención.
+func toggle_bike() -> void:
+	var gs := GameState
+	if not gs.riding and not gs.has_item("bici"):
+		gs.log_msg("No llevas ninguna bici.")
+		return
+	gs.riding = not gs.riding
+	var look: Dictionary = player.look.duplicate()  # (el del perfil es de solo lectura)
+	look["bici"] = gs.riding
+	player.look = look
+	player.rebuild()
+	if gs.riding:
+		gs.heat = minf(100.0, gs.heat + 3.0)
+		gs.log_msg("Te subes a la bici. (B para bajarte)")
+	else:
+		gs.log_msg("Te bajas de la bici.")
 
 
 ## La placa con el nombre de la calle. Ido, al cambiar de calle a veces dice otra (otra de las

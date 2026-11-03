@@ -26,6 +26,7 @@ var hunger := 0.0
 var fatigue := 0.0  ## Sueño
 var starving := 0.0  ## horas pasando hambre de verdad (ver Defs.STARVE_*)
 var vitality := 100.0  ## aguante para correr y pelear (ver vitality_max y Defs.VITALITY_*)
+var riding := false  ## vas montado en una bici (B; ver World.toggle_bike)
 var exhausted := false  ## agotado: no se corre hasta recuperar Defs.VITALITY_RECOVER
 var sanity := 100.0  ## Salud mental
 var dignity := 100.0
@@ -107,6 +108,7 @@ func new_game(profile_id: String) -> void:
 	fatigue = 20.0
 	vitality = 100.0
 	exhausted = false
+	riding = false
 	starving = 0.0
 	subs = {}
 	for id in profile["knows"]:

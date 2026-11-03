@@ -530,8 +530,10 @@ personajes como tipo base. Zonas nuevas en `World.ZONE_STREETS` y `World.ZONE_LA
   o un cable y te la guardas (en el inventario sale como tal: `GameState.fakes`), o un móvil
   parece basura. Las piedras se descubren al venderlas en el compraventa (hito), al vaciar la
   «cartera» o al volver a estar sereno. Lo que nadie recoge desaparece a las 10 h.
+  - [x] La bici sirve para moverse: con una en el inventario, B (o «Usar») para montar; vas
+    mucho más rápido (`Defs.BIKE_SPEED`) sin gastar vitalidad, y llamas algo la atención.
   - [ ] Pendiente: más compradores (otros yonkis, chatarreros) y que los dueños de las bicis
-    las reconozcan; que la bici sirva para moverse más rápido.
+    las reconozcan.
 
 **Minijuegos (punto 9)**
 - [x] Las acciones de habilidad pasan a un minijuego con otra vista (primer plano del

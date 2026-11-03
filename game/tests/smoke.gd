@@ -138,6 +138,14 @@ func _test_vitalidad(world) -> void:
 	world.hud.toggle_map()
 	world.hud.toggle_pause()
 	_check(not world.get_tree().paused and not world.hud.is_menu_open(), "pausa: no se quita")
+	# la bici: te subes con B (o desde el inventario), vas más rápido y te bajas al venderla
+	gs.add_item("bici")
+	world.toggle_bike()
+	world._update_player_input(0.016)
+	_check(gs.riding and world.player.look.get("bici", false) and world.player.run_factor == Defs.BIKE_SPEED, "bici: no te subes o no corre más")
+	gs.remove_item("bici")
+	world._update_player_input(0.016)
+	_check(not gs.riding and not world.player.look.get("bici", false), "bici: sigues montado en una bici que ya no tienes")
 	print("  vitalidad, pausa y mapa: OK")
 
 

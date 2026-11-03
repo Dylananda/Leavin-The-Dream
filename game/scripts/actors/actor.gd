@@ -402,22 +402,7 @@ func _build_body() -> void:
 	_silhouette = ShaderMaterial.new()
 	_silhouette.shader = _silhouette_shader
 	_silhouette.set_shader_parameter("color", SILHOUETTE)
-	_body = Node3D.new()
-	_body.scale = Vector3.ONE * SCALE * body_size
-	add_child(_body)
-	var key := "%d|%s|%s" % [var_to_str(look).hash(), accessory, body_size]
-	if _mesh_cache.has(key):
-		_from_cache(_mesh_cache[key])
-	else:
-		if look.get("species", "") == "perro":
-			_build_dog()
-		else:
-			_build_person()
-			if look.get("bici", false):
-				_build_bike()
-		_merge_parts()
-		if _mesh_cache.size() < MESH_CACHE_MAX:
-			_mesh_cache[key] = _to_cache()
+	_build_model()
 
 	_bubble = Label3D.new()
 	_bubble.billboard = BaseMaterial3D.BILLBOARD_ENABLED
@@ -588,6 +573,38 @@ func _build_person() -> void:
 				var a := PI * (0.15 + 0.7 * i / 5.0)
 				_part(_body, CityProps.box(Vector3(0.07, 0.24, 0.1)), look["hair"], Vector3(0, 1.86 + sin(a) * 0.4, cos(a) * 0.36))
 
+
+
+## El muñeco (cuerpo y extremidades) según `look`, `accessory` y `body_size`.
+func _build_model() -> void:
+	_body = Node3D.new()
+	_body.scale = Vector3.ONE * SCALE * body_size
+	add_child(_body)
+	var key := "%d|%s|%s" % [var_to_str(look).hash(), accessory, body_size]
+	if _mesh_cache.has(key):
+		_from_cache(_mesh_cache[key])
+	else:
+		if look.get("species", "") == "perro":
+			_build_dog()
+		else:
+			_build_person()
+			if look.get("bici", false):
+				_build_bike()
+		_merge_parts()
+		if _mesh_cache.size() < MESH_CACHE_MAX:
+			_mesh_cache[key] = _to_cache()
+
+
+## Vuelve a montar el muñeco tras cambiar `look` (subir o bajar de la bici), mirando hacia
+## el mismo lado.
+func rebuild() -> void:
+	var yaw := _body.rotation.y
+	remove_child(_body)
+	_body.free()
+	_legs.clear()
+	_arms.clear()
+	_build_model()
+	_body.rotation.y = yaw
 
 
 ## Una bici bajo el personaje (los repartidores): dos ruedas, cuadro, sillín y manillar.

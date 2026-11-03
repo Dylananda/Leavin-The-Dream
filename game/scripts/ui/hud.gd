@@ -270,7 +270,7 @@ func _build_log() -> void:
 
 func _build_help() -> void:
 	var l := Label.new()
-	l.text = "WASD: andar (Shift: correr)  ·  Clic: ir / interactuar  ·  I: inventario  ·  L: libreta  ·  M: mapa  ·  R: rebuscar  ·  Z: dormir aquí  ·  V: conos de visión  ·  Q/E: girar cámara  ·  Rueda: zoom  ·  P: pausa"
+	l.text = "WASD: andar (Shift: correr)  ·  Clic: ir / interactuar  ·  I: inventario  ·  L: libreta  ·  M: mapa  ·  R: rebuscar  ·  Z: dormir aquí  ·  V: conos de visión  ·  B: bici  ·  Q/E: girar cámara  ·  Rueda: zoom  ·  P: pausa"
 	l.add_theme_font_size_override("font_size", 15)
 	l.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE

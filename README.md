@@ -10,7 +10,7 @@ Abre `game/project.godot` con Godot 4.7 y pulsa F5.
 - WASD o flechas: andar (Shift: correr)
 - Clic: ir a un sitio, o hablar con un bot / entrar en un lugar
 - I: inventario · L: libreta · M: mapa del barrio · P: pausa (también con los botones de arriba a la derecha)
-- R: rebuscar en la basura · Z: dormir donde estés
+- R: rebuscar en la basura · Z: dormir donde estés · B: montar en la bici (si llevas una)
 - V: ver los conos de visión de todos los que tienes cerca
 - Q/E: girar la cámara · Rueda: zoom
 
