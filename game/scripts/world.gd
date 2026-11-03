@@ -1113,9 +1113,11 @@ func _on_caught(npc: Npc) -> void:
 				npc.say("Give me that! ¡Dame!", 3.0)
 				gs.log_msg("%s te alcanza y se cobra lo suyo: %d €." % [npc.display_name, n], GameState.C_BAD)
 			else:
-				npc.say("Asshole!", 3.0)
-				gs.change_health(-8, "Te mató a golpes alguien a quien habías robado")
-				gs.log_msg("No llevas nada que devolverle. %s te suelta un puñetazo." % npc.display_name, GameState.C_BAD)
+				# no llevas nada que devolverle: se cobra a golpes (pelea, minijuego)
+				npc.say("Asshole! ¡Te vas a enterar!", 3.0)
+				_beating(npc, func():
+					gs.change_health(-8, "Te mató a golpes alguien a quien habías robado")
+					gs.log_msg("No llevas nada que devolverle. %s te deja tirado a puñetazos." % npc.display_name, GameState.C_BAD))
 			gs.change_dignity(-3)
 		"territorio":
 			npc.memory.erase("pisado")
@@ -1271,6 +1273,7 @@ func _respawn() -> void:
 				npc.queue_free()
 			else:
 				censo.dormir(r)
+	_check_redemption()
 	# los que no te conocen se van del barrio al acabar su horario; los demás esperan latentes
 	censo.olvidar(h)
 	for kind in _npc_targets:
@@ -1332,6 +1335,29 @@ func _update_street() -> void:
 					_street_shown = other
 					break
 	hud.set_street(_street_shown)
+
+
+## Redención (perder, el más difícil; Defs.REDEMPTION_*): limpio, con la dignidad muy alta y
+## gente en el barrio que te aprecia, alguien a quien ayudaste se enamora de ti. Sales del
+## pozo... y el objetivo era caer. true si ha llegado.
+func _check_redemption() -> bool:
+	var gs := GameState
+	if not gs.alive or gs.dignity < Defs.REDEMPTION_DIGNITY or gs.mono > 0.5:
+		return false
+	for id in gs.subs:
+		if gs.subs[id]["addiction"] > Defs.REDEMPTION_ADDICTION:
+			return false
+	var friends := censo.amigos(Defs.REDEMPTION_HELPS)
+	if friends.size() < Defs.REDEMPTION_FRIENDS:
+		return false
+	var partners := friends.filter(func(r): return r["kind"] in Defs.PARTNER_KINDS)
+	if partners.is_empty():
+		return false
+	var p: Dictionary = partners.pick_random()
+	var who: String = p["name"]
+	gs.finish("%s te invita a cenar, y luego a quedarte. Encuentras curro descargando en la Boqueria, la metadona baja hasta cero y al año siguiente hay un crío llorando en un piso de la calle de la Cera. Has salido del pozo. Y el objetivo era caer: has perdido." % who,
+		"REDENCIÓN")
+	return true
 
 
 ## Ajuste de cuentas: si hay mucha gente a la que la has liado (Defs.AMBUSH_*), uno de ellos y

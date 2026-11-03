@@ -554,7 +554,9 @@ personajes como tipo base. Zonas nuevas en `World.ZONE_STREETS` y `World.ZONE_LA
     el camarero vigilando (`Pickpocket` con `loot` "litrona" o "propina").
   - [x] Robarle el alijo al latero también: sacar las latas de la reja de la alcantarilla con él
     al lado (`loot` "alijo"); si te pilla, va a por ti.
-  - [ ] Pendiente: jugarlos y ajustar tiempos y dificultad; el puñetazo del turista robado.
+  - [x] El robado que te alcanza sin que lleves nada que devolverle se cobra a golpes con una
+    pelea (minijuego), no con un puñetazo automático.
+  - [ ] Pendiente: jugarlos y ajustar tiempos y dificultad.
 
 ## 8. Todo el mundo está yonki a su manera (3 de noviembre de 2026)
 
@@ -604,9 +606,12 @@ El barrio entero tiende a engancharse, también el jugador, y salir de ahí es l
 
 ### Finales
 
-- [ ] **Redención (perder, el más difícil)**: subir tanto la dignidad y bajar el enganche a 0
+- [x] **Redención (perder, el más difícil)**: subir tanto la dignidad y bajar el enganche a 0
   que la gente te empieza a apreciar, te echas pareja (un vecino o una vecina) y formas una
   familia. Has salido... y has perdido.
+  Hecho: con la dignidad a 90 o más, sin enganche (`Defs.REDEMPTION_*`) y al menos cuatro
+  personas en el censo a las que has ayudado dos veces, una de ellas (vecina, educador,
+  música, repartidor) te propone quedarte. Pantalla final «REDENCIÓN», en verde.
 - [ ] **Revolución (difícil)**: comandas un ejército de yonkis, os organizáis y tomáis el
   poder de un barrio (ver «Legado»).
 - [x] **Morir de hambre, pero de verdad**: no al vaciarse la barra, sino días después; con la

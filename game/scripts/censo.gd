@@ -353,6 +353,17 @@ func rencorosos() -> Array[Dictionary]:
 	return out
 
 
+## Los que te aprecian: los que se acuerdan de que les ayudaste al menos `veces` veces.
+func amigos(veces: int) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	for r in registros:
+		var npc: Npc = r["npc"]
+		var mem: Dictionary = npc.memory if npc != null and is_instance_valid(npc) else r["estado"].get("memory", {})
+		if mem.get("ayudado", 0) >= veces:
+			out.append(r)
+	return out
+
+
 func latentes() -> int:
 	return registros.filter(func(r): return r["npc"] == null).size()
 

@@ -126,6 +126,14 @@ const STARVE_WORSEN := 36.0  ## ... que se dobla cada tantas horas de inanición
 const STARVE_SANITY := 0.01  ## salud mental por minuto y día de inanición
 const VITALITY_STARVE := 0.8  ## vitalidad máxima que quita cada hora de inanición
 const FAINT_RESCUE := 0.5  ## al desmayarte de hambre, probabilidad de que alguien llame a una ambulancia
+## Redención (perder, el más difícil): con esta dignidad, sin enganche a nada (como mucho
+## esto en cada sustancia) y con al menos estos amigos en el barrio (a los que has ayudado
+## estas veces), te echas pareja y sales del pozo.
+const REDEMPTION_DIGNITY := 90.0
+const REDEMPTION_ADDICTION := 1.0
+const REDEMPTION_FRIENDS := 4
+const REDEMPTION_HELPS := 2
+const PARTNER_KINDS := ["vecino", "educador", "musico", "mensajero"]  ## de quién te enamoras
 ## Leyenda del barrio: con esta caída (el último título de TITLES) se gana la partida.
 const LEGEND_CAIDA := 800.0
 ## Te llevan a casa (Borja, el niño bien): con la dignidad por debajo de esto, cada día puede

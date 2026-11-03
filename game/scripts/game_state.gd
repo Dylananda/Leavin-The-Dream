@@ -847,6 +847,12 @@ func _check_death(cause: String) -> void:
 		_end(cause if cause != "" else "Tu cuerpo dijo basta")
 
 
+## Acaba la partida con un final que decide otro sistema (World: la redención).
+func finish(reason: String, title := "") -> void:
+	if alive:
+		_end(reason, title)
+
+
 func _end(reason: String, title := "") -> void:
 	alive = false
 	ending_title = title

@@ -361,6 +361,16 @@ func _test_finales() -> void:
 		gs.dignity = 0.0
 		gs.advance(24 * 60)
 	_check(not gs.alive and gs.ending_title == "TE LLEVAN A CASA", "casa: a Borja no lo recogen (%s)" % reason[0])
+	# redención: limpio, digno y con amigos en el barrio, alguien se enamora de ti (y pierdes)
+	gs.new_game("parado")
+	gs.subs = {}
+	gs.dignity = 95.0
+	_check(not world._check_redemption(), "redención: llega sin amigos")
+	for i in Defs.REDEMPTION_FRIENDS:
+		var f = world._spawn_npc("vecino")
+		for k in Defs.REDEMPTION_HELPS:
+			f.remember("ayudado")
+	_check(world._check_redemption() and gs.ending_title == "REDENCIÓN", "redención: no llega con todo a favor")
 	get_root().get_tree().paused = false
 	print("  finales: OK")
 

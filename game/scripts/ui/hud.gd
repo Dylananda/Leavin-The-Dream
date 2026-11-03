@@ -858,7 +858,7 @@ func show_game_over(reason: String) -> void:
 	_game_over.add_child(v)
 	var lines := [
 		[gs.ending_title if gs.ending_title != "" else "FIN DE LA PARTIDA", 26,
-			Color("d08ae8") if gs.ending_title == "LEYENDA DEL BARRIO" else Color("e05a4a")],
+			{"LEYENDA DEL BARRIO": Color("d08ae8"), "REDENCIÓN": Color("80c8a0")}.get(gs.ending_title, Color("e05a4a"))],
 		[reason, 15, Color.WHITE],
 		["%s aguantó %d días en el Raval." % [gs.profile["name"], gs.day], 14, Color(0.8, 0.8, 0.8)],
 		["Caída total: %d" % int(gs.caida), 22, Color("d08ae8")],
