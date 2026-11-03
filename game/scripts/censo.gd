@@ -7,8 +7,9 @@ extends RefCounted
 ## ha pasado desde la última vez (ver _al_dia). Así puede haber miles de vecinos en el registro
 ## y solo se simula lo que tienes alrededor.
 ##
-## No se duermen los que tienen asuntos contigo (anclado): te persiguen o te buscan, les debes
-## dinero o te han dado un encargo en marcha. Los que van detrás de otro (perros, el grupo del
+## No se duermen los que tienen asuntos contigo ahora mismo (anclado): te persiguen, te buscan
+## o te han dado un encargo en marcha. A los que les debes dinero no hace falta tenerlos
+## despiertos: cuando vence el plazo, vienen a buscarte estén donde estén (despertadores). Los que van detrás de otro (perros, el grupo del
 ## guía) no tienen registro propio: se duermen y se despiertan con su amo.
 ##
 ## Un registro: kind, name, personaje (ficha del editor o {}), home, bed, zona (casillas de su
@@ -35,6 +36,7 @@ var pausado := false  ## sin repasos automáticos (lo usa el test de humo)
 var _timer := 0.0
 var _cursor := 0  ## por dónde va el repaso por tandas
 var _ultima := Vector2i(-9999, -9999)  ## casilla del jugador en el repaso anterior
+var _alarmas := 0.0  ## segundos hasta mirar los despertadores
 
 
 func _init(p_world: World) -> void:
@@ -53,10 +55,17 @@ func nuevo(kind: String) -> Dictionary:
 	while randf() < p_dog:
 		r["seguidores"].append("perro")
 		p_dog -= 1.0
-	# el guía, con su grupo del free tour
+	# el guía, con su grupo del free tour; las despedidas, en grupo
 	if kind == "guia":
 		for i in randi_range(Defs.GUIDE_GROUP.x, Defs.GUIDE_GROUP.y):
 			r["seguidores"].append("turista")
+	if kind == "fiestero":
+		for i in randi_range(Defs.PARTY_GROUP.x, Defs.PARTY_GROUP.y):
+			r["seguidores"].append("fiestero")
+	# algunos vecinos y abuelos van con los niños
+	if randf() < Defs.KIDS_WITH.get(kind, 0.0):
+		for i in randi_range(Defs.KIDS_GROUP.x, Defs.KIDS_GROUP.y):
+			r["seguidores"].append("nino")
 	registros.append(r)
 	return r
 
@@ -90,7 +99,7 @@ func activo(r: Dictionary, h: int) -> bool:
 
 ## Si tiene asuntos contigo y no se puede dormir aunque te alejes.
 func anclado(npc: Npc) -> bool:
-	if npc.mode != "" or npc.debt > 0:
+	if npc.mode != "":
 		return true
 	return GameState.errands.any(func(e): return e["state"] == "activo" and is_same(e["giver"], npc))
 
@@ -119,6 +128,10 @@ func posicion(r: Dictionary) -> Vector2i:
 func tick(delta: float) -> void:
 	if pausado:
 		return
+	_alarmas -= delta
+	if _alarmas <= 0.0:
+		_alarmas = 5.0
+		despertadores()
 	_timer -= delta
 	if _timer > 0.0:
 		return
@@ -165,6 +178,46 @@ func repasar(limite := 0, tanda := 0, en_su_sitio := false) -> void:
 		cerca.resize(limite)
 	for r in cerca:
 		despertar(r, posicion(r) if en_su_sitio else Vector2i(-1, -1))
+
+
+## Despertadores: el que tiene que cobrarte (una deuda vencida) viene a buscarte aunque esté
+## latente o en la otra punta: aparece fuera de la vista, cerca de ti, y viene hacia ti. Si no
+## le pagas, vuelve cada Defs.DEBT_VISIT_EVERY horas.
+func despertadores() -> void:
+	var now := GameState.now()
+	var me: Vector2i = world.player.cell
+	for r in registros:
+		var npc: Npc = r["npc"]
+		if npc != null and not is_instance_valid(npc):
+			npc = null
+		var debt: int = npc.debt if npc != null else r["estado"].get("debt", 0)
+		var due: float = npc.debt_due if npc != null else r["estado"].get("debt_due", 0.0)
+		if debt <= 0 or now < due or now < r.get("visita", -INF):
+			continue
+		if npc != null and (npc.mode != "" or npc.distance_to_cell(me) <= RADIO_VISTA):
+			continue  # ya está en ello, o a la vista: te cobrará cuando te vea
+		r["visita"] = now + Defs.DEBT_VISIT_EVERY * 60.0
+		var spot := _fuera_de_vista(me)
+		if npc == null:
+			npc = despertar(r, spot)
+		else:
+			npc.setup(world.city, spot)
+		npc.come_for("cobrar")
+
+
+## Una casilla de calle a las afueras de lo que ves, en una dirección al azar (que no se salga
+## del mapa: cerca del borde se prueban otras).
+func _fuera_de_vista(me: Vector2i) -> Vector2i:
+	var city := world.city
+	for i in 12:
+		var dir := Vector2.RIGHT.rotated(randf() * TAU)
+		var c := me + Vector2i(dir * (RADIO_VISTA + 4))
+		if c.x < 0 or c.y < 0 or c.x >= city.width or c.y >= city.height:
+			continue
+		var spot := city.nearest_walkable(c, 10)
+		if _dist(spot, me) > RADIO_VISTA and _dist(spot, me) <= RADIO_VISTA + 14:
+			return spot
+	return city.random_walkable_near(me, RADIO_VISTA)
 
 
 ## Le quita el cuerpo y guarda en el registro lo que le ha pasado.

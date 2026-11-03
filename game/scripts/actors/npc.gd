@@ -428,7 +428,7 @@ var last_seen := Vector2i.ZERO  ## casilla donde te vio por última vez
 var debt_due := 0.0  ## now() a partir del cual el camello viene a cobrar lo fiado
 ## Si se dibuja su cono de visión en el suelo (lo decide World según la distancia y la tecla V).
 var cone_visible := false
-var amo: Npc  ## (perros y el grupo de un guía) a quién siguen; World los retira cuando se va
+var amo: Npc  ## (perros, el grupo de un guía o de una despedida, niños con un adulto) a quién siguen; World los retira cuando se va
 var bed := Vector2i(-1, -1)  ## (KINDS[...]["bed"]) dónde pasa la noche; -1 si no tiene sitio
 var _still_until := 0.0  ## (estatuas) hasta entonces se mueve: le han echado una moneda
 var on_screen := true  ## lo pone World: fuera de la pantalla se actualiza menos (ver _process)
@@ -443,6 +443,8 @@ var _think := 0.0
 var _chatter := randf_range(8.0, 30.0)
 var _lost := 0.0  ## segundos persiguiéndote sin verte
 var _search := 0.0  ## segundos que le quedan buscándote
+var _hunt := 0.0  ## (mode "viene") segundos que le quedan viniendo a por ti
+var _hunt_why := ""  ## (mode "viene") a qué viene: "cobrar"
 var _calm_until := 0.0  ## (segundos de reloj) hasta entonces no vuelve a reaccionar
 var _look_yaw := 0.0  ## hacia dónde gira la cabeza cuando está parado
 var _look_timer := 0.0
@@ -606,6 +608,9 @@ func label() -> String:
 	if amo != null and is_instance_valid(amo):
 		if kind == "perro":
 			return "%s (%s de %s)" % [display_name, kind_label(kind, gender).to_lower(), amo.display_name]
+		if kind == "nino":
+			var rel := ("nieta" if gender == "f" else "nieto") if amo.kind == "anciano" else ("hija" if gender == "f" else "hijo")
+			return "%s (%s de %s)" % [display_name, rel, amo.display_name]
 		return "%s (%s del grupo de %s)" % [display_name, kind_label(kind, gender).to_lower(), amo.display_name]
 	if not known and k.has("disguise"):
 		return "%s (%s)" % [display_name, kind_label(k["disguise"], gender)]
@@ -832,6 +837,15 @@ func calm_down() -> void:
 	speed = KINDS[kind]["speed"]
 
 
+## Viene a buscarte desde lejos por `why` (lo que hará al verte, ver react: "cobrar"): anda
+## hacia donde estás hasta verte. Se cansa a los Defs.HUNT_SECONDS.
+func come_for(why: String) -> void:
+	mode = "viene"
+	_hunt_why = why
+	_hunt = Defs.HUNT_SECONDS
+	walk_to(player.cell)
+
+
 ## Empieza a perseguirte por `reason` ("policia", "deuda", "venganza", "parar").
 func start_chase(reason: String) -> void:
 	mode = "persigue"
@@ -1019,6 +1033,19 @@ func _follow_mode(dt: float) -> void:
 				calm_down()
 			elif not is_moving() or randf() < 0.2:
 				walk_to(_denounce_to.cell)
+		"viene":
+			# viene desde lejos (Censo, despertadores): en cuanto te ve, reacciona
+			if sees_player:
+				var why := _hunt_why
+				calm_down()
+				react(why)
+				return
+			_hunt -= dt
+			if _hunt <= 0.0:
+				calm_down()
+				walk_to(_wander_target())
+			elif not is_moving() or randf() < 0.05:
+				walk_to(player.cell)
 		"aparta":
 			if not is_moving():
 				calm_down()

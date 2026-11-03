@@ -96,8 +96,10 @@ sí y una memoria poco fiable**, que puede ir creciendo hacia misiones de rol en
       Hecho: las mallas se guardan por aspecto (`Actor._mesh_cache`) y los bots repetidos
       salen casi gratis. Con el triple de gente (unos 4.200 en el censo, hasta 370 con
       cuerpo), 60 FPS; el repaso del censo, 1,5–4 ms.
-    - [ ] «Despertadores»: que un latente con asuntos contigo actúe aunque esté lejos
-      (el camello que viene a cobrar) en vez de quedarse con cuerpo todo el rato
+    - [x] «Despertadores»: el que tiene que cobrarte (deuda vencida) viene a buscarte aunque
+      esté latente o lejos: aparece fuera de la vista y va hacia ti (`Censo.despertadores`,
+      `Npc.come_for`); si no pagas, vuelve cada `Defs.DEBT_VISIT_EVERY` horas. Las deudas ya
+      no tienen al acreedor siempre con cuerpo.
     - [ ] Guardar el censo en la partida guardada (cuando haya partidas guardadas)
 
 ## 2. Estado del personaje
@@ -368,7 +370,9 @@ de ruta:
     [Ara](https://es.ara.cat/economia/inmobiliario/veintena-vecinos-seis-fincas-barcelona-pie-guerra-fondo-quiere-colojamientos_1_5410764.html).
   - Residentes temporales, expats y alquiler de temporada en el Raval: [Papers (UAB)](https://ddd.uab.cat/pub/papers/papers_a2024v109n3/papers_a2024v109n3ae2353.info),
     [Ara](https://es.ara.cat/economia/efecto-expat-vivienda-alquileres-caros-temporales_1_4809421.amp.html).
-  - [ ] Pendiente: que los niños vayan con un adulto; repartidores en bici; que los perros
+  - [x] Niños con un adulto (algunos vecinos y abuelos, `Defs.KIDS_WITH`) y despedidas en
+    grupo (`Defs.PARTY_GROUP`).
+  - [ ] Pendiente: repartidores en bici; que los perros
     ladren al que les cae mal; jugarlo y ajustar cuántos hay de cada.
 
 **Policía dividida: Guàrdia Urbana y Mossos d'Esquadra** (rama `feat/policia-y-fauna`)

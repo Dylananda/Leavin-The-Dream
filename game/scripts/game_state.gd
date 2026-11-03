@@ -705,14 +705,14 @@ func _faint() -> void:
 		log_msg("Te desmayas de hambre. Te despiertas en urgencias con un zumo y un sermón.", C_BAD)
 		advance(4 * 60)
 		hunger = 55.0
-		change_health(-4, "Desnutrición")
+		change_health(-2, _starve_cause())
 		if alive:
 			relocated.emit("cap")
 	else:
 		log_msg("Te desmayas de hambre en un portal. Nadie llama a nadie. Te despiertas horas después, más débil.", C_BAD)
 		advance(3 * 60)
 		hunger = 90.0  # el mismo hambre: hay un par de horas para buscar algo antes de volver a caer
-		change_health(-3, _starve_cause())
+		change_health(-1.5, _starve_cause())
 
 
 ## Brote: dos días de ingreso. Sales desintoxicado, pero sin nada de lo que llevabas.

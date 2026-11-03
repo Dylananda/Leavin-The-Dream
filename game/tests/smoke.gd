@@ -219,10 +219,10 @@ func _test_censo(world) -> void:
 	npc.remember("pedido")
 	var name: String = npc.display_name
 	npc.setup(world.city, lejos)
-	npc.debt = 5
+	npc.mode = "busca"
 	censo.repasar()
 	_check(is_instance_valid(npc) and npc in world.npcs, "censo: se duerme alguien con asuntos contigo")
-	npc.debt = 0
+	npc.mode = ""
 	censo.repasar()
 	_check(r["npc"] == null and npc not in world.npcs, "censo: el que se aleja no se duerme")
 	_check(r["estado"]["memory"].get("pedido", 0) == 2, "censo: al dormirse no guarda lo que le hiciste")
@@ -235,6 +235,26 @@ func _test_censo(world) -> void:
 	r["visto"] -= Defs.LATENT_MEMORY_FADE * 2.0
 	back = censo.despertar(r, me)
 	_check(back.remembers("pedido") == 0, "censo: no olvida con el tiempo")
+	# despertador: el camello al que debes, latente y lejos, viene a buscarte cuando vence
+	var rc: Dictionary = censo.nuevo("camello")
+	var dealer = censo.despertar(rc, lejos)
+	dealer.add_debt(30, 0.0)
+	censo.dormir(rc)
+	censo.despertadores()
+	var hunter = rc["npc"]
+	_check(hunter != null and hunter.mode == "viene" and hunter.distance_to_cell(me) <= censo.RADIO_VISTA + 12,
+		"censo: el camello al que debes no viene a buscarte")
+	censo.despertadores()
+	_check(rc["npc"] == hunter, "censo: el despertador salta dos veces seguidas")
+	if hunter != null:
+		hunter.debt = 0
+		hunter.calm_down()
+	# grupos: la despedida sale con los suyos detrás
+	var party = censo.despertar(censo.nuevo("fiestero"), me)
+	var behind: int = world.npcs.filter(func(x): return x.amo == party).size()
+	_check(behind >= Defs.PARTY_GROUP.x, "censo: la despedida no va en grupo")
+	censo.dormir(censo.de(party))
+	_check(world.npcs.all(func(x): return x.amo != party), "censo: el grupo no se va con la despedida")
 	var n: int = censo.registros.size()
 	print("  censo: OK (%d registros, %d con cuerpo, %d latentes)" % [n, n - censo.latentes(), censo.latentes()])
 
@@ -260,6 +280,7 @@ func _test_finales() -> void:
 	_check(gs.effects()["causes"].any(func(c): return c[0].begins_with("Inanición")), "hambre: la inanición no se nota")
 	while gs.alive and gs.now() - start < 24 * 60 * 10:
 		gs.hunger = maxf(gs.hunger, 90.0)
+		gs.sanity = 100.0  # (sin estallidos ni puñetazos: solo el hambre)
 		gs.advance(60)
 	var hours := int((gs.now() - start) / 60.0)
 	_check(not gs.alive and "hambre" in reason[0] and hours >= 48, "hambre: no mata en días (%d h: %s)" % [hours, reason[0]])

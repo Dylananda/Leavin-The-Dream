@@ -77,6 +77,10 @@ const MOSSOS_SWEEP := 0.12
 const UNDERCOVER_CATCH := 0.35
 ## El grupo de un free tour: turistas que siguen al guía (en Ciutat Vella, máximo 15).
 const GUIDE_GROUP := Vector2i(4, 8)
+const PARTY_GROUP := Vector2i(2, 4)  ## los que van detrás de cada despedida de soltero
+## Vecinos y abuelos que van con niños (de la mano: los niños les siguen), y cuántos.
+const KIDS_WITH := {"vecino": 0.12, "anciano": 0.15}
+const KIDS_GROUP := Vector2i(1, 2)
 ## Cuántas veces más gente de cada tipo hay en el censo que en World.BASE_NPCS, ahora que los
 ## lejanos están latentes (scripts/censo.gd) y no cuestan. Sube sobre todo la gente corriente:
 ## el Raval tiene unos 47.000 vecinos y así hay en el censo uno de cada treinta y tantos. La
@@ -84,8 +88,8 @@ const GUIDE_GROUP := Vector2i(4, 8)
 ## están aquí, x1). El límite lo pone la tarjeta gráfica con los que se ven a la vez: con esto,
 ## unos 1.400 en el censo y 50-150 con cuerpo alrededor, a 60 FPS en una GTX 1060 (tests/paseo.gd).
 const CROWD := {
-	"vecino": 15.0, "anciano": 10.0, "nino": 8.0, "turista": 6.0, "pudiente": 4.0, "mensajero": 4.0,
-	"fiestero": 4.0, "skater": 3.0, "yonki": 2.0, "mendigo": 2.0, "chaval": 2.0, "musico": 2.0,
+	"vecino": 15.0, "anciano": 10.0, "nino": 6.0, "turista": 6.0, "pudiente": 4.0, "mensajero": 4.0,
+	"fiestero": 1.5, "skater": 3.0, "yonki": 2.0, "mendigo": 2.0, "chaval": 2.0, "musico": 2.0,
 	"rosero": 2.0, "chatarrero": 2.0,
 }
 ## Estadísticas de los personajes del editor (scripts/personajes.gd), de 0 a 10; con 5 son
@@ -112,8 +116,8 @@ const VITALITY_MIN_MAX := 15.0
 ## (GameState.starving). Cuantas más, más rápido baja la salud: se muere de hambre en unos
 ## días, no de golpe. Al comer se recupera el doble de deprisa.
 const STARVE_FROM := 90.0
-const STARVE_HEALTH := 0.012  ## salud por minuto con hambre de más de 85...
-const STARVE_WORSEN := 24.0  ## ... que se dobla cada tantas horas de inanición
+const STARVE_HEALTH := 0.006  ## salud por minuto con hambre de más de 85...
+const STARVE_WORSEN := 36.0  ## ... que se dobla cada tantas horas de inanición
 const STARVE_SANITY := 0.01  ## salud mental por minuto y día de inanición
 const VITALITY_STARVE := 0.8  ## vitalidad máxima que quita cada hora de inanición
 const FAINT_RESCUE := 0.5  ## al desmayarte de hambre, probabilidad de que alguien llame a una ambulancia
@@ -149,6 +153,9 @@ const AVENGER_CHANCE := {"m": 0.6, "f": 0.3}
 const BEG_ANNOY := 2
 ## Horas que te da un camello para pagar lo fiado antes de venir a por ti.
 const DEBT_GRACE_HOURS := 12.0
+## Despertadores (scripts/censo.gd): el que tiene que cobrarte viene a buscarte aunque esté lejos.
+const DEBT_VISIT_EVERY := 6.0  ## horas de juego entre una visita y la siguiente si no le pagas
+const HUNT_SECONDS := 90.0  ## segundos reales que te busca antes de dejarlo para otra vez
 
 ## look: colores y rasgos del muñeco (ver Actor.look).
 const PROFILES := [
