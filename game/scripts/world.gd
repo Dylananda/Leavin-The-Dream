@@ -90,6 +90,7 @@ var camera: Camera3D
 var hud: Hud
 var interactions: Interactions
 var errands: Errands  ## Encargos con plazo y libreta
+var misiones: Misiones  ## Misiones de los personajes del editor
 var street_items: StreetItems  ## Objetos tirados por la calle
 var trade: Trade  ## Trapicheo: revender y cambiar cosas con otros yonkis
 var conversation: Conversation  ## Conversación libre con IA (scripts/ai/)
@@ -159,6 +160,7 @@ func _ready() -> void:
 
 	interactions = Interactions.new(self)
 	errands = Errands.new(self)
+	misiones = Misiones.new(self)
 	street_items = StreetItems.new(self)
 	trade = Trade.new(self)
 	street_items.populate()
@@ -166,6 +168,7 @@ func _ready() -> void:
 	add_child(conversation)
 	_place_markers()
 	_personajes = Personajes.cargar_todos()
+	misiones.preparar()
 	Npc.reservados.clear()
 	for d in _personajes:
 		Npc.reservados[d["tipo"] + "|" + d["nombre"]] = true
@@ -788,7 +791,7 @@ func use_item(id: String) -> void:
 		return
 	if Defs.SUBSTANCES.has(id):
 		var seen := watching(_police_kinds())
-		var urbana := seen.filter(func(n: Npc): return n.corps() == "urbana")
+		var urbana := seen.filter(func(n: Npc): return n.corps() == "urbana" and not n.vista_gorda())
 		if id == "litrona" and not urbana.is_empty():
 			# beber en la calle es cosa de la ordenanza: la Urbana multa
 			var agent: Npc = urbana[0]
@@ -868,7 +871,8 @@ func sleep(minutes: float, robbery_risk: float, heal: float, quality: float, pla
 ## si un agente ya te ve, y si no según el sitio (Defs.SLEEP_WAKE), los agentes que patrullan
 ## cerca y si es un rincón escondido.
 func urbana_wakes(place: String) -> bool:
-	var urbanos := npcs.filter(func(n: Npc): return n.corps() == "urbana")
+	# los que te hacen la vista gorda (un favor de misión) no te despiertan
+	var urbanos := npcs.filter(func(n: Npc): return n.corps() == "urbana" and not n.vista_gorda())
 	if urbanos.any(func(n: Npc): return n.can_see(player)):
 		return randf() < Defs.SLEEP_WAKE_SEEN
 	var p: float = Defs.SLEEP_WAKE.get(place, 0.0)

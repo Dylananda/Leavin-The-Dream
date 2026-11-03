@@ -8,6 +8,8 @@ extends RefCounted
 ## La libreta es fiable casi siempre, pero según lo ido que vas (GameState.befuddlement())
 ## a veces apuntas mal un dato al aceptar el encargo, se te borra con las horas o no lo lees.
 ## El equilibrio está en Defs.ERRANDS; el estado, en GameState.errands y GameState.notes.
+## Las misiones de los personajes del editor también son encargos (con la clave "mision"):
+## lo que tienen de propio lo resuelve Misiones.
 
 const G := preload("res://scripts/game_state.gd")
 
@@ -97,7 +99,7 @@ func _pick_place(kind: String) -> Dictionary:
 		named = in_reach
 	var taken := []
 	for e in GameState.errands:
-		if e["state"] == "activo":
+		if e["state"] == "activo" and not e["poi"].is_empty():
 			taken.append(_cell(e["poi"]))
 	var best: Dictionary = {}
 	var best_score := -INF
@@ -156,6 +158,9 @@ func marker_for(npc: Npc) -> String:
 	for e in GameState.errands:
 		if e["state"] == "activo" and is_same(e["giver"], npc):
 			return "★"
+	var mision := world.misiones.marker_for(npc)
+	if mision != "":
+		return mision
 	if npc.has_meta("enemigo") or npc.get_meta("encargo_dia", -1) == GameState.day:
 		return ""
 	if not npc.known and Npc.KINDS[npc.kind].has("disguise"):
@@ -188,7 +193,10 @@ func actions_for_poi(poi: Dictionary) -> Array:
 	var acts := []
 	var gs := GameState
 	for e in gs.errands:
-		if e["state"] != "activo" or _cell(e["poi"]) != _cell(poi):
+		if e["state"] != "activo" or e["poi"].is_empty() or _cell(e["poi"]) != _cell(poi):
+			continue
+		if e.has("mision"):
+			acts.append_array(world.misiones.actions_for_poi(e))
 			continue
 		if (e["id"] == "paquete" and not gs.has_item("paquete")) or (e["id"] == "cartera" and not gs.has_item("cartera_caliente")):
 			continue
@@ -213,6 +221,9 @@ func _deliver_label(e: Dictionary) -> String:
 
 
 func complete(e: Dictionary) -> void:
+	if e.has("mision"):
+		world.misiones.cumplir(e)
+		return
 	var gs := GameState
 	var d: Dictionary = Defs.ERRANDS[e["id"]]
 	e["state"] = "hecho"
@@ -241,11 +252,13 @@ func complete(e: Dictionary) -> void:
 			gs.ease_mono(d["mono"])
 			gs.change_sanity(d["sanity"])
 			gs.add_item("bocadillo")
+			gs.add_item("papeles_albergue")
 			gs.log_msg("%s te estaba esperando. Café, papeles para el albergue y un bocadillo para luego." % e["who"], G.C_GOOD)
 			gs.change_dignity(d["dignity"], "Alguien cuenta contigo")
 
 
-## Abrir el paquete del camello: dos rayas para ti y una deuda más gorda.
+## Abrir el paquete del camello: dos rayas para ti y una deuda más gorda. Si es el de una
+## misión, la misión se da por fallada.
 func open_package() -> void:
 	var gs := GameState
 	if not gs.has_item("paquete"):
@@ -254,6 +267,12 @@ func open_package() -> void:
 	gs.add_item("farlopa", 2)
 	gs.milestone("paquete")
 	var e := active("paquete")
+	if e.is_empty():
+		e = world.misiones.con_objeto("paquete")
+		if not e.is_empty():
+			gs.log_msg("Dentro hay dos rayas. %s se va a enterar." % e["who"], G.C_BAD)
+			world.misiones.fallar(e)
+			return
 	if e.is_empty():
 		gs.log_msg("Dentro hay dos rayas. Ya no lo espera nadie... o eso crees.", G.C_GOOD)
 	else:
@@ -277,6 +296,9 @@ func update() -> void:
 
 
 func _fail(e: Dictionary, opened := false) -> void:
+	if e.has("mision"):
+		world.misiones.fallar(e)
+		return
 	var gs := GameState
 	var d: Dictionary = Defs.ERRANDS[e["id"]]
 	var giver = e["giver"]
@@ -377,6 +399,17 @@ func note_text(note: Dictionary) -> String:
 	if not note["poi"].is_empty() and note["poi"].get("kind") != "cas":
 		where += " (%s)" % world.city.street_name_near(_cell(note["poi"]))
 	var when := "¿?"
+	if e.has("mision"):
+		var donde := "" if note["poi"].is_empty() else where
+		if note["poi"].is_empty() and Misiones.OBJETIVOS[e["mision"]["objetivo"]["tipo"]]["con"] == "lugar":
+			donde = "¿?"
+		if note["until"] == INF:
+			when = "sin prisa"
+		elif note["until"] >= 0.0:
+			when = "antes de las %s" % gs.time_text(note["until"])
+			if e["mision"]["objetivo"]["tipo"] == "cita":
+				when = "de %s a %s" % [gs.time_text(note["from"]), gs.time_text(note["until"])]
+		return "%s: %s, %s." % [e["who"], world.misiones.que_apuntar(e, donde), when]
 	if note["until"] >= 0.0:
 		var d: Dictionary = Defs.ERRANDS[e["id"]]
 		if d.has("window") and d["window"][0] == 0.0:

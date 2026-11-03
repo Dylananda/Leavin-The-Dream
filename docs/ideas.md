@@ -55,7 +55,7 @@ sí y una memoria poco fiable**, que puede ir creciendo hacia misiones de rol en
 10. **Ciudad más grande y metro**
 11. **Diseñador de personajes**: herramienta aparte para crear personajes únicos con su
     historia, aspecto, zona, rutina, estadísticas, ficha de IA y misiones, que el juego carga
-    solo. — hecha la fase 1 (rama `feat/editor-personajes`)
+    solo. — hechas las fases 1 (rama `feat/editor-personajes`) y 2 (misiones)
     - [x] Fase 1: identidad, aspecto con el muñeco, zona (barrio, zona hecha o polígono),
       casa y lugares con horas, estadísticas, ficha de conversación y frases; el juego los
       saca a la calle y se puede hablar con ellos; botón «Probar en el juego»
@@ -63,8 +63,27 @@ sí y una memoria poco fiable**, que puede ir creciendo hacia misiones de rol en
       el valor y la agresividad en cómo reacciona (enfrentarse, ir a por ti), si siempre llama
       a la policía; qué quiere (te lo compra), qué lleva (lo cambia) y qué vende (se lo compras)
     - [x] Perros del editor con su dueño («Va con»): salen y se duermen con él
-    - [ ] Fase 2: misiones en el editor (condiciones, objetivo con los encargos y minijuegos
-      que ya hay, plazo y resultados al cumplir o fallar)
+    - [x] Fase 2: misiones en el editor (`scripts/misiones.gd`, pestaña «Misiones y notas»).
+      Cada personaje guarda las suyas: **condiciones** (horas, desde qué día, dignidad mínima,
+      después de qué otra misión, repetible), **objetivo** con lo que ya hay (llevar algo a un
+      sitio o a otro personaje, conseguirle algo, una cita mañana, convencer a alguien con
+      pruebas o mintiendo, y los minijuegos de robar, vigilar y pelear), **plazo** y
+      **resultados** al cumplirla o fallarla (dinero, objetos, deudas con plazo o ya, saldar lo
+      que le debes, favores, amigo o enemigo, dignidad, mente, salud, búsqueda, fichado).
+      En la partida es un encargo más: se apunta (mal) en la libreta, vence, ancla al que la da
+      en el censo y lleva la «!» y la «★» (también el otro personaje del objetivo).
+      - Favores: curarte una vez al día, contarte por dónde anda la policía y, la policía, hacer
+        la vista gorda (no te persigue, no te multa, no te despierta) unos días.
+      - «Le debes» en las estadísticas: lo que debes a un personaje al empezar; se le paga en su
+        menú y una misión lo puede saldar.
+      - Hechas: **«El paquete para Txell»** (Quique te da un paquete para Txell, a la que debes
+        40 €: si se lo llevas, se lo queda por tu deuda, te cura cuando lo necesites y Quique te
+        lo cobra a ti; si no llega o lo abres, Quique viene a cobrar 60 €) y **«El cajero de
+        Antonio»** (convencer a la agente Mas de que Antonio tiene plaza en el albergue: con los
+        papeles de la cita en el CAS, seguro; mintiendo, según tu dignidad y tu cabeza, y si no
+        cuela te ficha. Si sale bien, hace la vista gorda tres días y Antonio te cuenta lo que ve).
+      - [ ] Pendiente: pasar a misiones las demás notas de los personajes de ejemplo; probarlas
+        jugando y ajustar plazos y premios; capturas de la pestaña en el PC (en la nube no hay pantalla).
     - [ ] Fase 3: relaciones entre personajes y esquema de las cadenas de misiones
 12. **Bots latentes (censo)**: todos los del barrio en un registro de datos y cuerpo solo para
     los que tienes cerca; al volver a verlos se ponen al día. — hecho lo básico (rama `feat/editor-personajes`)
@@ -505,11 +524,64 @@ personajes como tipo base. Zonas nuevas en `World.ZONE_STREETS` y `World.ZONE_LA
   - [ ] Pendiente: jugarlos y ajustar tiempos y dificultad; más acciones (robar la litrona,
     el platito de propinas, el alijo del latero; el puñetazo del turista robado).
 
+## 8. Todo el mundo está yonki a su manera (3 de noviembre de 2026)
+
+La idea de fondo: no hay «yonkis» y «gente normal», todo el mundo está enganchado a algo.
+El barrio entero tiende a engancharse, también el jugador, y salir de ahí es lo más difícil.
+
+- [ ] **Los bots también consumen**: cada uno con sus sustancias, su colocón, su mono y su
+  enganche, y se nota en cómo se comportan (el de farlopa va acelerado y busca bronca, el de
+  caballo se duerme en un portal, el de pastillas está ido...). Encaja con el censo: al
+  despertar a un latente se calcula cómo le ha ido desde la última vez.
+- [ ] **Adicciones sin sustancia**: yonkis de pantalla (a los que es más fácil venderles un
+  móvil, que no lo sueltan y no ven que les robas), del juego (tragaperras de los bares),
+  del trabajo, de las compras...
+- [ ] **Más sustancias**, cada una con sus efectos visuales, de manejo y de enganche:
+  speed, MDMA, LSD, setas, DMT, ketamina; de farmacia: benzodiacepinas y otros ansiolíticos,
+  antidepresivos, opioides de receta (tramadol, fentanilo en parches), y el alcohol y el tabaco
+  de todos los días. Las de farmacia, con receta (médico del CAP) o de estraperlo.
+- [ ] **Contagio y conversiones** entre yonki y «no yonki», en los dos sentidos, con una
+  tendencia general a engancharse (ver «Contagio» en «Personajes que viven»).
+- [ ] **Equilibrio**: consumo, enganche, precios y premios de las misiones. Ahora mismo es
+  demasiado fácil hacer mucho dinero (lo ha notado el usuario jugando): repasar lo que dan
+  pedir, robar, trapichear, los encargos y las misiones, y lo que cuesta vivir.
+
+### Lo que sale de jugar las misiones (3 de noviembre de 2026)
+
+- [x] Los plazos de «El paquete para Txell» y «El cajero de Antonio» parecen bien.
+- [ ] **Barra de vitalidad**: correr no puede salir gratis. Se gasta al correr (y pelear) y
+  se recupera parado; su máximo y lo que tarda en volver dependen del hambre, el sueño, el
+  colocón, el mono y la salud.
+- [ ] **Mapa** del barrio (una tecla): calles, dónde estás, los sitios que conoces y los de
+  la libreta.
+- [ ] **Pausa** (botón y tecla).
+- [ ] **Más gente con la que vale la pena tratar**: ahora hay mucho bot de relleno; que
+  los personajes con historia, misiones o trato se encuentren más a menudo.
+
+### Finales
+
+- [ ] **Redención (perder, el más difícil)**: subir tanto la dignidad y bajar el enganche a 0
+  que la gente te empieza a apreciar, te echas pareja (un vecino o una vecina) y formas una
+  familia. Has salido... y has perdido.
+- [ ] **Revolución (difícil)**: comandas un ejército de yonkis, os organizáis y tomáis el
+  poder de un barrio (ver «Legado»).
+- [ ] **Morir de hambre, pero de verdad**: no al vaciarse la barra, sino días después; con la
+  barra vacía se nota mucho en la fuerza, la salud mental, la vista y el manejo.
+- [ ] **Sobredosis** (común): el enganche puede subir muy deprisa, por consumo o por las
+  putadas que te pasan en la partida (te roban la metadona, te cortan la droga, un susto...).
+- [ ] **A palos** (eventual): si enfadas a demasiada gente.
+- [ ] Propuestas de Claude, por valorar: **la cárcel** (una condena larga si acumulas
+  fichajes), **el psiquiátrico** (la salud mental a cero), **el capo** (te haces con el
+  menudeo del barrio y dejas de consumir: has caído hacia arriba), **te llevan de vuelta a
+  casa** (un familiar te encuentra y te saca del barrio) y **leyenda del barrio** (la caída más
+  honda: tu historia la cuentan los guías de los free tours).
+
 ## Más adelante
 
 - Misiones largas e intrincadas
 - Minijuegos para dar variedad
 - Concretar la idea central y el objetivo final
+- **Mapa del juego**: un esquema de todas las mecánicas y cómo se relacionan (para el usuario).
 
 ## Juegos de referencia
 

@@ -58,7 +58,8 @@
 		"lleva": {
 			"caballo": 1
 		},
-		"vende": {}
+		"vende": {},
+		"le_debes": 40
 	},
 	"ficha": {
 		"quien": "",
@@ -74,5 +75,5 @@
 	],
 	"misiones": [],
 	"relaciones": [],
-	"notas": "Le debes 40 €. Ver «El paquete para Txell» (Quique el Nano). Si le pagas, te cura una herida gratis cuando lo necesites. Tiene una perra, Tula."
+	"notas": "Le debes 40 € (en sus estadísticas). La misión «El paquete para Txell» es de Quique el Nano: si se lo llevas, estáis en paz y te cura las heridas cuando lo necesites. Tiene una perra, Tula."
 }

@@ -125,6 +125,14 @@ Baluard. Se cumplen en el menú del sitio, que es un lugar real del mapa. Los si
 lejos unos de otros y los plazos se pisan, así que no llegas a todo. Si fallas, hay
 consecuencias: deudas, la Urbana detrás o alguien que deja de fiarse de ti.
 
+Los personajes con nombre propio tienen además **misiones** («Misión «...»» en su menú, con
+una «!» encima): Quique el Nano te pide que le lleves un paquete a Txell, a la que debes 40 €
+(si se lo llevas, se lo queda por tu deuda y Quique te lo cobra a ti; si no, viene a por ti);
+Antonio, que convenzas a la agente Mas de que tiene plaza en el albergue (con los papeles de la
+cita en el CAS, o mintiendo, que si no cuela te ficha). Van a la libreta como los encargos, y
+quien está en una misión en marcha lleva una «★». Algunas acaban en un favor: que te curen,
+que te cuenten por dónde anda la policía o que una agente haga la vista gorda unos días.
+
 Cada encargo se apunta en la **libreta** (L), con un botón para marcar el sitio en el mapa.
 Casi siempre es fiable, pero cuanto más ido vas (colocón, mono, sueño, mente baja) más fácil
 es que hayas apuntado mal la hora o el sitio, que se te borre un dato o que no entiendas tu
@@ -175,7 +183,13 @@ diseñador de personajes, una herramienta aparte del juego para crear personajes
 - **Zona y rutina** en el mapa: un barrio o zona hecha, o un polígono dibujado; su casa; y los
   lugares a los que va a ciertas horas (dormir, pedir, tocar...). Avisa si un punto cae en un edificio.
 - **Estadísticas**, **ficha de conversación** para la IA y frases sueltas.
-- **Misiones y notas**: de momento en texto libre, para programarlas a mano.
+- **Misiones**: cuándo te la ofrece (horas, día, dignidad mínima, después de otra misión,
+  repetible), qué hay que hacer con lo que ya tiene el juego (llevar algo a un sitio o a otro
+  personaje, conseguirle algo, una cita, convencer a alguien con pruebas o mintiendo, y los
+  minijuegos de robar, vigilar y pelear), el plazo y lo que pasa al cumplirla o al fallarla
+  (dinero, objetos, deudas, favores, amigos y enemigos, las barras, la búsqueda, que te fichen).
+  En el juego salen en su menú, se apuntan en la libreta como los encargos y quien te la da lleva la «!».
+- **Notas**: lo que el editor aún no sabe expresar, en texto libre, para programarlo a mano.
 
 Cada personaje se guarda en `game/data/personajes/<id>.json` y el juego lo saca a la calle en
 su zona y a sus horas. Los campos marcados con ◌ se guardan pero el juego aún no los usa.
@@ -214,6 +228,9 @@ python tools/make_textures.py
   acuerdan, mercancía cortada, secretas, la esquina del camello) y trueque con otros yonkis
 - `game/scripts/errands.gd` — encargos con plazo (ofrecer, cumplir, fallar) y la libreta que
   se apunta y se lee peor cuanto más ido vas (equilibrio en `Defs.ERRANDS`)
+- `game/scripts/misiones.gd` — misiones de los personajes del editor: formato (`Misiones.nueva()`,
+  objetivos, resultados y favores), ofrecerlas, cumplirlas con quien toca y sus consecuencias.
+  En la partida son encargos con la clave `mision`
 - `game/scripts/world.gd` — escena de juego, entrada, eventos del barrio y cómo los efectos
   cambian la cámara y el movimiento
 - `game/scripts/ui/hud.gd` — barras, panel de sustancias y efectos, registro, menús, libreta, conversación
@@ -251,7 +268,7 @@ python tools/make_textures.py
 - `game/shaders/silhouette.gdshader` — silueta de los personajes a través de los edificios (stencil)
 - `game/tests/smoke.gd` — ejecuta todas las acciones con los 6 perfiles, cada sustancia,
   los extremos de hambre, sueño y salud mental, los encargos con la libreta, el género de los personajes,
-  los iconos de encargo, y la visión, la memoria, el escándalo, los camellos y los turistas
+  los iconos de encargo, las misiones del editor (y su pestaña), y la visión, la memoria, el escándalo, los camellos y los turistas
   que te reconocen; termina con `OK` o el número de fallos:
   `godot --headless --path game --script res://tests/smoke.gd`
 - `game/tests/charla.gd` — conversación real con la IA sin abrir el juego (necesita Ollama):

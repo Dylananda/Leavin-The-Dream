@@ -55,6 +55,7 @@ func _initialize() -> void:
 		if profile == Defs.PROFILES[0]:
 			await _test_conversation(gs, world)
 		await _test_errands(gs, world)
+		_test_misiones(gs, world)
 		if profile == Defs.PROFILES[0]:
 			_test_vision(gs, world)
 		_test_street_items(gs, world)
@@ -98,6 +99,7 @@ func _initialize() -> void:
 		print("  día %d, caída %d, dignidad %d, salud %d, hambre %d, sueño %d, mente %d, vivo=%s, hitos=%s" % [
 			gs.day, gs.caida, gs.dignity, gs.health, gs.hunger, gs.fatigue, gs.sanity, gs.alive, gs.milestones])
 		get_root().get_tree().paused = false
+	await _test_editor()
 	print("FALLOS: %d" % _failures if _failures > 0 else "OK")
 	quit(1 if _failures > 0 else 0)
 
@@ -296,6 +298,7 @@ func _test_errands(gs, world) -> void:
 		npc = npc[0]
 		npc.remove_meta("encargo_dia")
 		npc.remove_meta("enemigo")
+		npc.known = true  # (los disfrazados no se delatan hasta que les hablas)
 		givers[id] = npc
 		var offer = world.interactions.for_npc(npc).filter(func(a): return a["label"].begins_with("Encargo:"))
 		_check(offer.size() == 1, "%s: no ofrece su encargo" % kind)
@@ -384,6 +387,141 @@ func _test_errands(gs, world) -> void:
 	_check(world.hud.is_notebook_open(), "la libreta no se abre")
 	world.hud.toggle_notebook(errands)
 	print("  encargos y libreta: OK (deuda %d €, %d notas)" % [gs.debt, gs.notes.size()])
+
+
+## Misiones de los personajes del editor: todas bien hechas, se ofrecen, se apuntan, se cumplen
+## con quien toca y tienen sus consecuencias. «El paquete para Txell» (Quique) y «El cajero de
+## Antonio» (convencer a la agente Mas), por los dos lados: cumplirlas y fallarlas.
+func _test_misiones(gs, world) -> void:
+	var misiones = world.misiones
+	var ids: Array = world._personajes.map(func(d): return d["id"])
+	for d in world._personajes:
+		for a in misiones.comprobar(d, ids):
+			_check(not a[0], "misiones de %s: %s" % [d["nombre"], a[1]])
+	var quique = misiones.npc_de("quique_el_nano")
+	var txell = misiones.npc_de("txell")
+	var antonio = misiones.npc_de("antonio")
+	var mas = misiones.npc_de("agent_mas")
+	if quique == null or txell == null or antonio == null or mas == null:
+		print("  misiones: sin los personajes de ejemplo, no se prueban")
+		return
+	_steady(gs)
+	gs.errands = []
+	gs.notes = []
+	gs.misiones = {}
+	gs.favores = {}
+	gs.debe_a = {}
+	gs.debt = 0
+	gs.heat = 0.0
+	gs.wanted_until = -1.0
+	gs.money = 100
+	gs.minute_of_day = 11.0 * 60.0
+	gs.inventory.erase("paquete")
+	gs.inventory.erase("papeles_albergue")
+	misiones.preparar()
+	_check(misiones.debes("txell") == 40, "no le debes nada a Txell al empezar")
+	for npc in [quique, txell, antonio, mas]:
+		npc.debt = 0
+		npc.remove_meta("enemigo")
+		npc.known = true
+	# el paquete para Txell: Quique lo ofrece, te lo da y se cumple en el menú de Txell
+	_check(world.errands.marker_for(quique) == "!", "Quique no lleva el «!» de misión")
+	var offer = world.interactions.for_npc(quique).filter(func(a): return a["label"].begins_with("Misión «El paquete para Txell»"))
+	_check(offer.size() == 1, "Quique no ofrece «El paquete para Txell»")
+	if offer.is_empty():
+		return
+	offer[0]["do"].call()
+	_check(gs.has_item("paquete") and misiones.activas().size() == 1, "aceptar la misión no te da el paquete")
+	_check(world.errands.marker_for(quique) == "★" and world.errands.marker_for(txell) == "★", "la misión en marcha no marca a Quique y a Txell")
+	_check(world.censo.anclado(quique), "Quique se duerme con la misión en marcha")
+	_check(world.errands.notebook_entries()[0]["text"].contains("Txell"), "la misión no se apunta en la libreta")
+	print("  misiones: %s" % world.errands.note_text(gs.notes[-1]))
+	var dar = world.interactions.for_npc(txell).filter(func(a): return a["label"].begins_with("Darle: paquete"))
+	_check(dar.size() == 1, "no se le puede dar el paquete a Txell")
+	if not dar.is_empty():
+		dar[0]["do"].call()
+	_check(gs.misiones.get("quique_el_nano/el_paquete_para_txell", {}).get("estado", "") == "hecho", "darle el paquete no cumple la misión")
+	_check(not gs.has_item("paquete") and misiones.debes("txell") == 0, "Txell no se queda el paquete por tu deuda")
+	_check(quique.debt == 40 and gs.debt == 40 and quique.grudge() != "cobrar", "Quique no te cobra el paquete (con plazo) [deuda %d, total %d, %s]" % [quique.debt, gs.debt, quique.grudge()])
+	gs.health = 50.0
+	var curar = world.interactions.for_npc(txell).filter(func(a): return a["label"] == "Que te cure las heridas")
+	_check(curar.size() == 1, "Txell no te cura después de la misión")
+	if not curar.is_empty():
+		curar[0]["do"].call()
+	_check(gs.health > 50.0, "curarte no sube la salud")
+	_check(world.interactions.for_npc(quique).all(func(a): return not a["label"].begins_with("Misión")), "Quique vuelve a ofrecer una misión que no es repetible")
+	# fallarla: se pasa el plazo y Quique viene a cobrar ya
+	gs.misiones.erase("quique_el_nano/el_paquete_para_txell")
+	quique.debt = 0
+	gs.debt = 0
+	world.interactions.for_npc(quique).filter(func(a): return a["label"].begins_with("Misión"))[0]["do"].call()
+	misiones.activas()[0]["until"] = gs.now() - 1.0
+	world.errands.update()
+	_check(misiones.activas().is_empty() and quique.debt == 60 and quique.grudge() == "cobrar", "fallar el paquete no hace que Quique venga a cobrar")
+	# abrir el paquete también la falla
+	gs.misiones.erase("quique_el_nano/el_paquete_para_txell")
+	quique.debt = 0
+	gs.debt = 0
+	gs.inventory.erase("paquete")
+	world.interactions.for_npc(quique).filter(func(a): return a["label"].begins_with("Misión"))[0]["do"].call()
+	world.use_item("paquete")
+	_check(misiones.activas().is_empty() and quique.debt == 60, "abrir el paquete de Quique no falla la misión")
+	quique.debt = 0
+	gs.debt = 0
+	# el cajero de Antonio: convencer a la agente Mas con los papeles del albergue
+	offer = world.interactions.for_npc(antonio).filter(func(a): return a["label"].begins_with("Misión «El cajero de Antonio»"))
+	_check(offer.size() == 1, "Antonio no ofrece «El cajero de Antonio»")
+	if offer.is_empty():
+		return
+	offer[0]["do"].call()
+	var acts = world.interactions.for_npc(mas).filter(func(a): return a["label"].begins_with("Convencerle"))
+	_check(acts.size() == 1, "sin papeles, a la agente Mas solo se le puede mentir")
+	gs.add_item("papeles_albergue")
+	acts = world.interactions.for_npc(mas).filter(func(a): return a["label"].begins_with("Convencerle: enseñarle"))
+	_check(acts.size() == 1, "con los papeles no se le pueden enseñar a la agente Mas")
+	if not acts.is_empty():
+		acts[0]["do"].call()
+	_check(gs.misiones.get("antonio/el_cajero_de_antonio", {}).get("estado", "") == "hecho", "enseñarle los papeles no cumple la misión")
+	gs.heat = 100.0
+	_check(mas.vista_gorda() and mas.grudge() == "", "la agente Mas no hace la vista gorda")
+	_check(world.interactions.for_npc(antonio).any(func(a): return a["label"] == "Preguntarle qué ha visto"), "Antonio no te cuenta lo que ve")
+	gs.heat = 0.0
+	# mentirle y que no cuele: te ficha
+	gs.misiones.erase("antonio/el_cajero_de_antonio")
+	gs.favores.erase("agent_mas")
+	world.interactions.for_npc(antonio).filter(func(a): return a["label"].begins_with("Misión"))[0]["do"].call()
+	misiones.mentira_pillada(mas, misiones.activas()[0])
+	_check(gs.is_wanted() and gs.misiones["antonio/el_cajero_de_antonio"]["estado"] == "fallado", "mentirle a la agente Mas y que no cuele no te ficha")
+	gs.wanted_until = -1.0
+	gs.inventory.erase("papeles_albergue")
+	print("  misiones: OK")
+
+
+## La pestaña de misiones del diseñador de personajes: monta los paneles de las misiones de
+## ejemplo y de cada tipo de objetivo y de resultado sin errores (no guarda nada).
+func _test_editor() -> void:
+	change_scene_to_file("res://editor/editor_personajes.tscn")
+	await process_frame
+	await process_frame
+	var ed = current_scene
+	# (cargados a mano: ver la nota de _initialize sobre las clases que usan el autoload)
+	var P = load("res://scripts/personajes.gd")
+	var M = load("res://scripts/misiones.gd")
+	ed._editar(P.cargar(P.DIR + "quique_el_nano.json"), "quique_el_nano")
+	_check(ed._comprobar().all(func(a): return not a[0]), "editor: Quique tiene errores")
+	var m: Dictionary = M.nueva()
+	m["titulo"] = "Prueba"
+	m["id"] = "prueba"
+	ed._def["misiones"].append(m)
+	for tipo in M.OBJETIVOS:
+		m["objetivo"]["tipo"] = tipo
+		m["objetivo"]["personaje"] = "txell"
+		m["exito"]["efectos"] = M.EFECTOS.keys().map(func(t): return M.efecto(t))
+		ed._rehacer_misiones()
+		await process_frame
+	_check(ed._misiones_box.get_child_count() == 2, "editor: no salen los paneles de las misiones")
+	_check(ed._comprobar().any(func(a): return a[1].contains("le falta qué")), "editor: no avisa de los resultados a medias")
+	print("  editor de misiones: OK")
 
 
 ## Visión en cono tapada por los edificios, memoria de cada personaje, policía que solo
