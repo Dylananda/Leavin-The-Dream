@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "ibou",
+	"nombre": "Ibou",
+	"apodo": "",
+	"edad": 30,
+	"genero": "m",
+	"tipo": "mensajero",
+	"historia": "Repartidor de noche. Encontró el móvil de Liam (despedida) y no sabe a quién devolvérselo.",
+	"fuentes": "https://es.ara.cat/economia/tecnologia/gran-problema-riders-papeles_1_5220622.html",
+	"aspecto": {
+		"skin": "e0b08a",
+		"shirt": "ffc81e",
+		"pants": "312833",
+		"hair": "1b1410",
+		"jacket": "313c22",
+		"hair_style": "rapado",
+		"facial": "",
+		"glasses": true,
+		"skirt": false,
+		"accesorio": "reparto",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "barrio",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		11,
+		24
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 15,
+		"velocidad": 17.0,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"¿Este móvil es tuyo?",
+		"Llego tarde.",
+		"La app me penaliza."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Tiene el móvil de Liam. Dilema: devolvérselo a Liam (recompensa) o venderlo."
+}

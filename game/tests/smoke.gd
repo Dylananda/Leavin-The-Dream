@@ -12,6 +12,9 @@ func _initialize() -> void:
 		await process_frame
 		await process_frame
 		var world = current_scene
+		world.censo.pausado = true  # que no se duerma nadie a media prueba (el censo se prueba aparte)
+		_test_censo(world)
+		_test_personajes(world)
 		# los que no salen a esta hora (despedidas, lateros...) se crean a mano para probarlos
 		for kind in world.BASE_NPCS:
 			if world.npcs.filter(func(n): return n.kind == kind).is_empty():
@@ -56,6 +59,8 @@ func _initialize() -> void:
 			_test_vision(gs, world)
 		_test_street_items(gs, world)
 		_test_trade(gs, world)
+		if profile == Defs.PROFILES[0]:
+			_test_police_and_fauna(gs, world)
 		world._rummage()
 		world._sleep_here()
 		if gs.alive:
@@ -103,11 +108,79 @@ var _failures := 0
 ## Conversación con IA sin depender de Ollama: contra un puerto en el que no escucha nadie
 ## (el juego debe seguir y avisar en el registro) y con una respuesta inventada que usa
 ## todas las acciones de juego.
+## Personajes del editor: su fuerza cuenta en las peleas, venden lo que pone su ficha y los
+## perros salen con su dueño.
+func _test_personajes(world) -> void:
+	var censo = world.censo
+	var me: Vector2i = world.player.cell
+	var quique = null
+	var txell = null
+	for r in censo.registros:
+		match r["personaje"].get("id", ""):
+			"quique_el_nano":
+				quique = censo.despertar(r, me) if r["npc"] == null else r["npc"]
+			"txell":
+				txell = censo.despertar(r, me) if r["npc"] == null else r["npc"]
+	if quique == null or txell == null:
+		print("  personajes: sin los de ejemplo, no se prueban")
+		return
+	var gs = root.get_node("GameState")
+	var plain = world._spawn_npc("yonki")
+	_check(world.interactions._fight_chance(quique) <= world.interactions._fight_chance(plain),
+		"personajes: la fuerza no cuenta en las peleas")
+	gs.money = 100
+	var buy: Array = world.trade.offers_for(quique).filter(func(a): return a["label"].begins_with("Comprarle base"))
+	_check(not buy.is_empty(), "personajes: Quique no vende lo que pone su ficha")
+	if not buy.is_empty():
+		buy[0]["do"].call()
+		_check(gs.has_item("base"), "personajes: comprar no te da la sustancia")
+	_check(world.npcs.any(func(n): return n.amo == txell and n.display_name == "Tula"), "personajes: Tula no sale con Txell")
+	print("  personajes: OK")
+
+
+## Censo: el que se aleja se duerme con lo que le ha pasado, el que tiene asuntos contigo no,
+## al volver se acuerda (y con el tiempo olvida).
+func _test_censo(world) -> void:
+	var censo = world.censo
+	var me: Vector2i = world.player.cell
+	var lejos: Vector2i = me
+	while maxi(absi(lejos.x - me.x), absi(lejos.y - me.y)) <= censo.RADIO_DORMIR:
+		lejos = world.city.random_walkable()
+	var r: Dictionary = censo.nuevo("vecino")
+	var npc = censo.despertar(r, me)
+	npc.known = true
+	npc.money = 7
+	npc.remember("pedido")
+	npc.remember("pedido")
+	var name: String = npc.display_name
+	npc.setup(world.city, lejos)
+	npc.debt = 5
+	censo.repasar()
+	_check(is_instance_valid(npc) and npc in world.npcs, "censo: se duerme alguien con asuntos contigo")
+	npc.debt = 0
+	censo.repasar()
+	_check(r["npc"] == null and npc not in world.npcs, "censo: el que se aleja no se duerme")
+	_check(r["estado"]["memory"].get("pedido", 0) == 2, "censo: al dormirse no guarda lo que le hiciste")
+	r["home"] = me
+	censo.repasar()
+	var back = r["npc"]
+	_check(back != null and back.display_name == name and back.known and back.money == 7 and back.remembers("pedido") == 2,
+		"censo: al despertar no es el mismo o no se acuerda")
+	censo.dormir(r)
+	r["visto"] -= Defs.LATENT_MEMORY_FADE * 2.0
+	back = censo.despertar(r, me)
+	_check(back.remembers("pedido") == 0, "censo: no olvida con el tiempo")
+	var n: int = censo.registros.size()
+	print("  censo: OK (%d registros, %d con cuerpo, %d latentes)" % [n, n - censo.latentes(), censo.latentes()])
+
+
 ## Género según el nombre, etiquetas en femenino y el mismo aspecto para el mismo nombre.
 func _test_looks(world) -> void:
 	var npc_script = load("res://scripts/actors/npc.gd")  # cargado aquí: usa los autoloads
 	_check(Defs.PROFILES.filter(func(p): return p["name"] == "Mari Loli")[0]["look"]["gender"] == "f", "Mari Loli no es mujer")
 	for npc in world.npcs:
+		if not npc.personaje.is_empty():
+			continue  # los del editor de personajes llevan el género que se les puso
 		var k: Dictionary = npc_script.KINDS[npc.kind]
 		if npc.display_name in k.get("women", []):
 			_check(npc.gender == "f" and npc.look["gender"] == "f", "%s no es mujer" % npc.display_name)
@@ -331,7 +404,7 @@ func _test_vision(gs, world) -> void:
 	if line.size() < 2 or wall.size() < 2:
 		return
 	_check(city.line_of_sight(line[0], line[1]) and not city.line_of_sight(wall[0], wall[1]), "la línea de visión no ve la calle o atraviesa edificios")
-	var cop = world.npcs.filter(func(n): return n.kind == "policia")[0]
+	var cop = world.npcs.filter(func(n): return n.kind == "urbano")[0]
 	# delante y en la calle: lo ve; a la espalda o tras la pared, no
 	_place(cop, line[0], line[1])
 	player.setup(city, line[1])
@@ -482,7 +555,7 @@ func _test_vision(gs, world) -> void:
 		_check(brave.mode == "persigue" and brave.chase_reason == "parar", "el valiente no intenta pararte")
 		world._on_caught(brave)
 		_check(world._grabbed > 0.0, "el valiente que te alcanza no te agarra")
-	var police: Array = world.npcs.filter(func(n): return n.kind == "policia")
+	var police: Array = world.npcs.filter(func(n): return n.is_police())
 	for p in police:
 		world.npcs.erase(p)
 	for b in [victim, brave, caller]:
@@ -513,10 +586,110 @@ func _test_vision(gs, world) -> void:
 
 ## Un bot nuevo del tipo `kind`, sin pasado contigo.
 func _fresh(world, kind: String):
-	world._spawn_npc(kind)
-	var npc = world.npcs[-1]
+	var npc = world._spawn_npc(kind)  # (el último de npcs puede ser su perro o su grupo)
 	npc.known = true
 	return npc
+
+
+## Los dos cuerpos de policía con sus competencias, la Urbana que te despierta si duermes a la
+## vista, las secretas y la fauna nueva (estatuas, el grupo del guía, los que tienen cama).
+func _test_police_and_fauna(gs, world) -> void:
+	var city = world.city
+	var player = world.player
+	_steady(gs)
+	gs.heat = 0.0
+	gs.wanted_until = -1.0
+	for npc in world.npcs:
+		npc.calm_down()
+	var line := _find_line(city, 7)
+	if line.size() < 2:
+		return
+	var urbano = _fresh(world, "urbano")
+	var mosso = _fresh(world, "mosso")
+	# fichado por drogas: te persiguen los Mossos, no la Urbana; por civismo, al revés
+	gs.mark_wanted("prueba", "drogas")
+	_check(mosso.grudge() == "persigue" and urbano.grudge() == "", "fichado por drogas, persigue la Urbana o no los Mossos")
+	gs.wanted_until = -1.0
+	gs.mark_wanted("prueba", "civismo")
+	_check(urbano.grudge() == "persigue" and mosso.grudge() == "", "fichado por civismo, persiguen los Mossos o no la Urbana")
+	# si te alcanza la Urbana por la ordenanza, multa; si te alcanzan los Mossos, comisaría
+	var arrests: int = gs.arrests
+	var fines: int = gs.fines
+	world.police_caught(urbano)
+	_check(gs.fines == fines + 1 and gs.arrests == arrests and not gs.is_wanted(), "la Urbana no multa (o detiene) por la ordenanza")
+	world.police_caught(mosso)
+	_check(gs.arrests == arrests + 1, "los Mossos no te detienen")
+	_steady(gs)
+	# dormir a la vista de la Urbana: te despierta y te echa
+	_place(urbano, line[0], line[1])
+	player.setup(city, line[1])
+	var woken := 0
+	for i in 40:
+		if world.urbana_wakes("calle"):
+			woken += 1
+	_check(woken > 25, "un agente de la Urbana que te ve dormir no te despierta")
+	urbano.setup(city, line[0])
+	_place(urbano, line[0] + Vector2i(3, 0), line[1])  # de espaldas
+	var hidden := Vector2i(-1, -1)
+	for i in 4000:
+		var c = city.random_walkable()
+		if world.hidden_spot(c):
+			hidden = c
+			break
+	_check(hidden.x >= 0, "no hay rincones escondidos para dormir")
+	gs.advance(1)
+	var milestones: int = gs.milestones.size()
+	world.sleep(60, 0.0, 0.0, 0.5, "calle")
+	world.sleep(60, 0.0, 0.0, 0.5, "")
+	_check(gs.alive, "dormir con la Urbana cerca mata")
+	# beber a la vista de la Urbana: multa
+	_place(urbano, line[0], line[1])
+	player.setup(city, line[1])
+	fines = gs.fines
+	gs.add_item("litrona")
+	world.use_item("litrona")
+	_check(gs.fines == fines + 1, "beber delante de la Urbana no trae multa")
+	# la secreta: parece un guiri hasta que le intentas robar
+	var sec = _fresh(world, "urbano_secreta")
+	sec.known = false
+	_check(sec.undercover() and sec.label().contains("Turista") and not sec.looks_police(), "la Urbana de paisano no parece un guiri")
+	arrests = gs.arrests
+	_steady(gs)
+	_do(world, sec, "Robarle la cartera")
+	_check(gs.arrests == arrests + 1 and sec.known, "robarle a la secreta no acaba en detención")
+	_steady(gs)
+	# la estatua no se mueve hasta que le echan una moneda
+	var statue = _fresh(world, "estatua")
+	var spot: Vector2i = statue.cell
+	statue._idle = 0.0
+	statue._process(0.5)
+	_check(not statue.is_moving() and statue.cell == spot, "la estatua se mueve sola")
+	gs.money = 10
+	_do(world, statue, "Echarle una moneda en el platillo (1 €)")
+	_check(statue._still_until > statue._clock(), "la estatua no se mueve con la moneda")
+	# el guía sale con su grupo, y el grupo se va con él
+	var guide = _fresh(world, "guia")
+	var group: Array = world.npcs.filter(func(n): return n.amo == guide)
+	_check(group.size() >= Defs.GUIDE_GROUP.x and group.all(func(n): return n.kind == "turista"), "el guía sale sin su grupo")
+	_check(group[0].label().contains(guide.display_name), "el turista del grupo no dice de quién es")
+	world.npcs.erase(guide)
+	world._respawn()
+	_check(world.npcs.filter(func(n): return n.amo == guide).is_empty(), "el grupo se queda sin guía")
+	guide.queue_free()
+	# el sin techo tiene dónde dormir; el punki, perro
+	var homeless = _fresh(world, "mendigo")
+	_check(homeless.bed.x >= 0 and city.is_walkable(homeless.bed), "el sin techo no tiene dónde dormir")
+	var punk = _fresh(world, "punki")
+	_check(world.npcs.any(func(n): return n.kind == "perro" and n.amo == punk), "el punki va sin perro")
+	# los skaters, en el MACBA; las trabajadoras sexuales, en Robadors
+	var macba = city.landmark_cell("MACBA")
+	_check(macba.x >= 0 and _fresh(world, "skater").home.distance_to(macba) <= world.LANDMARK_RADIUS * 1.5, "los skaters no están en el MACBA")
+	# la ronda de la policía y las secretas que se llevan a un carterista
+	world.police_event()
+	_check(world.npcs.filter(func(n): return n.kind == "mosso_secreta").all(func(n): return n.undercover() or n.known), "una secreta de los Mossos va de uniforme")
+	gs.wanted_until = -1.0
+	gs.heat = 0.0
+	print("  policía y fauna: OK (%d multas, %d hitos nuevos)" % [gs.fines, gs.milestones.size() - milestones])
 
 
 ## Pone a `npc` en `at` mirando hacia `toward`.

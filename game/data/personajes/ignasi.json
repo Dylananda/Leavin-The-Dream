@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "ignasi",
+	"nombre": "Ignasi",
+	"apodo": "",
+	"edad": 47,
+	"genero": "m",
+	"tipo": "urbano_secreta",
+	"historia": "El más veterano de la unidad de paisano. Va de jubilado con riñonera. Los trileros ya le conocen y le gritan «¡agua!» en cuanto asoma.",
+	"fuentes": "Fuentes del tipo en docs/ideas.md. Carteristas del metro y la Rambla: https://www.3cat.cat/3catinfo/100-carteristes-actuen-cada-dia-al-metro-i-alguns-els-han-enxampat-fins-a-1000-cops/noticia/2935115/",
+	"aspecto": {
+		"skin": "5a3a26",
+		"shirt": "f260b0",
+		"pants": "665258",
+		"hair": "3a2418",
+		"jacket": "4a6269",
+		"hair_style": "calvo",
+		"facial": "",
+		"glasses": true,
+		"skirt": false,
+		"accesorio": "mochila",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "rambla",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		9,
+		23
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 40,
+		"velocidad": 12.0,
+		"fuerza": 5,
+		"valor": 6,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "Eres un agente veterano de la Urbana de paisano que se hace pasar por jubilado. Te has quemado: todos te conocen.",
+		"habla": "Castellano tranquilo de señor mayor, irónico.",
+		"sabe": "Todo sobre los trileros: ganchos, vigías, cuánto sacan.",
+		"no_sabe": "Drogas y Raval interior.",
+		"quiere": "Que alguien nuevo le sirva de ojos: le pagaría por avisar de dónde ponen la mesa."
+	},
+	"frases": [
+		"¿Dónde está la bolita?",
+		"*mira la mesa del trile*",
+		"Ya no hay respeto."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Misión: te ofrece 20 € por avisar de dónde pone la mesa La Nena (gancho de trile). Si aceptas, El Canario (trilero) deja de contar contigo de vigía."
+}

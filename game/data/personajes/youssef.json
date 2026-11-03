@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "youssef",
+	"nombre": "Youssef",
+	"apodo": "",
+	"edad": 31,
+	"genero": "m",
+	"tipo": "educador",
+	"historia": "Llegó solo a los quince años y durmió en la calle. Hoy es educador y mediador con los chavales: habla su idioma y sabe lo que es.",
+	"fuentes": "Educadores de calle y CAS Baluard. Fuente concreta pendiente.",
+	"aspecto": {
+		"skin": "8d5a3b",
+		"shirt": "e07a30",
+		"pants": "31353d",
+		"hair": "5a3a20",
+		"jacket": "382831",
+		"hair_style": "corto",
+		"facial": "",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "chaleco",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "barrio",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		9,
+		21
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 15,
+		"velocidad": 11.2,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "Eres educador social que vivió en la calle de adolescente. Los chavales confían en ti.",
+		"habla": "Castellano, darija y catalán; directo, con humor.",
+		"sabe": "Dónde duermen los chavales, recursos para menores, cómo tratar con la DGAIA.",
+		"no_sabe": "Nada de drogas duras.",
+		"quiere": "Encontrar a Zakaria antes de que le pase algo."
+	},
+	"frases": [
+		"Yo también estuve ahí.",
+		"¿Has visto a Zakaria?",
+		"Hay sitio en el Estel."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Busca a Zakaria (chaval)."
+}

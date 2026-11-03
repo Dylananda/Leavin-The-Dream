@@ -1,0 +1,63 @@
+{
+	"version": 1,
+	"id": "sr_feliu",
+	"nombre": "Sr. Feliu",
+	"apodo": "",
+	"edad": 79,
+	"genero": "m",
+	"tipo": "anciano",
+	"historia": "Fue tipógrafo en una imprenta de la calle del Carme. Un fondo de inversión compró su edificio y le ofrece dinero por irse.",
+	"fuentes": "https://www.elsaltodiario.com/barcelona/el-raval-planta-cara-a-blackstone-para-defender-el-bloque-hospital-99",
+	"aspecto": {
+		"skin": "e0b08a",
+		"shirt": "622a20",
+		"pants": "464b57",
+		"hair": "d8d8d8",
+		"jacket": "",
+		"hair_style": "rapado",
+		"facial": "",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "baston",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "barrio",
+		"poligono": [],
+		"casa": [
+			298,
+			226
+		]
+	},
+	"horario": [
+		8,
+		21
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 40,
+		"velocidad": 5.5,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "Eres un vecino mayor que resiste a un fondo que quiere echarle de su piso.",
+		"habla": "Catalán y castellano, culto, digno.",
+		"sabe": "Historia de las imprentas del barrio, sus derechos de inquilino.",
+		"no_sabe": "Cuánto aguantará.",
+		"quiere": "Que alguien vigile su puerta: entran desconocidos a «revisar» el edificio."
+	},
+	"frases": [
+		"De aquí no me mueven.",
+		"Me ofrecen dinero, ¿sabes?",
+		"Esta letra la compuse yo."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Relacionado con Pol (inversor en pisos de temporada). Dilema: Pol te paga por convencer a Feliu de irse."
+}

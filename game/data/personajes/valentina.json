@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "valentina",
+	"nombre": "Valentina",
+	"apodo": "",
+	"edad": 25,
+	"genero": "f",
+	"tipo": "captador",
+	"historia": "Reparte flyers de una discoteca del puerto. Estudió turismo y habla cuatro idiomas. Cobra en entradas que revende.",
+	"fuentes": "https://www.3cat.cat/3catinfo/preocupacio-a-ciutat-vella-per-la-presencia-de-captadors-de-clubs-cannabics/noticia/3254458/",
+	"aspecto": {
+		"skin": "e0b08a",
+		"shirt": "85a076",
+		"pants": "4b5c5e",
+		"hair": "7a7a7a",
+		"jacket": "",
+		"hair_style": "coleta",
+		"facial": "",
+		"glasses": false,
+		"skirt": true,
+		"accesorio": "folletos",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "rambla",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		17,
+		3
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 50,
+		"velocidad": 10.0,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"Free entry tonight!",
+		"¿Fiesta?",
+		"VIP, VIP."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Te puede dar entradas para revender a las despedidas (trapicheo)."
+}

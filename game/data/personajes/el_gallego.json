@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "el_gallego",
+	"nombre": "El Gallego",
+	"apodo": "",
+	"edad": 58,
+	"genero": "m",
+	"tipo": "yonki",
+	"historia": "Llegó de Vigo en los ochenta y sobrevivió a la época en que el caballo se llevó a media generación. Ahora toma metadona y vende chatarra a Kofi. Se acuerda de todos los muertos por su nombre.",
+	"fuentes": "Consumo en la calle en el Raval y salas de consumo supervisado (CAS Baluard). Fuente concreta pendiente.",
+	"aspecto": {
+		"skin": "8d5a3b",
+		"shirt": "262033",
+		"pants": "535142",
+		"hair": "b8b8b8",
+		"jacket": "46394e",
+		"hair_style": "rapado",
+		"facial": "barba",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "rambla_raval",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [],
+	"lugares": [],
+	"stats": {
+		"dinero": 3,
+		"velocidad": 8.8,
+		"fuerza": 2,
+		"valor": 4,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [
+			"metadona",
+			"litrona"
+		],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"En el 85 esto era un cementerio.",
+		"La metadona me salvó, chaval.",
+		"¿Has visto a Kofi?"
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Le debe un carro de supermercado a Kofi (chatarrero). Misión: conseguirle un carro. Te enseña dónde estaban los picaderos de antes (secretos del mapa)."
+}

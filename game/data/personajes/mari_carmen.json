@@ -1,0 +1,74 @@
+{
+	"version": 1,
+	"id": "mari_carmen",
+	"nombre": "Mari Carmen",
+	"apodo": "",
+	"edad": 54,
+	"genero": "f",
+	"tipo": "mendigo",
+	"historia": "Dejó a un marido que la pegaba y no tenía adónde ir. Prefiere la calle a volver. Pide en la Boqueria y guarda sus cosas en una bolsa de Ikea que no suelta nunca.",
+	"fuentes": "https://es.ara.cat/sociedad/emergencia-social/cuatro-horas-peinando-calles-barcelona-personas-duermen-raso_130_5582284.html",
+	"aspecto": {
+		"skin": "e0b08a",
+		"shirt": "612144",
+		"pants": "544347",
+		"hair": "8a5a30",
+		"jacket": "",
+		"hair_style": "melena",
+		"facial": "",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "carton",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "barrio",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [],
+	"lugares": [
+		{
+			"tipo": "pedir",
+			"x": 398,
+			"y": 176,
+			"desde": 9,
+			"hasta": 14,
+			"nota": "entrada de la Boqueria"
+		},
+		{
+			"tipo": "dormir",
+			"x": 415,
+			"y": 198,
+			"desde": 22,
+			"hasta": 8,
+			"nota": "portal cerca del mercado"
+		}
+	],
+	"stats": {
+		"dinero": 6,
+		"velocidad": 6.5,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"No toques mi bolsa.",
+		"Gracias, cariño.",
+		"Las de la Boqueria me guardan fruta."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Misión: le roban la bolsa (papeles y fotos de sus hijos). Recuperarla de El Mudo o de la compraventa. Agent Ortega la anima a denunciar al marido."
+}

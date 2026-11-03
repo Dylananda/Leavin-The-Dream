@@ -8,7 +8,10 @@ extends Node3D
 const BASE_NPCS := {
 	"turista": [55, ""],
 	"vecino": [35, ""],
-	"policia": [6, "total"],
+	"urbano": [4, "total"],
+	"mosso": [3, "total"],
+	"urbano_secreta": [2, ""],
+	"mosso_secreta": [2, "vulnerables"],
 	"yonki": [10, "vulnerables"],
 	"camello": [4, "vulnerables"],
 	"mantero": [3, "venta_ambulante"],
@@ -22,12 +25,37 @@ const BASE_NPCS := {
 	"anciano": [14, ""],
 	"mensajero": [10, ""],
 	"pudiente": [12, ""],
+	"musico": [5, ""],
+	"estatua": [4, ""],
+	"mendigo": [8, "vulnerables"],
+	"skater": [6, ""],
+	"captador": [4, ""],
+	"rosero": [4, "locales"],
+	"chatarrero": [4, ""],
+	"trabajadora_sexual": [5, ""],
+	"guia": [2, ""],
+	"caricaturista": [3, ""],
+	"punki": [3, ""],
 }
 ## Calles de cada zona de Npc.KINDS (nombres de OpenStreetMap).
 const ZONE_STREETS := {
 	"rambla": ["La Rambla"],
 	"rambla_raval": ["Rambla del Raval", "Carrer de Sant Pau", "Carrer d'en Robador"],
+	"robadors": ["Carrer d'en Robador", "Carrer de Sant Ramon", "Carrer de Sant Pau"],
+	# los puntos donde se toca: la Rambla y las plazas del Pi (más los edificios de abajo)
+	"musica": ["La Rambla", "Plaça del Pi", "Plaça de Sant Josep Oriol", "Pla de la Boqueria"],
+	"pintores": ["Plaça de Sant Josep Oriol", "Plaça del Pi", "La Rambla"],
 }
+## Zonas junto a un edificio con rótulo (CityMap.landmark_cell), a menos de LANDMARK_RADIUS
+## casillas: la plaça dels Àngels del MACBA, la puerta del Liceu, el CCCB.
+const ZONE_LANDMARKS := {
+	"macba": ["MACBA"],
+	"musica": ["MACBA", "Liceu", "CCCB"],
+}
+const LANDMARK_RADIUS := 10
+## Las estatuas humanas, en el tramo de abajo de la Rambla (desde 2019): esta parte de sus
+## casillas, las más cercanas a Colom.
+const STATUE_STRETCH := 0.3
 const DESPAWN_DISTANCE := 30  ## casillas: fuera de su horario se van cuando no los ves
 const PLAYER_SPEED := 18.0  ## metros por segundo
 const RUN_FACTOR := 1.7  ## multiplicador de velocidad con Shift
@@ -77,6 +105,8 @@ var _street_timer := 0.0
 var _pending: Variant = null  ## Npc o PoiMarker al que vamos a interactuar
 var _pending_tries := 0
 var _npc_targets := {}
+var _personajes: Array[Dictionary] = []  ## personajes del editor (ver Personajes)
+var censo: Censo  ## todos los bots del barrio, con cuerpo o latentes (ver Censo)
 var _event_timer := 20.0
 var _respawn_timer := 30.0
 var _last_rummage := -999.0
@@ -135,11 +165,28 @@ func _ready() -> void:
 	conversation = Conversation.new(self)
 	add_child(conversation)
 	_place_markers()
+	_personajes = Personajes.cargar_todos()
+	Npc.reservados.clear()
+	for d in _personajes:
+		Npc.reservados[d["tipo"] + "|" + d["nombre"]] = true
+	# el censo: todos los del barrio en el registro; cuerpo solo los que andan cerca
+	censo = Censo.new(self)
 	for kind in BASE_NPCS:
 		_npc_targets[kind] = _target_count(kind)
 		if Npc.active_at(kind, GameState.hour()):
 			for i in _npc_targets[kind]:
-				_spawn_npc(kind)
+				censo.nuevo(kind)
+	var probar := _probar_id()
+	for d in _personajes:
+		if Npc.KINDS.has(d["tipo"]) and d.get("amo", "") == "":
+			var r := censo.de_personaje(d)
+			if d["id"] == probar:
+				censo.despertar(r, player.cell).say("¡Aquí estoy!", 4.0)
+	# los perros del editor van con su dueño (sin dueño en el censo, solos)
+	for d in _personajes:
+		if Npc.KINDS.has(d["tipo"]) and d.get("amo", "") != "" and not censo.con_amo(d):
+			censo.de_personaje(d)
+	censo.repasar(0, 0, true)
 
 	hud = Hud.new()
 	add_child(hud)
@@ -193,12 +240,14 @@ func _thousands(n: int) -> String:
 	return s + out
 
 
+## Cuántos de este tipo hay en el censo: la base, por el índice de criminalidad que toca y
+## por lo que se multiplica la gente (Defs.CROWD).
 func _target_count(kind: String) -> int:
-	var base: int = BASE_NPCS[kind][0]
+	var base: float = BASE_NPCS[kind][0] * Defs.CROWD.get(kind, 1.0)
 	var category: String = BASE_NPCS[kind][1]
-	if category == "":
-		return base
-	return roundi(base * city.crime_factor(category))
+	if category != "":
+		base *= city.crime_factor(category)
+	return roundi(base)
 
 
 func _place_markers() -> void:
@@ -214,40 +263,106 @@ func _place_markers() -> void:
 		markers.append(m)
 
 
-func _spawn_npc(kind: String) -> void:
-	var npc := Npc.new()
-	npc.init_kind(kind)
-	npc.player = player
-	npc.world = self
-	var home: Vector2i
-	var zone: String = Npc.KINDS[kind].get("zone", "")
-	if zone != "":
-		home = _zone_cell(zone)
+## Un bot nuevo del tipo `kind`, en el censo y ya con cuerpo, junto a su casa.
+func _spawn_npc(kind: String) -> Npc:
+	var r := censo.nuevo(kind)
+	return censo.despertar(r, city.random_walkable_near(r["home"], 8))
+
+
+## Uno que va detrás de `amo` (su perro, un turista del grupo del guía); se va cuando se va él.
+func _spawn_follower(kind: String, amo: Npc, personaje := {}) -> void:
+	var f := Npc.new()
+	if personaje.is_empty():
+		f.init_kind(kind)
 	else:
-		home = _default_home(kind)
-	npc.home = home
-	city.entities.add_child(npc)
-	npc.setup(city, city.random_walkable_near(home, 8))
-	npc.caught_player.connect(_on_caught)
-	npcs.append(npc)
-	# algunos sacan al perro (Npc.DOG_OWNERS)
-	if randf() < Npc.DOG_OWNERS.get(kind, 0.0):
-		var dog := Npc.new()
-		dog.init_kind("perro")
-		dog.player = player
-		dog.world = self
-		dog.amo = npc
-		dog.home = npc.cell
-		city.entities.add_child(dog)
-		dog.setup(city, city.random_walkable_near(npc.cell, 2))
-		dog.caught_player.connect(_on_caught)
-		npcs.append(dog)
+		f.init_personaje(personaje)  # un perro del editor que va con su dueño (Personajes «amo»)
+	f.player = player
+	f.world = self
+	f.amo = amo
+	f.home = amo.cell
+	city.entities.add_child(f)
+	f.setup(city, city.random_walkable_near(amo.cell, 2))
+	f.caught_player.connect(_on_caught)
+	npcs.append(f)
+
+
+## Dónde pasa la noche `npc` (KINDS[...]["bed"]): el lugar de ese tipo más cercano a su casa o,
+## si no hay ninguno cerca, un portal escondido de los alrededores.
+func _bed_for(npc: Npc) -> Vector2i:
+	var best := Vector2i(-1, -1)
+	for p in city.pois_of_kind(Npc.KINDS[npc.kind]["bed"]):
+		var c := city.nearest_walkable(Vector2i(p["x"], p["y"]))
+		if npc.distance_to_cell(c) < 60 and (best.x < 0 or npc.distance_to_cell(c) < npc.distance_to_cell(best)):
+			best = c
+	if best.x >= 0 and randf() < 0.6:
+		return best
+	for i in 30:
+		var c := city.random_walkable_near(npc.home, 25)
+		if hidden_spot(c):
+			return c
+	return best if best.x >= 0 else city.random_walkable_near(npc.home, 10)
+
+
+## Si `cell` es un rincón escondido: poca calle alrededor (un callejón, un portal al fondo de
+## un pasaje). Ahí la Urbana no te ve dormir tan fácilmente.
+func hidden_spot(cell: Vector2i) -> bool:
+	var open := 0
+	for dy in range(-3, 4):
+		for dx in range(-3, 4):
+			if city.is_walkable(cell + Vector2i(dx, dy)):
+				open += 1
+	return open < Defs.HIDDEN_OPEN_CELLS
+
+
+## Dónde vive un personaje del editor: el lugar de su rutina a esta hora, su casa, o una
+## casilla de su zona.
+func _personaje_home(d: Dictionary, zona: Array) -> Vector2i:
+	var l := Personajes.lugar_a(d, GameState.hour())
+	if not l.is_empty():
+		return city.nearest_walkable(Vector2i(l["x"], l["y"]))
+	var casa: Array = d["zona"]["casa"]
+	if casa.size() == 2:
+		return city.nearest_walkable(Vector2i(casa[0], casa[1]))
+	if not zona.is_empty():
+		return zona.pick_random()
+	if d["zona"]["tipo"] in ["barrio", "poligono"]:
+		return city.random_walkable()
+	return _zone_cell(d["zona"]["tipo"])
+
+
+## Casillas transitables dentro de un polígono ([[x, y], ...] en casillas).
+func _cells_in_polygon(poly: Array) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	if poly.size() < 3:
+		return out
+	var r := Rect2i(Vector2i(poly[0][0], poly[0][1]), Vector2i.ZERO)
+	for v in poly:
+		r = r.expand(Vector2i(v[0], v[1]))
+	for y in range(r.position.y, r.end.y + 1):
+		for x in range(r.position.x, r.end.x + 1):
+			if city.is_walkable(Vector2i(x, y)) and Personajes.dentro(Vector2(x, y), poly):
+				out.append(Vector2i(x, y))
+	return out
+
+
+## El id del personaje que pide probar el editor (`-- --probar=<id>`), o "".
+func _probar_id() -> String:
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--probar="):
+			return a.trim_prefix("--probar=")
+	return ""
 
 
 ## Casilla al azar de una zona: sus calles, o cerca de los bares para la noche.
 func _zone_cell(zone: String) -> Vector2i:
 	if zone == "plazas":
 		return _random_cell_of(CityMap.Cell.PLAZA)
+	if zone == "estatuas":
+		var rambla := city.street_cells("La Rambla")
+		var colom := city.landmark_cell("Colom")
+		if not rambla.is_empty() and colom.x >= 0:
+			rambla.sort_custom(func(a: Vector2i, b: Vector2i): return a.distance_squared_to(colom) < b.distance_squared_to(colom))
+			return rambla[randi() % maxi(1, int(rambla.size() * STATUE_STRETCH))]
 	if zone == "bares":
 		var bars := city.pois_of_kind("bar")
 		if not bars.is_empty():
@@ -256,6 +371,15 @@ func _zone_cell(zone: String) -> Vector2i:
 	var cells: Array[Vector2i] = []
 	for street in ZONE_STREETS.get(zone, []):
 		cells.append_array(city.street_cells(street))
+	var spots: Array[Vector2i] = []
+	for text in ZONE_LANDMARKS.get(zone, []):
+		var c := city.landmark_cell(text)
+		if c.x >= 0:
+			spots.append(c)
+	# un edificio cuenta tanto como una calle entera
+	var streets: int = ZONE_STREETS.get(zone, []).size()
+	if not spots.is_empty() and (cells.is_empty() or randf() < float(spots.size()) / (spots.size() + streets)):
+		return city.random_walkable_near(spots.pick_random(), LANDMARK_RADIUS)
 	return cells.pick_random() if not cells.is_empty() else city.random_walkable()
 
 
@@ -279,6 +403,14 @@ func _default_home(kind: String) -> Vector2i:
 			var spots := city.pois_of_kind("bar") + city.pois_of_kind("kebab")
 			var p: Dictionary = spots.pick_random()
 			home = Vector2i(p["x"], p["y"])
+		"mendigo":
+			# pide en la puerta de una iglesia o de un súper
+			var spots := city.pois_of_kind("iglesia") + city.pois_of_kind("super")
+			if spots.is_empty():
+				home = city.random_walkable()
+			else:
+				var p: Dictionary = spots.pick_random()
+				home = city.nearest_walkable(Vector2i(p["x"], p["y"]))
 		_:
 			home = city.random_walkable()
 	return home
@@ -321,6 +453,7 @@ func _process(delta: float) -> void:
 	if _event_timer <= 0.0:
 		_event_timer = randf_range(15.0, 35.0) / city.crime_factor("peleas")
 		_random_event()
+	censo.tick(delta)
 	_respawn_timer -= delta
 	if _respawn_timer <= 0.0:
 		_respawn_timer = 30.0
@@ -451,12 +584,12 @@ func _update_markers() -> void:
 			color = C_SUSPECT
 		npc.set_marker(mark, color)
 		var near := npc.distance_to_cell(player.cell) <= CONE_SHOW_DISTANCE
-		npc.cone_visible = near and (_all_cones or npc.kind == "policia" or npc.mode != "" or npc.alert > 0.05)
+		npc.cone_visible = near and (_all_cones or npc.looks_police() or npc.mode != "" or npc.alert > 0.05)
 		if color == C_HUNTER:
 			npc.set_silhouette(Color(C_HUNTER, 0.75))
 		elif mark != "":
 			npc.set_silhouette(Color(color, 0.75))
-		elif npc.kind == "policia":
+		elif npc.looks_police():
 			npc.set_silhouette(C_POLICE_SILHOUETTE)
 		else:
 			npc.set_silhouette(Actor.SILHOUETTE)
@@ -622,7 +755,8 @@ func _open_pending() -> void:
 	if target is Npc:
 		var npc := target as Npc
 		npc.stop()
-		npc.known = true
+		if not npc.is_police():
+			npc.known = true  # las secretas no se descubren porque les hables
 		title = npc.label()
 		actions = interactions.for_npc(npc)
 	else:
@@ -653,7 +787,15 @@ func use_item(id: String) -> void:
 		GameState.change_dignity(-1)
 		return
 	if Defs.SUBSTANCES.has(id):
-		if police_watching() > 0:
+		var seen := watching(_police_kinds())
+		var urbana := seen.filter(func(n: Npc): return n.corps() == "urbana")
+		if id == "litrona" and not urbana.is_empty():
+			# beber en la calle es cosa de la ordenanza: la Urbana multa
+			var agent: Npc = urbana[0]
+			agent.reveal()
+			agent.say("Aquí no se puede beber. Documentación.", 3.0)
+			GameState.fine(Defs.FINE_DRINKING, "beber en la calle")
+		elif not seen.is_empty():
 			GameState.heat = minf(100.0, GameState.heat + 35.0)
 			GameState.log_msg("Un agente te ha visto consumiendo en plena calle.", GameState.C_BAD)
 		elif not watching(WITNESS_KINDS).is_empty():
@@ -692,16 +834,57 @@ func _rummage() -> void:
 
 
 func _sleep_here() -> void:
-	sleep(6 * 60, 0.35, 10.0, 0.5)
+	var hidden := hidden_spot(player.cell)
+	if hidden:
+		GameState.log_msg("Te metes en un rincón donde no se te ve desde la calle.")
+	sleep(6 * 60, 0.25 if hidden else 0.35, 10.0, 0.5, "calle")
 	GameState.change_dignity(-5, "Dormir en el suelo de %s" % city.street_name_near(player.cell))
 	GameState.milestone("primera_calle")
 
 
 ## Duerme `minutes` minutos. `robbery_risk` es la probabilidad de que te roben si llevas dinero;
-## `quality` (0..1), lo que se descansa en ese sitio (ver GameState.rest).
-func sleep(minutes: float, robbery_risk: float, heal: float, quality: float) -> void:
+## `quality` (0..1), lo que se descansa en ese sitio (ver GameState.rest). `place` = "calle",
+## "banco", "cajero" (a la vista: la Urbana te puede despertar y echar, ver urbana_wakes) o ""
+## (bajo techo).
+func sleep(minutes: float, robbery_risk: float, heal: float, quality: float, place := "") -> void:
 	player.stop()
+	if place != "" and urbana_wakes(place):
+		var slept := minutes * randf_range(0.2, 0.6)
+		GameState.rest(slept, quality, robbery_risk * 0.5, heal * 0.5)
+		var agent := _nearest_of(["urbano"], player.cell)
+		var who := agent.display_name if agent else "Un agente de la Guàrdia Urbana"
+		if agent:
+			agent.say("Aquí no se puede dormir. Recoja y circule.", 4.0)
+		GameState.log_msg("%s te despierta con la linterna a las %02d:00: «Aquí no se puede dormir. Recoja y circule.» Te vas con las mantas a cuestas." % [who, GameState.hour()], GameState.C_BAD)
+		GameState.change_dignity(-3, "Que te echen de donde dormías")
+		GameState.milestone("desalojo")
+		player.setup(city, city.random_walkable_near(player.cell, 15))
+		_camera_focus = player.position
+		return
 	GameState.rest(minutes, quality, robbery_risk, heal)
+
+
+## Si, durmiendo a la vista en `place`, la Guàrdia Urbana te despierta y te echa: casi seguro
+## si un agente ya te ve, y si no según el sitio (Defs.SLEEP_WAKE), los agentes que patrullan
+## cerca y si es un rincón escondido.
+func urbana_wakes(place: String) -> bool:
+	var urbanos := npcs.filter(func(n: Npc): return n.corps() == "urbana")
+	if urbanos.any(func(n: Npc): return n.can_see(player)):
+		return randf() < Defs.SLEEP_WAKE_SEEN
+	var p: float = Defs.SLEEP_WAKE.get(place, 0.0)
+	p += Defs.SLEEP_WAKE_PER_AGENT * urbanos.filter(func(n: Npc): return n.distance_to_cell(player.cell) <= Defs.SLEEP_PATROL_CELLS).size()
+	if place == "calle" and hidden_spot(player.cell):
+		p *= Defs.SLEEP_HIDDEN_FACTOR
+	return randf() < p
+
+
+## El bot de los tipos `kinds` más cercano a `cell`; null si no hay ninguno.
+func _nearest_of(kinds: Array, cell: Vector2i) -> Npc:
+	var best: Npc = null
+	for n in npcs:
+		if n.kind in kinds and (best == null or n.distance_to_cell(cell) < best.distance_to_cell(cell)):
+			best = n
+	return best
 
 
 func arrest_player() -> void:
@@ -747,9 +930,15 @@ func watching(kinds: Array = [], except: Npc = null) -> Array[Npc]:
 	return out
 
 
-## Agentes que te están viendo ahora (su cono te alcanza y no hay edificios en medio).
-func police_watching() -> int:
-	return watching(["policia"]).size()
+## Agentes que te están viendo ahora (su cono te alcanza y no hay edificios en medio), de uniforme
+## o de paisano; con `corps`, solo los de ese cuerpo ("urbana" o "mossos").
+func police_watching(corps := "") -> int:
+	return watching(_police_kinds(corps)).size()
+
+
+## Tipos de bot de la policía, de los dos cuerpos o solo de `corps`.
+static func _police_kinds(corps := "") -> Array:
+	return Npc.POLICE.keys().filter(func(k): return corps == "" or Npc.POLICE[k] == corps)
 
 
 ## Testigos de un robo a `victim`: los que te ven y no viven de la calle (esos miran a otro lado).
@@ -764,8 +953,9 @@ func robbery_witnesses(victim: Npc) -> Array[Npc]:
 ## Escándalo: `shouter` (la víctima o un testigo; null si es un guardia de seguridad o alguien
 ## a quien no ves) grita `text`. Quien lo oye reacciona según su carácter (Npc.temper()):
 ## unos intentan pararte, otros llaman a la policía, otros pasan. Si lo oye un agente, viene;
-## si no, quedas fichado. En cualquier caso, la policía que te vea irá a por ti.
-func scandal(shouter: Npc, text: String) -> void:
+## si no, quedas fichado. En cualquier caso, la policía que te vea irá a por ti. `crime` (clave de
+## Defs.CRIME_CORPS) decide a qué cuerpo llega la llamada y quién te persigue si te fichan.
+func scandal(shouter: Npc, text: String, crime := "hurto") -> void:
 	var gs := GameState
 	var at := player.cell
 	if shouter:
@@ -780,8 +970,8 @@ func scandal(shouter: Npc, text: String) -> void:
 	for npc in npcs:
 		if npc == shouter or npc.distance_to_cell(at) > Defs.SCANDAL_HEAR:
 			continue
-		if npc.kind == "policia":
-			npc.investigate(player.cell)
+		if npc.is_police():
+			npc.investigate(player.cell)  # en flagrante interviene cualquiera
 			police = true
 			continue
 		if npc.mode != "":
@@ -801,7 +991,7 @@ func scandal(shouter: Npc, text: String) -> void:
 		# la llamada llega al agente más cercano, si está en el barrio
 		var best: Npc = null
 		for npc in npcs:
-			if npc.kind == "policia" and npc.distance_to_cell(at) <= Defs.SCANDAL_CALL and (best == null or npc.distance_to_cell(at) < best.distance_to_cell(at)):
+			if npc.corps() in Defs.CRIME_CORPS[crime] and npc.distance_to_cell(at) <= Defs.SCANDAL_CALL and (best == null or npc.distance_to_cell(at) < best.distance_to_cell(at)):
 				best = npc
 		if best:
 			best.investigate(player.cell)
@@ -811,10 +1001,11 @@ func scandal(shouter: Npc, text: String) -> void:
 	if stoppers > 0:
 		msg += " %s intenta pararte." % ("Alguien" if stoppers == 1 else "Un par de valientes")
 	if police:
-		msg += " Viene la policía."
+		var corps: Array = Defs.CRIME_CORPS[crime]
+		msg += " Viene la Urbana." if corps == ["urbana"] else (" Vienen los Mossos." if corps == ["mossos"] else " Viene la policía.")
 	gs.log_msg(msg, GameState.C_BAD)
 	if not police:
-		gs.mark_wanted("te han visto robar en %s y han dado tu descripción" % where)
+		gs.mark_wanted("te han visto en %s y han dado tu descripción" % where, crime)
 
 
 ## Onda roja en el suelo que muestra hasta dónde llega un grito.
@@ -849,7 +1040,7 @@ func _on_caught(npc: Npc) -> void:
 	var gs := GameState
 	match npc.chase_reason:
 		"policia":
-			arrest_player()
+			police_caught(npc)
 		"deuda":
 			var paid := mini(gs.money, npc.debt)
 			if paid > 0:
@@ -919,7 +1110,8 @@ func _on_caught(npc: Npc) -> void:
 ## Te van a dar una paliza (`npc` te ha alcanzado y no llevas nada): se pelea (minijuego
 ## Fight), cuesta arriba. Si ganas, te lo quitas de encima con algún golpe; si no, `lose`.
 func _beating(npc: Npc, lose: Callable) -> void:
-	play_minigame(Fight.new(npc), Defs.BEATING_FIGHT_CHANCE, func(result: String, _stats: Dictionary):
+	var chance := Defs.BEATING_FIGHT_CHANCE - (npc.stat("fuerza") - 5) * Defs.STAT_FIGHT
+	play_minigame(Fight.new(npc), chance, func(result: String, _stats: Dictionary):
 		if result != "ok":
 			lose.call()
 			return
@@ -929,10 +1121,31 @@ func _beating(npc: Npc, lose: Callable) -> void:
 		gs.log_msg("Te quitas de encima a %s a golpes y sales corriendo." % npc.display_name, GameState.C_GOOD))
 
 
-func police_near(cell: Vector2i, radius: int) -> int:
+## Te ha alcanzado un agente. Los Mossos te detienen y te llevan a comisaría. La Urbana, si te
+## buscaban por un delito, te retiene hasta que llegan los Mossos; si solo era por la ordenanza
+## o porque llamabas la atención, te identifica, te requisa la bebida y te multa.
+func police_caught(agent: Npc) -> void:
+	var gs := GameState
+	agent.reveal()
+	if agent.corps() == "mossos" or (gs.is_wanted() and gs.wanted_crime != "civismo"):
+		if agent.corps() == "urbana":
+			gs.log_msg("%s te pone contra la pared y llama a los Mossos. Te llevan a comisaría." % agent.display_name, GameState.C_BAD)
+		arrest_player()
+		return
+	agent.say("Documentación. Y esto se queda aquí.", 3.0)
+	if gs.has_item("litrona"):
+		gs.remove_item("litrona", gs.inventory["litrona"])
+	gs.heat = minf(gs.heat, Defs.CHASE_HEAT - 10.0)
+	gs.wanted_until = -1.0
+	gs.fine(Defs.FINE_DRINKING, "incumplir la ordenanza de civismo")
+
+
+## Agentes a menos de `radius` casillas de `cell` (de uniforme o de paisano); con `corps`, solo
+## los de ese cuerpo.
+func police_near(cell: Vector2i, radius: int, corps := "") -> int:
 	var n := 0
 	for npc in npcs:
-		if npc.kind == "policia" and npc.distance_to_cell(cell) <= radius:
+		if npc.is_police() and (corps == "" or npc.corps() == corps) and npc.distance_to_cell(cell) <= radius:
 			n += 1
 	return n
 
@@ -949,9 +1162,12 @@ func remove_random_npc(kind: String) -> void:
 ## Quita un bot de la calle al cabo de unos segundos (se va con alguien, se mete en un portal...).
 func remove_npc_later(npc: Npc, seconds: float) -> void:
 	npcs.erase(npc)
+	# referencia débil: el temporizador es del árbol y puede saltar con la partida ya cerrada
+	var ref: WeakRef = weakref(npc)
 	get_tree().create_timer(seconds, false).timeout.connect(func():
-		if is_instance_valid(npc):
-			npc.queue_free())
+		var n = ref.get_ref()
+		if n != null:
+			n.queue_free())
 
 
 ## Conversación libre (IA) con un bot que tiene ficha.
@@ -990,32 +1206,46 @@ func highlight_poi(poi: Dictionary) -> void:
 	for m in markers:
 		if m.poi == poi:
 			m.highlighted = true
-			get_tree().create_timer(12.0, false).timeout.connect(func(): m.highlighted = false)
+			var ref: WeakRef = weakref(m)  # (ver remove_npc_later)
+			get_tree().create_timer(12.0, false).timeout.connect(func():
+				if ref.get_ref() != null:
+					ref.get_ref().highlighted = false)
 
 
-## Repone los bots que faltan y retira, lejos de tu vista, los que ya no están en su horario.
+## Retira, lejos de tu vista, a los que ya no están en su horario y repone en el censo los
+## que faltan (latentes: se materializan cuando te acercas, ver Censo).
 func _respawn() -> void:
 	var h := GameState.hour()
 	for npc in npcs.duplicate():
-		# el perro se va con su dueño
-		if npc.kind == "perro" and (npc.amo == null or not is_instance_valid(npc.amo) or npc.amo not in npcs):
+		# el perro se va con su dueño, y el grupo con su guía
+		# (los perros del editor de personajes van solos, de momento)
+		var follows: bool = (npc.kind == "perro" and npc.personaje.is_empty()) or npc.amo != null
+		if follows and (npc.amo == null or not is_instance_valid(npc.amo) or npc.amo not in npcs):
 			npcs.erase(npc)
 			npc.queue_free()
 			continue
-		if not Npc.active_at(npc.kind, h) and npc.distance_to_cell(player.cell) > DESPAWN_DISTANCE and npc.mode == "":
-			npcs.erase(npc)
-			npc.queue_free()
+		if not npc.active(h) and npc.distance_to_cell(player.cell) > DESPAWN_DISTANCE and npc.mode == "":
+			var r := censo.de(npc)
+			if r.is_empty():
+				npcs.erase(npc)
+				npc.queue_free()
+			else:
+				censo.dormir(r)
+	# los que no te conocen se van del barrio al acabar su horario; los demás esperan latentes
+	censo.olvidar(h)
 	for kind in _npc_targets:
 		if not Npc.active_at(kind, h):
 			continue
-		var missing: int = _npc_targets[kind] - npcs.filter(func(n): return n.kind == kind).size()
-		for i in mini(missing, ceili(_npc_targets[kind] / 4.0)):
-			_spawn_npc(kind)
+		var missing: int = _npc_targets[kind] - censo.registros.filter(func(r): return r["kind"] == kind and r["personaje"].is_empty()).size()
+		for i in missing:
+			censo.nuevo(kind)
 
 
 ## Eventos del barrio: peleas entre yonkis, yonkis que vienen a pedirte y carteristas trabajando.
 func _random_event() -> void:
 	if randf() < 0.2 and pickpocket_event():
+		return
+	if randf() < Defs.URBANA_SWEEP + Defs.MOSSOS_SWEEP and police_event():
 		return
 	var yonkis := npcs.filter(func(n): return n.kind == "yonki")
 	if yonkis.is_empty():
@@ -1036,16 +1266,48 @@ func _random_event() -> void:
 		closest.say("¡Ven aquí si tienes huevos!", 4.0)
 		if a.distance_to_cell(player.cell) < 40:
 			GameState.log_msg("Pelea de yonkis cerca de %s." % city.street_name_near(a.cell))
-		for npc in npcs:
-			if npc.kind == "policia" and npc.distance_to_cell(a.cell) < 80:
-				npc.walk_to(a.cell)
-				break
+		# una pelea es cosa de los Mossos
+		var mosso := _nearest_of(["mosso"], a.cell)
+		if mosso and mosso.distance_to_cell(a.cell) < 80:
+			mosso.walk_to(a.cell)
+
+
+## La policía hace su ronda: la Urbana va a por un mantero, un latero o un trilero (les requisa
+## la manta, las latas o la mesa) y los Mossos, a por un camello. El que lo ve venir, recoge y
+## se larga. Devuelve false si no hay a quién.
+func police_event() -> bool:
+	var urbana := randf() < Defs.URBANA_SWEEP / (Defs.URBANA_SWEEP + Defs.MOSSOS_SWEEP)
+	var targets := ["mantero", "latero", "trilero"] if urbana else ["camello"]
+	var agent_kind := "urbano" if urbana else "mosso"
+	for target in npcs.filter(func(n): return n.kind in targets and n.mode == "").duplicate():
+		var agent := _nearest_of([agent_kind], target.cell)
+		if agent == null or agent.mode != "" or agent.distance_to_cell(target.cell) > 90:
+			continue
+		agent.walk_to(target.cell)
+		target.say(["¡Agua!", "¡Agua, agua!", "¡La Urbana!"].pick_random() if urbana else "¡Los mossos! ¡Abrimos!", 3.0)
+		target.walk_to(city.random_walkable_near(target.home, 30))
+		if target.distance_to_cell(player.cell) < 40:
+			var what: String = {"mantero": "la manta", "latero": "las latas", "trilero": "la mesa del trile"}.get(target.kind, "")
+			if urbana:
+				GameState.log_msg("La Urbana le requisa %s a %s cerca de %s." % [what, target.display_name, city.street_name_near(target.cell)])
+			else:
+				GameState.log_msg("Los Mossos paran a %s cerca de %s. Se va sin nada encima." % [target.display_name, city.street_name_near(target.cell)])
+		return true
+	return false
 
 
 ## Un carterista le vacía el bolsillo a un turista cercano (que luego ya no tiene nada que robarle).
-## Devuelve false si no hay a quién.
+## Si le estaba viendo un agente de paisano de la Urbana, se lo lleva. Devuelve false si no hay a quién.
 func pickpocket_event() -> bool:
 	for thief in npcs.filter(func(n): return n.kind == "carterista").duplicate():
+		var cop := _nearest_of(["urbano_secreta"], thief.cell)
+		if cop and cop.can_see(thief) and randf() < Defs.UNDERCOVER_CATCH:
+			cop.walk_to(thief.cell)
+			cop.say("Guàrdia Urbana. Quieto.", 3.0)
+			if thief.distance_to_cell(player.cell) < 30:
+				GameState.log_msg("Un «turista» agarra de la muñeca a %s y saca una placa: Urbana de paisano." % thief.display_name)
+			remove_npc_later(thief, 3.0)
+			return true
 		for victim in npcs:
 			if victim.kind in ["turista", "fiestero"] and not victim.robbed and victim.distance_to_cell(thief.cell) < 60:
 				victim.robbed = true

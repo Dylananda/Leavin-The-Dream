@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "zakaria",
+	"nombre": "Zakaria",
+	"apodo": "",
+	"edad": 15,
+	"genero": "m",
+	"tipo": "chaval",
+	"historia": "Llegó escondido en los bajos de un camión. Se escapó del centro de acogida porque compartía cuarto con chicos que le robaban. Dibuja muy bien.",
+	"fuentes": "https://beteve.cat/societat/ciutat-vella-nens-cola-dgaia-pla-pilot/",
+	"aspecto": {
+		"skin": "5a3a26",
+		"shirt": "3a538d",
+		"pants": "53685a",
+		"hair": "1b1410",
+		"jacket": "4b535f",
+		"hair_style": "rapado",
+		"facial": "",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "gorra",
+		"tamano": 0.8
+	},
+	"zona": {
+		"tipo": "rambla_raval",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		15,
+		3
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 2,
+		"velocidad": 12.0,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"¿Tienes un boli?",
+		"No vuelvo al centro.",
+		"Mira mi dibujo."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Youssef (educador) le busca. Misión: convencerle de volver o de ir al Estel d'Assís. Mehdi le protege."
+}

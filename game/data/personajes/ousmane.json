@@ -1,0 +1,57 @@
+{
+	"version": 1,
+	"id": "ousmane",
+	"nombre": "Ousmane",
+	"apodo": "",
+	"edad": 24,
+	"genero": "m",
+	"tipo": "mantero",
+	"historia": "Lleva dos años en Barcelona. Juega al fútbol con los niños de la plaza los domingos y sueña con hacer una prueba en un equipo de tercera.",
+	"fuentes": "Venta ambulante y Sindicat de Manters (Top Manta). Fuente concreta pendiente.",
+	"aspecto": {
+		"skin": "5a3a26",
+		"shirt": "528858",
+		"pants": "627b6f",
+		"hair": "c8a060",
+		"jacket": "",
+		"hair_style": "rapado",
+		"facial": "",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "rambla",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [],
+	"lugares": [],
+	"stats": {
+		"dinero": 10,
+		"velocidad": 12.8,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "Eres mantero joven. Alegre, futbolero, ingenuo con la ciudad.",
+		"habla": "Castellano aprendido, frases cortas, «mi amigo».",
+		"sabe": "Fútbol, la Rambla, dónde se juega en el barrio.",
+		"no_sabe": "Casi nada de leyes ni de policía.",
+		"quiere": "Una oportunidad en un equipo. Un balón nuevo."
+	},
+	"frases": [
+		"¡Gafas, bolsos!",
+		"¿Juegas a fútbol?",
+		"Mi amigo, mira."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Juega con Lucas y Nour (niños) en la plaza. Si le consigues unas botas, te ayuda cuando le necesites."
+}

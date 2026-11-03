@@ -125,8 +125,9 @@ func _risk(item: StreetItem, risk: float) -> void:
 	var seen := world.watching().filter(func(n): return n.kind not in Defs.NEVER_INTERVENE)
 	if seen.is_empty():
 		return
-	var police := seen.filter(func(n): return n.kind == "policia")
+	var police := seen.filter(func(n): return n.is_police())
 	if not police.is_empty():
+		police[0].reveal()
 		world.scandal(police[0], "¡Alto! ¡Deja eso donde estaba!")
 	elif randf() < risk:
 		world.scandal(seen[0], ["¡Eh! ¡Eso no es tuyo!", "¡Al ladrón! ¡Se lleva la bici!", "Hey! That's not yours!"].pick_random())

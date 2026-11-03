@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "marcel",
+	"nombre": "Marcel",
+	"apodo": "",
+	"edad": 30,
+	"genero": "m",
+	"tipo": "captador",
+	"historia": "Encargado de los captadores de un club. Les paga poco y los despide si los multan. Tiene contactos con Quique el Nano.",
+	"fuentes": "https://www.3cat.cat/3catinfo/preocupacio-a-ciutat-vella-per-la-presencia-de-captadors-de-clubs-cannabics/noticia/3254458/",
+	"aspecto": {
+		"skin": "5a3a26",
+		"shirt": "76648a",
+		"pants": "564450",
+		"hair": "7a7a7a",
+		"jacket": "353942",
+		"hair_style": "rapado",
+		"facial": "bigote",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "folletos",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "rambla",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		17,
+		3
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 70,
+		"velocidad": 10.0,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"Más gente, más gente.",
+		"Esta noche se llena.",
+		"No me hagas perder el tiempo."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Contacto entre los clubs y Quique. Podría ofrecerte trabajo."
+}

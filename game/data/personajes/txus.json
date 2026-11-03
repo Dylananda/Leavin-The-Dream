@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "txus",
+	"nombre": "Txus",
+	"apodo": "",
+	"edad": 33,
+	"genero": "m",
+	"tipo": "punki",
+	"historia": "Okupa de los noventa que nunca se fue. Vive con tres perros y una furgoneta que no arranca.",
+	"fuentes": "",
+	"aspecto": {
+		"skin": "8d5a3b",
+		"shirt": "1a1a1a",
+		"pants": "57464d",
+		"hair": "c8a060",
+		"jacket": "101010",
+		"hair_style": "rapado",
+		"facial": "bigote",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "cresta",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "plazas",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		11,
+		4
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 5,
+		"velocidad": 9.0,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"Ni dios ni amo.",
+		"¿Tienes pal perro?",
+		"Esta plaza es nuestra."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Su furgoneta es un sitio para dormir si te lo ganas."
+}

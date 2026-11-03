@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "nour",
+	"nombre": "Nour",
+	"apodo": "",
+	"edad": 10,
+	"genero": "f",
+	"tipo": "nino",
+	"historia": "Le hace de traductora a su padre en el médico. Colecciona chapas y sabe dónde está cada fuente del barrio.",
+	"fuentes": "Infancia en el Raval: pisos pequeños, plazas como patio. Fuente concreta pendiente.",
+	"aspecto": {
+		"skin": "5a3a26",
+		"shirt": "647d4c",
+		"pants": "36332b",
+		"hair": "c8a060",
+		"jacket": "704d6f",
+		"hair_style": "melena",
+		"facial": "",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "",
+		"tamano": 0.62
+	},
+	"zona": {
+		"tipo": "plazas",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		9,
+		21
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 10,
+		"velocidad": 9.0,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"¿Tienes chapas?",
+		"Mi padre es Hamid.",
+		"Esa fuente no funciona."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Hija de Hamid (frutero)."
+}

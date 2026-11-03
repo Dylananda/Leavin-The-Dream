@@ -44,7 +44,7 @@ func _init(p_world: World) -> void:
 
 
 static func can_talk(npc: Npc) -> bool:
-	return Fichas.has(npc.kind) and not npc.has_meta("enemigo")
+	return Fichas.has_npc(npc) and not npc.has_meta("enemigo")
 
 
 func _key(npc: Npc) -> String:
@@ -197,9 +197,9 @@ func _prepare(npc: Npc) -> void:
 		if not NOT_OFFERED.any(func(w): return a["label"].begins_with(w)):
 			_turn["options"]["o%d" % (_turn["options"].size() + 1)] = a
 	var data := []
-	var f := Fichas.of(npc.kind)
+	var f := Fichas.of_npc(npc)
 	if "policia" in f["datos"]:
-		data.append_array(_police_data(npc))
+		data.append_array(_police_data(npc, "secretas" in f["datos"]))
 	if "turistas" in f["datos"]:
 		data.append_array(_tourist_data(npc))
 	for d in data.slice(0, MAX_DATA):
@@ -227,11 +227,15 @@ func _meters(a: Npc, cell: Vector2i) -> int:
 	return int(a.distance_to_cell(cell) * world.city.cell_m)
 
 
-func _police_data(npc: Npc) -> Array:
+## Agentes cerca de `npc`, con su cuerpo; los de paisano, solo si `secretas` (quien vive de
+## la calle aprende a reconocerlos).
+func _police_data(npc: Npc, secretas: bool) -> Array:
+	const WHO := {"urbano": "un agente de la Urbana", "mosso": "una pareja de Mossos",
+		"urbano_secreta": "uno de la Urbana de paisano", "mosso_secreta": "uno de los Mossos de paisano"}
 	var out := []
 	for n in world.npcs:
-		if n.kind == "policia" and n.distance_to_cell(npc.cell) <= POLICE_RADIUS:
-			out.append("Hay un agente de la Urbana por %s, a unos %d m." % [world.city.street_name_near(n.cell), _meters(npc, n.cell)])
+		if n.is_police() and (n.looks_police() or secretas) and n.distance_to_cell(npc.cell) <= POLICE_RADIUS:
+			out.append("Hay %s por %s, a unos %d m." % [WHO[n.kind], world.city.street_name_near(n.cell), _meters(npc, n.cell)])
 	if out.is_empty():
 		out.append("Ahora mismo no hay ningún agente por aquí cerca.")
 	return out
@@ -286,7 +290,7 @@ static func _list(d: Dictionary, describe: Callable, empty: String) -> String:
 ## Instrucciones para el modelo. También prepara las opciones de esta frase (ver `schema`).
 func system_prompt(npc: Npc) -> String:
 	_prepare(npc)
-	var f := Fichas.of(npc.kind)
+	var f := Fichas.of_npc(npc)
 	var bio: String = npc.bio() if npc.bio() != "" else f["historia"]
 	var facts: Array = _mem(npc)["facts"]
 	return "\n".join([

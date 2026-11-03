@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "montse_ribas",
+	"nombre": "Montse Ribas",
+	"apodo": "",
+	"edad": 47,
+	"genero": "f",
+	"tipo": "educador",
+	"historia": "Educadora de calle desde hace veinte años. Ha visto morir a gente que conocía y sigue saliendo cada mañana con su mochila de material.",
+	"fuentes": "Educadores de calle y CAS Baluard. Fuente concreta pendiente.",
+	"aspecto": {
+		"skin": "5a3a26",
+		"shirt": "e07a30",
+		"pants": "3c3340",
+		"hair": "1b1410",
+		"jacket": "",
+		"hair_style": "melena",
+		"facial": "",
+		"glasses": false,
+		"skirt": true,
+		"accesorio": "chaleco",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "barrio",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		9,
+		21
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 20,
+		"velocidad": 11.2,
+		"fuerza": 5,
+		"valor": 8,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "Eres educadora de calle veterana. Cercana, directa, sin juzgar.",
+		"habla": "Castellano y catalán, cálida, preguntas por la salud.",
+		"sabe": "Recursos: albergues, comedores, el CAS Baluard, metadona, trámites.",
+		"no_sabe": "Dónde se pilla (y no lo quiere saber).",
+		"quiere": "Que la gente esté viva mañana. Que Txell vuelva al programa de metadona."
+	},
+	"frases": [
+		"¿Has pasado por el Baluard?",
+		"Te guardo cita.",
+		"¿Cómo estás de verdad?"
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Misión: llevar a Txell al programa de metadona. Si lo consigues, Txell te perdona la deuda."
+}

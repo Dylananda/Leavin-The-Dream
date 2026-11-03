@@ -1,0 +1,66 @@
+{
+	"version": 1,
+	"id": "quique_el_nano",
+	"nombre": "Quique el Nano",
+	"apodo": "",
+	"edad": 34,
+	"genero": "m",
+	"tipo": "camello",
+	"historia": "Creció en la calle de la Cera. Vende en un piso de Sant Ramon que cambia de puerta cada pocos meses. Fía, pero cobra.",
+	"fuentes": "Narcopisos y venta de calle en el Raval (prensa local, 2017-2019). Fuente concreta pendiente.",
+	"aspecto": {
+		"skin": "5a3a26",
+		"shirt": "7cb280",
+		"pants": "7e6f64",
+		"hair": "5a3a20",
+		"jacket": "",
+		"hair_style": "rizos",
+		"facial": "",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "capucha",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "barrio",
+		"poligono": [],
+		"casa": [
+			509,
+			340
+		]
+	},
+	"horario": [],
+	"lugares": [],
+	"stats": {
+		"dinero": 150,
+		"velocidad": 12.0,
+		"fuerza": 6,
+		"valor": 5,
+		"agresividad": 6,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {
+			"base": 6,
+			"caballo": 4
+		},
+		"vende": {
+			"base": 12,
+			"caballo": 16
+		}
+	},
+	"ficha": {
+		"quien": "Eres camello del Raval. Cercano cuando te conviene, frío cuando te deben. Tu piso es tu negocio y no te gusta que lo mencionen.",
+		"habla": "Castellano de barrio, «tete», «primo», amenazas suaves.",
+		"sabe": "Quién debe a quién, qué pisos están quemados, cuándo hay redadas (más o menos).",
+		"no_sabe": "Que hay una mossa de paisano en la calle (Marta).",
+		"quiere": "Que le paguen, que le lleven paquetes sin abrirlos y que nadie hable con la poli."
+	},
+	"frases": [
+		"¿Qué necesitas?",
+		"Me debes, ¿eh?",
+		"Hoy no fío."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "MISIÓN CLAVE «El paquete para Txell»: te da un paquete para llevárselo a Txell. A Txell le debes 40 €. Si se lo llevas, Txell se queda el paquete como pago de tu deuda y Quique te lo cobra a ti; si no se lo llevas, Quique viene a por ti. Elegir qué perder. Relacionado con Sra. Encarna (quiere pruebas de su piso) y Agent Serra."
+}

@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "xavi",
+	"nombre": "Xavi",
+	"apodo": "",
+	"edad": 35,
+	"genero": "m",
+	"tipo": "urbano_secreta",
+	"historia": "Agente de la Urbana de paisano. Va de guiri con camiseta del Barça y una cámara colgada. Lleva meses detrás de Vera, una carterista que siempre se le escapa.",
+	"fuentes": "Fuentes del tipo en docs/ideas.md. Carteristas del metro y la Rambla: https://www.3cat.cat/3catinfo/100-carteristes-actuen-cada-dia-al-metro-i-alguns-els-han-enxampat-fins-a-1000-cops/noticia/2935115/",
+	"aspecto": {
+		"skin": "5a3a26",
+		"shirt": "d6f260",
+		"pants": "403a33",
+		"hair": "5a3a20",
+		"jacket": "",
+		"hair_style": "corto",
+		"facial": "",
+		"glasses": true,
+		"skirt": false,
+		"accesorio": "mochila",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "rambla",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		9,
+		23
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 60,
+		"velocidad": 12.0,
+		"fuerza": 7,
+		"valor": 7,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "Eres agente de la Guàrdia Urbana de paisano disfrazado de turista. Hablas como guiri hasta que decides actuar.",
+		"habla": "Inglés de turista y castellano cuando te sales del papel.",
+		"sabe": "Caras de carteristas, horarios del metro, dónde se venden carteras robadas.",
+		"no_sabe": "Nada de drogas.",
+		"quiere": "Pillar a Vera con las manos en la masa. Un chivatazo bueno vale mucho."
+	},
+	"frases": [
+		"Nice! Very nice!",
+		"*hace una foto a nada*",
+		"Sorry, the Boqueria?"
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Misión cruzada: si le das un chivatazo sobre Vera, te borra una multa. Pero Vera tiene a gente en la Rambla y se entera de quién habla."
+}

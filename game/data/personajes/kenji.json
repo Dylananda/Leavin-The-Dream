@@ -1,0 +1,57 @@
+{
+	"version": 1,
+	"id": "kenji",
+	"nombre": "Kenji",
+	"apodo": "",
+	"edad": 29,
+	"genero": "m",
+	"tipo": "turista",
+	"historia": "Fotógrafo aficionado. Busca «la Barcelona de las películas» y hace fotos a todo el mundo sin preguntar.",
+	"fuentes": "Turismo masivo en Ciutat Vella. Fuente concreta pendiente.",
+	"aspecto": {
+		"skin": "f0cfb0",
+		"shirt": "6093f2",
+		"pants": "35423d",
+		"hair": "5a3a20",
+		"jacket": "5c444b",
+		"hair_style": "rapado",
+		"facial": "",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "mochila",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "barrio",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [],
+	"lugares": [],
+	"stats": {
+		"dinero": 150,
+		"velocidad": 10.4,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"Photo, please?",
+		"So cinematic!",
+		"*clic*"
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Te hace una foto sin permiso. Puedes cobrarle, robarle la cámara o posar."
+}

@@ -1,0 +1,54 @@
+{
+	"version": 1,
+	"id": "tula",
+	"nombre": "Tula",
+	"apodo": "",
+	"edad": 6,
+	"genero": "f",
+	"tipo": "perro",
+	"historia": "La perra de Txell. La sigue a todas partes y gruñe a los que le deben dinero.",
+	"fuentes": "",
+	"aspecto": {
+		"skin": "5a3a26",
+		"shirt": "c8963c",
+		"pants": "5e5469",
+		"hair": "1b1410",
+		"jacket": "",
+		"hair_style": "melena",
+		"facial": "",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "barrio",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [],
+	"lugares": [],
+	"stats": {
+		"dinero": 10,
+		"velocidad": 11.0,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Va con Txell.",
+	"amo": "txell"
+}

@@ -21,7 +21,12 @@ const CHASE_HEAT := 40.0
 ## vacía (heat >= 90), te ven desde más lejos (EXPOSED_SIGHT). A NEAR_SIGHT casillas te notan
 ## aunque estés a su espalda.
 const VISION := {
-	"policia": {"range": 14.0, "angle": 70.0},
+	"urbano": {"range": 14.0, "angle": 70.0},
+	"mosso": {"range": 14.0, "angle": 70.0},
+	# los de paisano miran como cualquiera, pero algo más lejos: es su oficio
+	"urbano_secreta": {"range": 12.0, "angle": 90.0},
+	"mosso_secreta": {"range": 12.0, "angle": 90.0},
+	"estatua": {"range": 8.0, "angle": 60.0},  # no puede girar la cabeza
 	"_": {"range": 10.0, "angle": 90.0},
 }
 const NIGHT_SIGHT := 0.72
@@ -38,6 +43,62 @@ const SEARCH_TIME := 8.0
 ## Si te escapas de la policía, o nadie de uniforme oye el escándalo, quedas fichado: el
 ## agente que te vea en este tiempo (minutos de juego) te persigue aunque no hagas nada.
 const WANTED_MINUTES := 24.0 * 60.0
+## Los dos cuerpos de policía y lo que le toca a cada uno (fuentes en docs/ideas.md). La
+## Guàrdia Urbana es la policía local del Ajuntament: convivencia, ordenanza de civismo, venta
+## ambulante, y también los hurtos en la Rambla y el metro. Los Mossos d'Esquadra (Generalitat)
+## llevan el orden público y los delitos: robos con violencia, peleas, drogas, y las detenciones
+## acaban en su comisaría. Por cada delito, qué cuerpos acuden si los llaman y te persiguen si
+## te fichan por él (ver GameState.mark_wanted y World.scandal). Uno que te ve en flagrante
+## interviene sea del cuerpo que sea.
+const CRIME_CORPS := {
+	"civismo": ["urbana"],  # beber en la calle, dormir a la vista, trile, manta, latas
+	"hurto": ["urbana", "mossos"],  # carteras, móviles, bicis: sin violencia
+	"violencia": ["mossos"],  # peleas y robos con violencia
+	"drogas": ["mossos"],  # vender, camellos, narcopisos
+}
+## Multas de la Urbana por la ordenanza (euros). La de convivencia de 2026 pone de 30 a 100 €
+## por beber en lata o botella donde no se puede, y más si molesta o hay niños cerca.
+const FINE_DRINKING := 60
+const FINE_INSULT := 100  ## faltarle al respeto a un agente (Ley de Seguridad Ciudadana)
+## Dormir en la calle (World.sleep): la Urbana te despierta y te echa si te ve. Probabilidad
+## de que pase una patrulla y te vea según dónde duermes; un agente que ya te ve casi seguro.
+## Escondido (un rincón con poca calle alrededor, ver World.hidden_spot) es mucho más seguro.
+const SLEEP_WAKE := {"calle": 0.45, "banco": 0.5, "cajero": 0.3}
+const SLEEP_WAKE_SEEN := 0.9
+const SLEEP_WAKE_PER_AGENT := 0.1  ## cada agente de la Urbana de patrulla cerca suma esto
+const SLEEP_PATROL_CELLS := 80  ## casillas a las que cuenta un agente como «de patrulla cerca»
+const SLEEP_HIDDEN_FACTOR := 0.25  ## escondido, la probabilidad se queda en esta parte
+const HIDDEN_OPEN_CELLS := 16  ## un rincón tiene menos de estas casillas de calle en 7x7 (un 7 % de la calle)
+## Ronda de la policía por el barrio (World._police_event): cada cuánto (probabilidad por evento
+## del barrio) la Urbana va a por un mantero, latero o trilero y los Mossos a por un camello, y
+## la probabilidad de que los de paisano se lleven a un carterista que están vigilando.
+const URBANA_SWEEP := 0.25
+const MOSSOS_SWEEP := 0.12
+const UNDERCOVER_CATCH := 0.35
+## El grupo de un free tour: turistas que siguen al guía (en Ciutat Vella, máximo 15).
+const GUIDE_GROUP := Vector2i(4, 8)
+## Cuántas veces más gente de cada tipo hay en el censo que en World.BASE_NPCS, ahora que los
+## lejanos están latentes (scripts/censo.gd) y no cuestan. Sube sobre todo la gente corriente:
+## el Raval tiene unos 47.000 vecinos y así hay en el censo uno de cada treinta y tantos. La
+## policía, los camellos y los que hacen el juego más difícil no cambian (los tipos que no
+## están aquí, x1). El límite lo pone la tarjeta gráfica con los que se ven a la vez: con esto,
+## unos 1.400 en el censo y 50-150 con cuerpo alrededor, a 60 FPS en una GTX 1060 (tests/paseo.gd).
+const CROWD := {
+	"vecino": 15.0, "anciano": 10.0, "nino": 8.0, "turista": 6.0, "pudiente": 4.0, "mensajero": 4.0,
+	"fiestero": 4.0, "skater": 3.0, "yonki": 2.0, "mendigo": 2.0, "chaval": 2.0, "musico": 2.0,
+	"rosero": 2.0, "chatarrero": 2.0,
+}
+## Estadísticas de los personajes del editor (scripts/personajes.gd), de 0 a 10; con 5 son
+## como un bot corriente de su tipo.
+const STAT_FIGHT := 0.06  ## probabilidad de ganarle una pelea que quita cada punto de fuerza por encima de 5
+const STAT_BRAVE := 0.05  ## lo que suma cada punto de valor sobre 5 a que se enfrente en un escándalo...
+const STAT_AVENGE := 0.06  ## ... y cada punto de valor o agresividad a que vaya a por ti si le robas
+const STAT_HOTHEAD := 7  ## desde esta agresividad, al que pegas o pides demasiado va a por ti en vez de apartarse
+## Bots latentes (scripts/censo.gd): lo que se pone al día al volver a verlos.
+const LATENT_ROBBED_FORGET := 24.0 * 60.0  ## minutos tras los que al que robaron vuelve a llevar dinero
+const LATENT_MEMORY_FADE := 3.0 * 24.0 * 60.0  ## minutos latente por cada vez que olvida algo que le hiciste...
+const LATENT_GRUDGES := ["robado", "pegado", "timado", "pisado"]  ## ... y esto lo olvida a la mitad de ritmo
+
 ## Escándalo al robar: quién oye el grito (casillas) y lo lejos que llega una llamada a la policía.
 const SCANDAL_HEAR := 20
 const SCANDAL_CALL := 60
@@ -45,7 +106,8 @@ const SCANDAL_CALL := 60
 ## llaman a la policía o pasan. Los que viven de la calle nunca se meten.
 const BRAVE_CHANCE := 0.2
 const CALLER_CHANCE := 0.45
-const NEVER_INTERVENE := ["yonki", "camello", "mantero", "latero", "trilero", "carterista", "chaval", "nino", "perro"]
+const NEVER_INTERVENE := ["yonki", "camello", "mantero", "latero", "trilero", "carterista", "chaval", "nino", "perro",
+	"mendigo", "punki", "rosero", "chatarrero", "trabajadora_sexual", "captador", "skater", "estatua"]
 ## Turistas (y despedidas) robados que te reconocen: probabilidad de que vayan a por ti en vez
 ## de buscar a un policía, según su género (fija por nombre).
 const AVENGER_CHANCE := {"m": 0.6, "f": 0.3}
@@ -363,6 +425,10 @@ const MILESTONES := {
 	"camello": ["Pasar tu primera papela", 10],
 	"cortar": ["Vender mercancía cortada", 5],
 	"secreta": ["Venderle un porro a un secreta", 15],
+	"multa": ["Primera multa de la Urbana", 5],
+	"desalojo": ["Que la Urbana te despierte en la calle", 10],
+	"estatua": ["Hacer reír a una estatua", 3],
+	"flyers": ["Repartir flyers por la Rambla", 5],
 	# conocer una sustancia nueva (las que ya conoce el perfil no cuentan)
 	"probar_litrona": ["Empezar a beber en la calle", 3],
 	"probar_porro": ["Probar los porros", 3],

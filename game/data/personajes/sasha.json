@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "sasha",
+	"nombre": "Sasha",
+	"apodo": "",
+	"edad": 29,
+	"genero": "m",
+	"tipo": "caricaturista",
+	"historia": "Pinta acuarelas de la Rambla para turistas. No tiene licencia y recoge el caballete cada vez que ve a la Urbana.",
+	"fuentes": "https://www.barcelona.cat/barcelonacultura/en/detail/99400322599",
+	"aspecto": {
+		"skin": "e0b08a",
+		"shirt": "ab99c8",
+		"pants": "484239",
+		"hair": "8a5a30",
+		"jacket": "",
+		"hair_style": "rizos",
+		"facial": "",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "caballete",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "pintores",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		10,
+		20
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 15,
+		"velocidad": 7.0,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"Acuarela, veinte euros.",
+		"*recoge rápido*",
+		"Original, hecho aquí."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Necesita vigía, como los manteros."
+}

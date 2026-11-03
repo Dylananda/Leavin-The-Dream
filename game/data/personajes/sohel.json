@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "sohel",
+	"nombre": "Sohel",
+	"apodo": "",
+	"edad": 26,
+	"genero": "m",
+	"tipo": "latero",
+	"historia": "Estudiaba ingeniería y vino para mandar dinero a su madre. Esconde las latas en una alcantarilla de la calle Nou de la Rambla y se sabe los horarios de la Urbana de memoria.",
+	"fuentes": "https://www.eldiario.es/catalunya/xavier-trias-reconoce-obsesion-lateros_1_5782404.html",
+	"aspecto": {
+		"skin": "5a3a26",
+		"shirt": "7f6984",
+		"pants": "444d3e",
+		"hair": "5a3a20",
+		"jacket": "",
+		"hair_style": "rizos",
+		"facial": "",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "bolsa",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "bares",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		20,
+		5
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 15,
+		"velocidad": 10.0,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"¡Beer, cerveza!",
+		"Fría, amigo.",
+		"Shhh, Urbana."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Ver Agent Lozano (quiere saber dónde esconde las latas). Si guardas su secreto, te fía latas."
+}

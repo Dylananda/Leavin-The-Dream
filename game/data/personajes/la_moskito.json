@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "la_moskito",
+	"nombre": "La Moskito",
+	"apodo": "",
+	"edad": 27,
+	"genero": "f",
+	"tipo": "punki",
+	"historia": "Toca el bajo en un grupo que ensaya en un local okupado. Recoge comida de los contenedores de los súper y la reparte.",
+	"fuentes": "",
+	"aspecto": {
+		"skin": "c68c5e",
+		"shirt": "1a1a1a",
+		"pants": "434454",
+		"hair": "1b1410",
+		"jacket": "101010",
+		"hair_style": "coleta",
+		"facial": "",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "cresta",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "plazas",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		11,
+		4
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 3,
+		"velocidad": 9.0,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"Comida gratis, ¿quieres?",
+		"Concierto el viernes.",
+		"¡Fuera fachas!"
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Te enseña dónde tiran comida los súper (comida gratis)."
+}

@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "joel",
+	"nombre": "Joel",
+	"apodo": "",
+	"edad": 23,
+	"genero": "m",
+	"tipo": "captador",
+	"historia": "Capta turistas para un club cannábico de la calle Tallers. Cobra por cabeza. Quiere ahorrar para un máster y no se cree que esto sea delito.",
+	"fuentes": "https://www.3cat.cat/3catinfo/preocupacio-a-ciutat-vella-per-la-presencia-de-captadors-de-clubs-cannabics/noticia/3254458/",
+	"aspecto": {
+		"skin": "f0cfb0",
+		"shirt": "3b919b",
+		"pants": "647c7e",
+		"hair": "7a7a7a",
+		"jacket": "",
+		"hair_style": "rapado",
+		"facial": "",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "folletos",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "rambla",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		17,
+		3
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 40,
+		"velocidad": 10.0,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"Hey, smoke weed?",
+		"Private club, very nice.",
+		"Socio, socio."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Ver Hugo (mosso de paisano). Si le avisas, te consigue entrada al club (sitio nuevo)."
+}

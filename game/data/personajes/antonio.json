@@ -1,0 +1,82 @@
+{
+	"version": 1,
+	"id": "antonio",
+	"nombre": "Antonio",
+	"apodo": "",
+	"edad": 63,
+	"genero": "m",
+	"tipo": "mendigo",
+	"historia": "Fue camarero cuarenta años. Se quedó sin trabajo a los 58, después sin piso. Duerme en un cajero de la Rambla del Raval y cada noche la Urbana le despierta.",
+	"fuentes": "https://es.ara.cat/sociedad/emergencia-social/cuatro-horas-peinando-calles-barcelona-personas-duermen-raso_130_5582284.html",
+	"aspecto": {
+		"skin": "f0cfb0",
+		"shirt": "854474",
+		"pants": "2a3135",
+		"hair": "3a2418",
+		"jacket": "",
+		"hair_style": "corto",
+		"facial": "",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "carton",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "barrio",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [],
+	"lugares": [
+		{
+			"tipo": "dormir",
+			"x": 301,
+			"y": 353,
+			"desde": 23,
+			"hasta": 7,
+			"nota": "cajero de la Rambla del Raval"
+		},
+		{
+			"tipo": "pedir",
+			"x": 383,
+			"y": 401,
+			"desde": 9,
+			"hasta": 13,
+			"nota": "puerta de Sant Pau del Camp"
+		},
+		{
+			"tipo": "comer",
+			"x": 609,
+			"y": 367,
+			"desde": 13,
+			"hasta": 15,
+			"nota": "comedor"
+		}
+	],
+	"stats": {
+		"dinero": 4,
+		"velocidad": 6.5,
+		"fuerza": 2,
+		"valor": 3,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"Una ayudita, por favor.",
+		"Yo servía cafés en la Boqueria.",
+		"Otra vez la Urbana..."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Ver «El cajero de Antonio» (Agent Mas). Si le ayudas a conseguir plaza en un albergue, te avisa de cosas que ve de noche (quién entra en el piso de Quique)."
+}

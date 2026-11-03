@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "don_quijote",
+	"nombre": "Don Quijote",
+	"apodo": "",
+	"edad": 60,
+	"genero": "m",
+	"tipo": "estatua",
+	"historia": "Lleva quince años de Quijote con una lanza de cartón. Se sabe el libro de memoria y lo recita si le echan un billete.",
+	"fuentes": "https://www.catalannews.com/life-style/item/human-statues-will-move-to-the-lowest-part-of-barcelonas-rambla",
+	"aspecto": {
+		"skin": "c68c5e",
+		"shirt": "7b6080",
+		"pants": "455653",
+		"hair": "5a3a20",
+		"jacket": "",
+		"hair_style": "corto",
+		"facial": "",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "platillo",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "estatuas",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		10,
+		20
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 15,
+		"velocidad": 6.0,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "Eres estatua humana de Don Quijote. Hablas a veces como el personaje.",
+		"habla": "Castellano antiguo de broma, citas del Quijote.",
+		"sabe": "El Quijote entero y la historia de la Rambla.",
+		"no_sabe": "El presente, a propósito.",
+		"quiere": "Un Sancho: alguien que le acompañe y pase el platillo."
+	},
+	"frases": [
+		"*inmóvil*",
+		"«En un lugar de la Mancha...»",
+		"*levanta la lanza*"
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Te ofrece hacer de Sancho (pasar el platillo) por la mitad de lo que saquéis."
+}

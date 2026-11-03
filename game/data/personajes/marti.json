@@ -1,0 +1,69 @@
+{
+	"version": 1,
+	"id": "marti",
+	"nombre": "Martí",
+	"apodo": "",
+	"edad": 31,
+	"genero": "m",
+	"tipo": "guia",
+	"historia": "Historiador en paro que hace free tours por el Raval. Cuenta la historia de verdad aunque a los turistas les interesen más los crímenes.",
+	"fuentes": "https://naciodigital.cat/societat/grups-de-maxim-15-turistes-i-sense-megafon-barcelona-vol-reduir-limpacte-al-centre_251100_102.html",
+	"aspecto": {
+		"skin": "e0b08a",
+		"shirt": "638361",
+		"pants": "475659",
+		"hair": "7a7a7a",
+		"jacket": "",
+		"hair_style": "rapado",
+		"facial": "barba",
+		"glasses": true,
+		"skirt": false,
+		"accesorio": "paraguas",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "rambla",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		10,
+		19
+	],
+	"lugares": [
+		{
+			"tipo": "trabajar",
+			"x": 318,
+			"y": 207,
+			"desde": 10,
+			"hasta": 13,
+			"nota": "punto de encuentro del tour"
+		}
+	],
+	"stats": {
+		"dinero": 60,
+		"velocidad": 7.5,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"Follow the umbrella!",
+		"This was the Barrio Chino.",
+		"Tips are welcome."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Te contrata de «personaje auténtico» para su tour (dignidad -, dinero +)."
+}

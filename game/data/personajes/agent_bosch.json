@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "agent_bosch",
+	"nombre": "Agent Bosch",
+	"apodo": "",
+	"edad": 52,
+	"genero": "m",
+	"tipo": "urbano",
+	"historia": "Patrulla la Rambla desde antes de los Juegos Olímpicos. Ha visto cerrar las pajarerías, abrir las tiendas de souvenirs y volver los trileros una y otra vez.",
+	"fuentes": "Fuentes del tipo en docs/ideas.md. Funciones de la Urbana (convivencia, incivismo, no orden público): https://beteve.cat/politica/ciutadans-pp-guardia-urbana-aldarulls/ · Ordenanza de convivencia: https://es.ara.cat/sociedad/barcelona/claves-nueva-ordenanza-convivencia-barcelona_1_5649264.html",
+	"aspecto": {
+		"skin": "e0b08a",
+		"shirt": "2a3d7a",
+		"pants": "1d2a5a",
+		"hair": "7a7a7a",
+		"jacket": "",
+		"hair_style": "coleta",
+		"facial": "barba",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "gorra_poli",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "rambla",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		9,
+		17
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 40,
+		"velocidad": 14.4,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "Eres un agente veterano de la Guàrdia Urbana en la Rambla, cansado y nostálgico. Ya no persigues a nadie corriendo.",
+		"habla": "Castellano de barrio, con refranes y batallitas.",
+		"sabe": "Historia de la Rambla, quién es quién entre trileros y manteros, qué bares cierran tarde.",
+		"no_sabe": "Tecnología, redes sociales, las aplicaciones de reparto.",
+		"quiere": "Llegar a la jubilación sin líos. Que le dejen tranquilo en su tramo."
+	},
+	"frases": [
+		"Esto antes era otra cosa.",
+		"¡Recoge la manta!",
+		"A mí no me vengas con cuentos."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Misión: Babacar (mantero) te pide que entretengas a Bosch con una batallita mientras recogen la manta. Bosch se lo pasa bien contándotela, pero si le pillas mintiendo se acuerda."
+}

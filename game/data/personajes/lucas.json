@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "lucas",
+	"nombre": "Lucas",
+	"apodo": "",
+	"edad": 8,
+	"genero": "m",
+	"tipo": "nino",
+	"historia": "Juega a fútbol en la plaza con Ousmane los domingos. Quiere ser portero.",
+	"fuentes": "Infancia en el Raval: pisos pequeños, plazas como patio. Fuente concreta pendiente.",
+	"aspecto": {
+		"skin": "f0cfb0",
+		"shirt": "5946bd",
+		"pants": "3c3441",
+		"hair": "3a2418",
+		"jacket": "",
+		"hair_style": "tupe",
+		"facial": "",
+		"glasses": true,
+		"skirt": false,
+		"accesorio": "",
+		"tamano": 0.62
+	},
+	"zona": {
+		"tipo": "plazas",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		9,
+		21
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 10,
+		"velocidad": 9.0,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"¡Pásala!",
+		"¡Paradón!",
+		"¿Juegas?"
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Su madre no quiere que hable con desconocidos."
+}

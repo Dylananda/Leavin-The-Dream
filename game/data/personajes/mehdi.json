@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "mehdi",
+	"nombre": "Mehdi",
+	"apodo": "",
+	"edad": 16,
+	"genero": "m",
+	"tipo": "chaval",
+	"historia": "Hace de hermano mayor de los más pequeños. Esnifa cola para no sentir el frío y se pelea con quien se meta con Zakaria.",
+	"fuentes": "https://beteve.cat/societat/ciutat-vella-nens-cola-dgaia-pla-pilot/",
+	"aspecto": {
+		"skin": "e0b08a",
+		"shirt": "2a8130",
+		"pants": "3d3631",
+		"hair": "8a5a30",
+		"jacket": "333739",
+		"hair_style": "rapado",
+		"facial": "",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "gorra",
+		"tamano": 0.8
+	},
+	"zona": {
+		"tipo": "rambla_raval",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		15,
+		3
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 5,
+		"velocidad": 12.0,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 5,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"Déjale en paz.",
+		"Un euro, hermano.",
+		"*bolsa en la mano*"
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Protege a Zakaria. Si ayudas a Zakaria, Mehdi te defiende en una pelea."
+}

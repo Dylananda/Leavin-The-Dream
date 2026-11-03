@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "el_canario",
+	"nombre": "El Canario",
+	"apodo": "",
+	"edad": 45,
+	"genero": "m",
+	"tipo": "trilero",
+	"historia": "Llegó de Las Palmas con veinte años. Lleva una mesa de trile y una red de ganchos y vigías que le avisan de la Urbana.",
+	"fuentes": "https://beteve.cat/societat/mes-pressio-de-la-guardia-urbana-contra-els-trilers-a-la-rambla/",
+	"aspecto": {
+		"skin": "5a3a26",
+		"shirt": "7c75aa",
+		"pants": "44363e",
+		"hair": "5a3a20",
+		"jacket": "",
+		"hair_style": "rizos",
+		"facial": "",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "caja",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "rambla",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		10,
+		20
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 60,
+		"velocidad": 12.0,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"¡Aquí se gana!",
+		"Doble o nada.",
+		"¡Agua!"
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Te ofrece hacer de vigía o de gancho (minijuegos existentes). Ver Ignasi (urbana de paisano)."
+}

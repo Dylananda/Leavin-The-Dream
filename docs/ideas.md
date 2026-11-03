@@ -53,6 +53,31 @@ sí y una memoria poco fiable**, que puede ir creciendo hacia misiones de rol en
 8. **Trapicheo**: comprar y vender a más personajes, no solo a los camellos.
 9. **Minijuegos de habilidad** para las acciones (robar, distinguir a la gente).
 10. **Ciudad más grande y metro**
+11. **Diseñador de personajes**: herramienta aparte para crear personajes únicos con su
+    historia, aspecto, zona, rutina, estadísticas, ficha de IA y misiones, que el juego carga
+    solo. — hecha la fase 1 (rama `feat/editor-personajes`)
+    - [x] Fase 1: identidad, aspecto con el muñeco, zona (barrio, zona hecha o polígono),
+      casa y lugares con horas, estadísticas, ficha de conversación y frases; el juego los
+      saca a la calle y se puede hablar con ellos; botón «Probar en el juego»
+    - [x] El juego usa las estadísticas (`Npc.stat`, `Defs.STAT_*`): la fuerza en las peleas,
+      el valor y la agresividad en cómo reacciona (enfrentarse, ir a por ti), si siempre llama
+      a la policía; qué quiere (te lo compra), qué lleva (lo cambia) y qué vende (se lo compras)
+    - [x] Perros del editor con su dueño («Va con»): salen y se duermen con él
+    - [ ] Fase 2: misiones en el editor (condiciones, objetivo con los encargos y minijuegos
+      que ya hay, plazo y resultados al cumplir o fallar)
+    - [ ] Fase 3: relaciones entre personajes y esquema de las cadenas de misiones
+12. **Bots latentes (censo)**: todos los del barrio en un registro de datos y cuerpo solo para
+    los que tienes cerca; al volver a verlos se ponen al día. — hecho lo básico (rama `feat/editor-personajes`)
+    - [x] Dormir y despertar según la distancia, con lo que les pasó; no se duermen los que
+      tienen asuntos contigo; olvidan con el tiempo (el rencor, más despacio)
+    - [x] Medido: 2.600 en el censo a 60 FPS (unos 40–60 con cuerpo alrededor)
+    - [x] Más población: unos 1.400 en el censo a mediodía (`Defs.CROWD`: sobre todo vecinos,
+      abuelos, niños y turistas; la policía y los camellos no cambian), 60 FPS estables
+    - [ ] Montar un cuerpo cuesta unos 3 ms: al llegar a una zona llena se nota algún tirón;
+      se podría reutilizar cuerpos dormidos en vez de montarlos de cero
+    - [ ] «Despertadores»: que un latente con asuntos contigo actúe aunque esté lejos
+      (el camello que viene a cobrar) en vez de quedarse con cuerpo todo el rato
+    - [ ] Guardar el censo en la partida guardada (cuando haya partidas guardadas)
 
 ## 2. Estado del personaje
 
@@ -137,8 +162,10 @@ nombre, historia y motivos, no estereotipos por nacionalidad.
   [eldiario.es](https://www.eldiario.es/catalunya/barcelona/jovenes-migrados-inhalan-plataforma-vecinal_1_3482411.html),
   [betevé](https://beteve.cat/societat/ciutat-vella-nens-cola-dgaia-pla-pilot/).
 - [ ] Pendiente: las fuentes son en buena parte de hace años; comprobar cómo está hoy cada fenómeno.
-- [ ] Pendiente: que la policía requise latas y desmonte mesas de trile por su cuenta; grupos de
-  despedida que se muevan juntos; más personajes (after hours, narcopisos, aluminosis...).
+- [x] Que la policía requise latas y desmonte mesas de trile por su cuenta: hecho (la ronda de la
+  Urbana y de los Mossos, rama `feat/policia-y-fauna`, ver abajo).
+- [ ] Pendiente: grupos de despedida que se muevan juntos (los free tours ya lo hacen); más
+  personajes (after hours, narcopisos, aluminosis...).
 
 ## 4. Conversación con IA local
 
@@ -322,6 +349,112 @@ de ruta:
     [Ara](https://es.ara.cat/economia/efecto-expat-vivienda-alquileres-caros-temporales_1_4809421.amp.html).
   - [ ] Pendiente: que los niños vayan con un adulto; repartidores en bici; que los perros
     ladren al que les cae mal; jugarlo y ajustar cuántos hay de cada.
+
+**Policía dividida: Guàrdia Urbana y Mossos d'Esquadra** (rama `feat/policia-y-fauna`)
+- [x] El tipo `policia` se separa en dos cuerpos con sus competencias (`Npc.POLICE`,
+  `Defs.CRIME_CORPS`), cada uno con su uniforme (la gorra con la banda de cuadros blancos de la
+  Urbana, la roja de los Mossos) y agentes de paisano:
+  - `urbano` (Guàrdia Urbana, policía local): convivencia y ordenanza. Si te ve dormir en la
+    calle, en un banco o en un cajero te despierta con la linterna y te echa (`World.urbana_wakes`;
+    dormir en un rincón escondido, con poca calle alrededor, es mucho más seguro). Multa por
+    beber en la calle (`Defs.FINE_DRINKING`), requisa las latas a los lateros, la manta a los
+    manteros y la mesa a los trileros en su ronda (`World.police_event`), y es la que viene si
+    haces de vigía del mantero o del trilero. No lleva las drogas: si te chivas de un camello,
+    te manda a los Mossos. Si te alcanza por la ordenanza, te multa; si te buscaban por un
+    delito, te retiene y llama a los Mossos.
+  - `mosso` (Mossos d'Esquadra, policía de la Generalitat): delitos y orden público. Peleas y
+    robos con violencia, tráfico de drogas (la redada cuando haces de aguador del camello, el
+    chivatazo), detenciones y comisaría.
+  - `urbano_secreta`: de paisano, vestido de guiri por la Rambla (y el metro de Liceu) a por los
+    carteristas; se lleva a alguno en `World.pickpocket_event`. `mosso_secreta`: de paisano,
+    como un vecino más, por Robadors y Sant Ramon, a por los camellos. Parecen lo que no son
+    (`disguise`) hasta que actúan: hablarles no los descubre, intentar robarles o venderles sí.
+    En el minijuego del vigía, las secretas son de la Urbana o de los Mossos según para quién vigiles.
+  - Fichado: se apunta por qué (`GameState.wanted_crime`) y solo te persigue el cuerpo al que le
+    toca (por civismo la Urbana, por drogas o violencia los Mossos, por hurto los dos); si lo que
+    pasa es que llamas mucho la atención (heat alto), cualquiera. La llamada de un escándalo llega
+    al agente más cercano del cuerpo que toca; quien lo ve en flagrante interviene sea del que sea.
+  - Hitos nuevos: primera multa, que la Urbana te despierte en la calle.
+  - Fuentes: la Urbana no tiene competencias de orden público, que son de los Mossos
+    ([betevé](https://beteve.cat/politica/ciutadans-pp-guardia-urbana-aldarulls/)); funciones de la
+    Urbana: tráfico, convivencia, incivismo ([Equinox](https://www.equinoxmagazine.fr/2024/10/19/polices-differentes-en-espagne/));
+    la ordenanza de convivencia de 2026 y sus multas por beber en la calle (de 30 a 100 €, más si
+    molesta o hay menores) ([Ara](https://es.ara.cat/sociedad/barcelona/claves-nueva-ordenanza-convivencia-barcelona_1_5649264.html),
+    [NacióDigital](https://naciodigital.cat/societat/la-lletra-petita-de-les-noves-multes-a-barcelona-anar-sense-samarreta-pagar-un-massatge-o-beure-al-carrer.html),
+    [Barcelona Secreta](https://barcelonasecreta.com/multas-ordenanza-civismo-barcelona/));
+    un tercio de las denuncias de la primera semana fueron por beber ([Ara](https://es.ara.cat/sociedad/barcelona/claves-nueva-ordenanza-convivencia-barcelona_1_5649264.html)).
+    La unidad de paisano de la Urbana que detiene a captadores y carteristas en la Rambla:
+    [3Cat](https://www.3cat.cat/3catinfo/preocupacio-a-ciutat-vella-per-la-presencia-de-captadors-de-clubs-cannabics/noticia/3254458/),
+    [betevé](https://beteve.cat/societat/operacio-contra-captadors-associacions-cannabiques/).
+  - [ ] Pendiente: comprobar con el texto oficial de la ordenanza qué sanciona cada cuerpo (las
+    cifras de las multas varían según el medio); que los Mossos vayan en pareja; la comisaría de
+    los Mossos frente a la de la Urbana en el mapa; que la Urbana pida el permiso a músicos y
+    estatuas; jugarlo y ajustar `Defs.SLEEP_WAKE` y las rondas.
+
+**Fauna de la calle** (rama `feat/policia-y-fauna`). Once tipos nuevos, con nombres, historias,
+zona, horario, frases, sus acciones y ficha para hablar con ellos (menos la estatua). Los
+identificadores (`musico`, `estatua`, `mendigo`, `skater`, `captador`, `rosero`, `chatarrero`,
+`trabajadora_sexual`, `guia`, `caricaturista`, `punki`) son los mismos que usa el editor de
+personajes como tipo base. Zonas nuevas en `World.ZONE_STREETS` y `World.ZONE_LANDMARKS`
+(calles de OpenStreetMap y edificios con rótulo del mapa, sin datos nuevos).
+- [x] **Músicos callejeros** (10–23 h): un punto fijo cada uno (la Rambla, las plazas del Pi y
+  de Sant Josep Oriol, la puerta del Liceu, el MACBA, el CCCB). Echarles un euro, escucharles (calma
+  el mono) o pasar la gorra. Fuentes: el programa Música al Carrer del ICUB, con puntos de
+  actuación por toda la ciudad ([Ajuntament](https://www.barcelona.cat/barcelonacultura/en/recomanem/call-proposals-musica-carrer));
+  la asociación de músicos de calle y de metro AMUC y la prueba para tener licencia ([Diari de Tarragona](https://www.diaridetarragona.com/reus/192255/reus-segueix-sense-regular-els-musics-de-carrer-i-els-artistes-abandonen-la-ciutat-ni22198207.html)).
+- [x] **Estatuas humanas** (10–20 h, en el tramo de abajo de la Rambla, junto a Colom): quietas,
+  sin girar la cabeza (`still`), hasta que les echas una moneda; se les puede intentar hacer
+  reír o robarles el platillo. Fuentes: el traslado al tramo de abajo ([Catalan News](https://www.catalannews.com/life-style/item/human-statues-will-move-to-the-lowest-part-of-barcelonas-rambla)),
+  las licencias por concurso y su queja ([betevé](https://beteve.cat/societat/les-estatues-de-la-rambla-volen-que-es-revisin-les-llicencies-i-demanen-tornar-on-eren-abans/)),
+  el decreto de 2019 ([BOPB](https://bcnroc.ajuntament.barcelona.cat/jspui/bitstream/11703/112540/5/BOPB_2019_estatues_humanes.pdf)).
+- [x] **Sin techo** (`mendigo`, a todas horas): piden en la puerta de una iglesia o un súper y de
+  noche se van a su sitio (`bed`): un cajero o un portal escondido. Compartir comida, un euro,
+  pedir a su lado o preguntarles dónde se puede dormir sin que te levante la Urbana. Fuentes: el
+  recuento de Arrels (al menos 1.384 personas durmiendo en la calle en 2023, algunas en cajeros)
+  y las muertes en la calle ([Ara](https://es.ara.cat/sociedad/emergencia-social/cuatro-horas-peinando-calles-barcelona-personas-duermen-raso_130_5582284.html),
+  [Ara](https://es.ara.cat/sociedad/84-personas-hogar-murieron-calles-barcelona-pasado-ano_1_5251011.amp.html)).
+- [x] **Skaters del MACBA** (12–22 h, plaça dels Àngels): mirarles, pedirles el skate (te la
+  pegas o no) o un cigarro. Fuentes: la plaza como meca mundial del skate ([betevé](https://beteve.cat/societat/placa-macba-meca-skaters-arreu-mon-no-volem-perdre/)),
+  la prohibición de patinar de 22 a 9 h por el ruido ([Catalan News](https://www.catalannews.com/life-style/item/barcelona-s-world-famous-unofficial-skate-park-faces-controversial-nighttime-curfew)),
+  la reforma para acabar con el «monopolio» de los skaters ([3Cat](https://www.3cat.cat/3catinfo/la-nova-placa-dels-angels-de-barcelona-vol-posar-fi-al-monopoli-dels-skaters/noticia/3280065/)).
+- [x] **Captadores** (17–3 h, en la Rambla): discotecas, rutas de bares y clubs cannábicos.
+  Ayudarles a repartir flyers (pagan según los guiris que haya cerca) o que te lleven al club
+  (dos porros; si te ve la Urbana, te ficha). Fuentes: captadores cada 200 metros y la Urbana
+  de paisano que los detiene ([3Cat](https://www.3cat.cat/3catinfo/preocupacio-a-ciutat-vella-per-la-presencia-de-captadors-de-clubs-cannabics/noticia/3254458/)),
+  el cierre de 30 clubs en 2024 ([Ara](https://es.ara.cat/sociedad/barcelona/barcelona-ordena-cerrar-30-clubs-cannabicos_1_5084612.html)),
+  las rutas de bares prohibidas (ver las despedidas, arriba).
+- [x] **Roseros** (20–3 h, por los bares y las terrazas): comprarles una rosa o preguntarles qué
+  bar cierra tarde. Fuentes: la Urbana decomisa las rosas de los vendedores sin licencia y multa
+  por encima de 150 € ([betevé](https://beteve.cat/economia/floristes-critiquen-intrusisme-sant-jordi-2026-menys-venda-roses-prevista/)).
+  - [ ] Pendiente: buscar fuentes sobre la venta de rosas de noche por los bares (lo encontrado es de Sant Jordi).
+- [x] **Chatarreros** (7–22 h, por todo el barrio), con su carro de supermercado: venderles la
+  chatarra o el cobre sin ir al compraventa, o ayudarles a empujar. Fuentes: los asentamientos de
+  chatarreros del Poblenou y su papel en el reciclaje ([Público](https://www.publico.es/especiales/el-quinze/malvivir-chatarra-barcelona.html)),
+  el desalojo de las naves en 2013 ([La Marea](https://lamarea.com/2013/07/25/300-persones-se-quedan-sin-casa-despues-del-desalojo-de-dos-fabricas-en-poblenou),
+  [La Marea](https://lamarea.com/2013/08/07/los-desalojados-de-la-nave-de-poblenou-no-logran-el-arraigo-prometido)).
+- [x] **Trabajadoras sexuales** (11–5 h, calle d'en Robador, Sant Ramon y Sant Pau): darles
+  conversación, preguntarles por los camellos o avisarles de que viene la Urbana. Nunca un
+  servicio: se las trata como a vecinas que saben mucho de la calle. Fuentes: la ordenanza que
+  multa ofrecer servicios en la calle y la organización de las trabajadoras ([eldiario.es](https://www.eldiario.es/catalunya/solo-queremos-dejen-trabajar_1_5717565.html),
+  [eldiario.es](https://www.eldiario.es/catalunya/prostitutas-barcelona-organizan_1_5709876.amp.html)),
+  el estigma usado para justificar la reforma urbana del barrio ([Quaderns-e, UAB](https://ddd.uab.cat/pub/artpub/2012/157746/quaderns-e_a2012v17n2p82.pdf)),
+  las amenazas y el acoso de 2016 ([NacióDigital](https://naciodigital.cat/societat/les-prostitutes-del-raval-es-queixen-duna-onada-damenaces-i-assetjament.html)),
+  los pisos precintados en Robadors ([betevé](https://beteve.cat/societat/precintats-set-pisos-al-raval-que-presumptament-funcionaven-com-a-prostibuls-il%C2%B7legals/)).
+- [x] **Guías de free tour** (10–19 h, desde la Rambla) con su grupo de 4 a 8 turistas detrás
+  (`World._spawn_follower`, como los perros): pegarte al grupo o pedirle. Fuentes: grupos de
+  15 como máximo y sin megáfono en Ciutat Vella ([NacióDigital](https://naciodigital.cat/societat/grups-de-maxim-15-turistes-i-sense-megafon-barcelona-vol-reduir-limpacte-al-centre_251100_102.html)),
+  los free tours, en un vacío legal ([Ara](https://en.ara.cat/society/one-way-system-barcelona-old-town-tourist-groups-good-practices-limits_1_4410574.html)),
+  el decreto prorrogado hasta 2028 ([Ajuntament](https://ajuntament.barcelona.cat/turisme/en/noticia/el-decret-de-limitacio-de-grups-turistics-a-ciutat-vella-es-prorroga-un-any-mes_1308739)).
+  - [ ] Pendiente: confirmar con una fuente que las plataformas de free tours cobran a los guías por turista.
+- [x] **Caricaturistas** (10–20 h, la Rambla y las plazas del Pi y de Sant Josep Oriol): que te
+  hagan una caricatura o posar de modelo. Fuentes: la Mostra de Pintors, Caricaturistes i
+  Retratistes de les Rambles ([Ajuntament](https://www.barcelona.cat/barcelonacultura/en/detail/99400322599)),
+  la normativa de la Mostra d'Art de Sant Josep Oriol ([Ajuntament](https://bcnroc.ajuntament.barcelona.cat/jspui/bitstream/11703/86394/1/normregpap_2015.pdf)).
+- [x] **Punkis con perros** (11–4 h, en las plazas): llevan siempre un perro y a menudo dos
+  (`DOG_OWNERS` por encima de 1). Compartir el litro (si te ve la Urbana, multa), pedirles un
+  cigarro o dar de comer a los perros. Que los albergues no admitan perros es una de las razones
+  por las que hay quien prefiere la calle.
+  - [ ] Pendiente: buscar fuentes sobre los albergues y los perros en Barcelona.
 
 **Trapicheo (punto 8)**
 - [x] Un sistema de tráfico: comprar y vender a más personajes (yonkis, fiesteros, turistas,

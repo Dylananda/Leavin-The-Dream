@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "vera",
+	"nombre": "Vera",
+	"apodo": "",
+	"edad": 28,
+	"genero": "f",
+	"tipo": "carterista",
+	"historia": "La mejor de la Rambla. Va de turista con mapa y gorra y nunca roba más de 400 € de una vez. Le robó la cartera a Grzegorz sin saber que llevaba su pasaporte.",
+	"fuentes": "https://naciodigital.cat/societat/identificada-394-vegades-detinguda-27-i-denunciada-45-.html",
+	"aspecto": {
+		"skin": "5a3a26",
+		"shirt": "cd60f2",
+		"pants": "2c2f37",
+		"hair": "3a2418",
+		"jacket": "63623f",
+		"hair_style": "coleta",
+		"facial": "",
+		"glasses": true,
+		"skirt": false,
+		"accesorio": "mochila",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "rambla",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		9,
+		21
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 80,
+		"velocidad": 11.5,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"Sorry, sorry!",
+		"Excuse me...",
+		"*desaparece*"
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Tiene el pasaporte de Grzegorz. Xavi (urbana de paisano) va tras ella. Misión: recuperar el pasaporte (comprárselo, robárselo o chivarte)."
+}

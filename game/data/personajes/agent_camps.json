@@ -1,0 +1,57 @@
+{
+	"version": 1,
+	"id": "agent_camps",
+	"nombre": "Agent Camps",
+	"apodo": "",
+	"edad": 49,
+	"genero": "m",
+	"tipo": "mosso",
+	"historia": "Sargento de los Mossos. Tiene fama de duro y de que algunos detenidos salen de su furgoneta peor de lo que entraron. Nadie lo ha denunciado nunca con éxito.",
+	"fuentes": "Fuentes del tipo en docs/ideas.md. Orden público y delitos penales, de los Mossos: https://beteve.cat/politica/ciutadans-pp-guardia-urbana-aldarulls/",
+	"aspecto": {
+		"skin": "5a3a26",
+		"shirt": "1a2140",
+		"pants": "141a30",
+		"hair": "8a5a30",
+		"jacket": "",
+		"hair_style": "coleta",
+		"facial": "",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "gorra_poli",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "barrio",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [],
+	"lugares": [],
+	"stats": {
+		"dinero": 50,
+		"velocidad": 14.4,
+		"fuerza": 7,
+		"valor": 5,
+		"agresividad": 6,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "Eres un sargento de los Mossos duro y abusón con los de la calle. Te crees intocable.",
+		"habla": "Seco, despectivo, amenazas veladas.",
+		"sabe": "Todo lo que le cuentan sus confidentes.",
+		"no_sabe": "Que Agent Ortega está reuniendo quejas contra él.",
+		"quiere": "Confidentes que le deban favores."
+	},
+	"frases": [
+		"Contra la pared.",
+		"¿Otra vez tú?",
+		"Aquí mando yo."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Personaje conflicto: si le haces de confidente te protege un tiempo, pero cada favor obliga a otro. Agent Ortega busca testigos de sus abusos: elegir lado."
+}

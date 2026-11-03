@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "sophie",
+	"nombre": "Sophie",
+	"apodo": "",
+	"edad": 30,
+	"genero": "f",
+	"tipo": "fiestero",
+	"historia": "Dama de honor en una despedida de Lyon. Es la única sobria y se encarga de que nadie acabe en el hospital.",
+	"fuentes": "https://es.ara.cat/sociedad/barcelona/noche-rutas-borrachera-prohibidas-barcelona-vegas-bro_130_5466856.html",
+	"aspecto": {
+		"skin": "5a3a26",
+		"shirt": "614268",
+		"pants": "374545",
+		"hair": "8a5a30",
+		"jacket": "1c1b27",
+		"hair_style": "melena",
+		"facial": "",
+		"glasses": true,
+		"skirt": false,
+		"accesorio": "despedida",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "bares",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		22,
+		5
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 110,
+		"velocidad": 9.0,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"Où est l'hôtel?",
+		"Not again...",
+		"Water, please!"
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Te pagaría por guiar al grupo hasta el apartamento."
+}

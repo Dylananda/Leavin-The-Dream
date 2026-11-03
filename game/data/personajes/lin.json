@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "lin",
+	"nombre": "Lin",
+	"apodo": "",
+	"edad": 35,
+	"genero": "f",
+	"tipo": "caricaturista",
+	"historia": "Estudió Bellas Artes en Hangzhou. Hace caricaturas rapidísimas en la plaza de Sant Josep Oriol y sueña con exponer en una galería del barrio.",
+	"fuentes": "https://www.barcelona.cat/barcelonacultura/en/detail/99400322599",
+	"aspecto": {
+		"skin": "c68c5e",
+		"shirt": "6073b0",
+		"pants": "413e34",
+		"hair": "3a2418",
+		"jacket": "",
+		"hair_style": "coleta",
+		"facial": "",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "caballete",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "pintores",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		10,
+		20
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 30,
+		"velocidad": 7.0,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"Caricatura, cinco minutos.",
+		"Sonríe.",
+		"Este te lo regalo."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Alexandra (galerista) podría exponerla. Misión: presentarlas."
+}

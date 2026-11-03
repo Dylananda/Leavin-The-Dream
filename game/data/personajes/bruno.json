@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"id": "bruno",
+	"nombre": "Bruno",
+	"apodo": "",
+	"edad": 27,
+	"genero": "m",
+	"tipo": "skater",
+	"historia": "Patina el MACBA desde los 12. Le rompieron la muñeca y ahora graba vídeos de los demás. Odia la reforma de la plaza.",
+	"fuentes": "https://beteve.cat/societat/placa-macba-meca-skaters-arreu-mon-no-volem-perdre/",
+	"aspecto": {
+		"skin": "e0b08a",
+		"shirt": "48458c",
+		"pants": "484e5a",
+		"hair": "7a7a7a",
+		"jacket": "46453b",
+		"hair_style": "rapado",
+		"facial": "",
+		"glasses": false,
+		"skirt": false,
+		"accesorio": "skate",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "macba",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		12,
+		22
+	],
+	"lugares": [],
+	"stats": {
+		"dinero": 20,
+		"velocidad": 16.0,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 4,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"No nos van a echar.",
+		"Graba esto.",
+		"La plaza es de todos."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Sabe que vendes y te puede comprar algún porro."
+}

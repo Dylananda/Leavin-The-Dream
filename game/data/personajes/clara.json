@@ -1,0 +1,69 @@
+{
+	"version": 1,
+	"id": "clara",
+	"nombre": "Clara",
+	"apodo": "",
+	"edad": 24,
+	"genero": "f",
+	"tipo": "musico",
+	"historia": "Toca el arpa delante del MACBA. Ganó una plaza en Música al Carrer y los skaters le bajan el volumen cuando toca.",
+	"fuentes": "https://www.barcelona.cat/barcelonacultura/en/recomanem/call-proposals-musica-carrer",
+	"aspecto": {
+		"skin": "e0b08a",
+		"shirt": "9e8671",
+		"pants": "372c33",
+		"hair": "5a3a20",
+		"jacket": "",
+		"hair_style": "coleta",
+		"facial": "",
+		"glasses": false,
+		"skirt": true,
+		"accesorio": "guitarra",
+		"tamano": 1.0
+	},
+	"zona": {
+		"tipo": "musica",
+		"poligono": [],
+		"casa": []
+	},
+	"horario": [
+		10,
+		23
+	],
+	"lugares": [
+		{
+			"tipo": "tocar",
+			"x": 186,
+			"y": 203,
+			"desde": 16,
+			"hasta": 20,
+			"nota": "delante del MACBA"
+		}
+	],
+	"stats": {
+		"dinero": 20,
+		"velocidad": 9.0,
+		"fuerza": 5,
+		"valor": 5,
+		"agresividad": 3,
+		"llama_policia": false,
+		"quiere": [],
+		"lleva": {},
+		"vende": {}
+	},
+	"ficha": {
+		"quien": "",
+		"habla": "",
+		"sabe": "",
+		"no_sabe": "",
+		"quiere": ""
+	},
+	"frases": [
+		"Gràcies!",
+		"*arpa*",
+		"Ese sitio es mío, tengo permiso."
+	],
+	"misiones": [],
+	"relaciones": [],
+	"notas": "Disputa con Nando por el punto de música del MACBA."
+}
