@@ -582,14 +582,23 @@ func _latero(npc: Npc) -> Array:
 		gs.log_msg("Bajáis las latas a una alcantarilla de %s. Te da 5 €." % world.city.street_name_near(npc.cell), G.C_GOOD)))
 	if npc.has_meta("alijo"):
 		acts.append(_act("Robarle el alijo de la alcantarilla", func():
-			gs.advance(10)
-			gs.add_item("litrona", 4)
-			npc.set_meta("enemigo", true)
-			npc.remember("robado")
-			npc.say("¡Ladrón! ¡Eso era para mi familia!", 4.0)
-			gs.log_msg("Cuatro latas. Él sabe perfectamente quién ha sido.", G.C_GOOD)
-			gs.change_dignity(-6, "Robarle a uno que está peor que tú")
-			gs.change_sanity(-3)))
+			# minijuego: distraerle y sacar las latas de la reja mientras no mira
+			world.play_minigame(Pickpocket.new(npc, "alijo"), 0.55, func(result: String, _stats: Dictionary):
+				if result == "nada":
+					return
+				gs.advance(10)
+				npc.set_meta("enemigo", true)
+				npc.remember("robado")
+				if result == "ok":
+					gs.add_item("litrona", 4)
+					npc.say("¡Ladrón! ¡Eso era para mi familia!", 4.0)
+					gs.log_msg("Cuatro latas. Él sabe perfectamente quién ha sido.", G.C_GOOD)
+				else:
+					npc.say("¡Suelta eso! ¡Es mío!", 4.0)
+					gs.log_msg("Te pilla con la mano en la reja. No te llevas nada.", G.C_BAD)
+					npc.react("venganza")
+				gs.change_dignity(-6, "Robarle a uno que está peor que tú")
+				gs.change_sanity(-3))))
 	if world.police_near(npc.cell, 25, "urbana") > 0:
 		acts.append(_act("Avisarle de que viene la Urbana", func():
 			npc.remember("ayudado")

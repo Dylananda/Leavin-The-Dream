@@ -552,8 +552,9 @@ personajes como tipo base. Zonas nuevas en `World.ZONE_STREETS` y `World.ZONE_LA
   - [x] Robar la litrona del súper y la propina del platito de un bar también se juegan: el
     minijuego de robar al descuido con el botín en el estante o en la barra y el dependiente o
     el camarero vigilando (`Pickpocket` con `loot` "litrona" o "propina").
-  - [ ] Pendiente: jugarlos y ajustar tiempos y dificultad; más acciones (el alijo del latero;
-    el puñetazo del turista robado).
+  - [x] Robarle el alijo al latero también: sacar las latas de la reja de la alcantarilla con él
+    al lado (`loot` "alijo"); si te pilla, va a por ti.
+  - [ ] Pendiente: jugarlos y ajustar tiempos y dificultad; el puñetazo del turista robado.
 
 ## 8. Todo el mundo está yonki a su manera (3 de noviembre de 2026)
 
