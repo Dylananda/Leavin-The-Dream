@@ -100,7 +100,9 @@ de una iglesia y de noche se va a su cajero o a su portal.
 La policía son dos cuerpos. La **Guàrdia Urbana** lleva la convivencia: te despierta y te echa
 si te ve dormir en la calle (en un rincón escondido es más difícil), multa por beber, requisa la
 manta, las latas y la mesa del trile, y te manda a los Mossos si te chivas de un camello. Los
-**Mossos d'Esquadra** llevan los delitos: peleas, drogas, detenciones y comisaría. Los dos tienen
+**Mossos d'Esquadra** llevan los delitos: peleas, drogas, detenciones y comisaría. Con las drogas
+en la calle actúan los dos (la Urbana tiene su plan contra el menudeo), y si te alcanza la Urbana
+llama a los Mossos. Los dos tienen
 agentes de paisano (de guiri en la Rambla, de vecino en Robadors) que no se descubren hasta que
 actúan. Si te fichan, te persigue el cuerpo al que le toca lo que hiciste. Los
 personajes nuevos tienen nombre e historia propia; las fuentes están en `docs/ideas.md`.

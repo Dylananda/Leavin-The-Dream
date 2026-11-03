@@ -430,7 +430,8 @@ de ruta:
       con la investigación en manos de los Mossos ([betevé](https://beteve.cat/societat/7-detinguts-punt-venda-drogues-consum-raval/),
       [El Debate, 2026](https://www.eldebate.com/espana/cataluna/barcelona/20260804/barcelona-aumenta-presion-policial-contra-menudeo-droga-calle-preocupante_446629.html)).
       En el juego, cualquier agente que te vea vender interviene, pero fichado por drogas solo te
-      persiguen los Mossos (`Defs.CRIME_CORPS`): **por decidir** si la Urbana también.
+      persiguen los Mossos (`Defs.CRIME_CORPS`). Decidido (3 de noviembre): ahora te persiguen
+      los dos cuerpos.
     - La ordenanza nueva entró en vigor en febrero de 2026 y se centra en beber y orinar en la
       calle ([Ara](https://es.ara.cat/sociedad/barcelona/claves-nueva-ordenanza-convivencia-barcelona_1_5649264.html)).
 

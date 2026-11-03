@@ -54,7 +54,7 @@ const CRIME_CORPS := {
 	"civismo": ["urbana"],  # beber en la calle, dormir a la vista, trile, manta, latas
 	"hurto": ["urbana", "mossos"],  # carteras, móviles, bicis: sin violencia
 	"violencia": ["mossos"],  # peleas y robos con violencia
-	"drogas": ["mossos"],  # vender, camellos, narcopisos
+	"drogas": ["urbana", "mossos"],  # vender, camellos, narcopisos (la Urbana, contra el menudeo: Plan Druida)
 }
 ## Multas de la Urbana por la ordenanza (euros). La de convivencia de 2026 pone de 30 a 100 €
 ## por beber en lata o botella donde no se puede, y más si molesta o hay niños cerca.

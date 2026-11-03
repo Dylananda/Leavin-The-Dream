@@ -955,10 +955,16 @@ func _test_police_and_fauna(gs, world) -> void:
 		return
 	var urbano = _fresh(world, "urbano")
 	var mosso = _fresh(world, "mosso")
-	# fichado por drogas: te persiguen los Mossos, no la Urbana; por civismo, al revés
-	gs.mark_wanted("prueba", "drogas")
-	_check(mosso.grudge() == "persigue" and urbano.grudge() == "", "fichado por drogas, persigue la Urbana o no los Mossos")
+	# fichado por violencia: te persiguen los Mossos, no la Urbana; por drogas, los dos; por
+	# civismo, solo la Urbana
+	gs.mark_wanted("prueba", "violencia")
+	_check(mosso.grudge() == "persigue" and urbano.grudge() == "", "fichado por violencia, persigue la Urbana o no los Mossos")
 	gs.wanted_until = -1.0
+	gs.wanted_crime = ""
+	gs.mark_wanted("prueba", "drogas")
+	_check(mosso.grudge() == "persigue" and urbano.grudge() == "persigue", "fichado por drogas, no te persiguen los dos")
+	gs.wanted_until = -1.0
+	gs.wanted_crime = ""
 	gs.mark_wanted("prueba", "civismo")
 	_check(urbano.grudge() == "persigue" and mosso.grudge() == "", "fichado por civismo, persiguen los Mossos o no la Urbana")
 	# si te alcanza la Urbana por la ordenanza, multa; si te alcanzan los Mossos, comisaría
