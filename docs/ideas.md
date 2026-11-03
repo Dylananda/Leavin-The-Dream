@@ -524,11 +524,52 @@ personajes como tipo base. Zonas nuevas en `World.ZONE_STREETS` y `World.ZONE_LA
   - [ ] Pendiente: jugarlos y ajustar tiempos y dificultad; más acciones (robar la litrona,
     el platito de propinas, el alijo del latero; el puñetazo del turista robado).
 
+## 8. Todo el mundo está yonki a su manera (3 de noviembre de 2026)
+
+La idea de fondo: no hay «yonkis» y «gente normal», todo el mundo está enganchado a algo.
+El barrio entero tiende a engancharse, también el jugador, y salir de ahí es lo más difícil.
+
+- [ ] **Los bots también consumen**: cada uno con sus sustancias, su colocón, su mono y su
+  enganche, y se nota en cómo se comportan (el de farlopa va acelerado y busca bronca, el de
+  caballo se duerme en un portal, el de pastillas está ido...). Encaja con el censo: al
+  despertar a un latente se calcula cómo le ha ido desde la última vez.
+- [ ] **Adicciones sin sustancia**: yonkis de pantalla (a los que es más fácil venderles un
+  móvil, que no lo sueltan y no ven que les robas), del juego (tragaperras de los bares),
+  del trabajo, de las compras...
+- [ ] **Más sustancias**, cada una con sus efectos visuales, de manejo y de enganche:
+  speed, MDMA, LSD, setas, DMT, ketamina; de farmacia: benzodiacepinas y otros ansiolíticos,
+  antidepresivos, opioides de receta (tramadol, fentanilo en parches), y el alcohol y el tabaco
+  de todos los días. Las de farmacia, con receta (médico del CAP) o de estraperlo.
+- [ ] **Contagio y conversiones** entre yonki y «no yonki», en los dos sentidos, con una
+  tendencia general a engancharse (ver «Contagio» en «Personajes que viven»).
+- [ ] **Equilibrio**: consumo, enganche, precios y premios de las misiones. Ahora mismo es
+  demasiado fácil hacer mucho dinero (lo ha notado el usuario jugando): repasar lo que dan
+  pedir, robar, trapichear, los encargos y las misiones, y lo que cuesta vivir.
+
+### Finales
+
+- [ ] **Redención (perder, el más difícil)**: subir tanto la dignidad y bajar el enganche a 0
+  que la gente te empieza a apreciar, te echas pareja (un vecino o una vecina) y formas una
+  familia. Has salido... y has perdido.
+- [ ] **Revolución (difícil)**: comandas un ejército de yonkis, os organizáis y tomáis el
+  poder de un barrio (ver «Legado»).
+- [ ] **Morir de hambre, pero de verdad**: no al vaciarse la barra, sino días después; con la
+  barra vacía se nota mucho en la fuerza, la salud mental, la vista y el manejo.
+- [ ] **Sobredosis** (común): el enganche puede subir muy deprisa, por consumo o por las
+  putadas que te pasan en la partida (te roban la metadona, te cortan la droga, un susto...).
+- [ ] **A palos** (eventual): si enfadas a demasiada gente.
+- [ ] Propuestas de Claude, por valorar: **la cárcel** (una condena larga si acumulas
+  fichajes), **el psiquiátrico** (la salud mental a cero), **el capo** (te haces con el
+  menudeo del barrio y dejas de consumir: has caído hacia arriba), **te llevan de vuelta a
+  casa** (un familiar te encuentra y te saca del barrio) y **leyenda del barrio** (la caída más
+  honda: tu historia la cuentan los guías de los free tours).
+
 ## Más adelante
 
 - Misiones largas e intrincadas
 - Minijuegos para dar variedad
 - Concretar la idea central y el objetivo final
+- **Mapa del juego**: un esquema de todas las mecánicas y cómo se relacionan (para el usuario).
 
 ## Juegos de referencia
 
