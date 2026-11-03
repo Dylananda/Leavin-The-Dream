@@ -178,10 +178,14 @@ func _ready() -> void:
 				censo.nuevo(kind)
 	var probar := _probar_id()
 	for d in _personajes:
-		if Npc.KINDS.has(d["tipo"]):
+		if Npc.KINDS.has(d["tipo"]) and d.get("amo", "") == "":
 			var r := censo.de_personaje(d)
 			if d["id"] == probar:
 				censo.despertar(r, player.cell).say("¡Aquí estoy!", 4.0)
+	# los perros del editor van con su dueño (sin dueño en el censo, solos)
+	for d in _personajes:
+		if Npc.KINDS.has(d["tipo"]) and d.get("amo", "") != "" and not censo.con_amo(d):
+			censo.de_personaje(d)
 	censo.repasar(0, 0, true)
 
 	hud = Hud.new()
@@ -266,9 +270,12 @@ func _spawn_npc(kind: String) -> Npc:
 
 
 ## Uno que va detrás de `amo` (su perro, un turista del grupo del guía); se va cuando se va él.
-func _spawn_follower(kind: String, amo: Npc) -> void:
+func _spawn_follower(kind: String, amo: Npc, personaje := {}) -> void:
 	var f := Npc.new()
-	f.init_kind(kind)
+	if personaje.is_empty():
+		f.init_kind(kind)
+	else:
+		f.init_personaje(personaje)  # un perro del editor que va con su dueño (Personajes «amo»)
 	f.player = player
 	f.world = self
 	f.amo = amo
@@ -1103,7 +1110,8 @@ func _on_caught(npc: Npc) -> void:
 ## Te van a dar una paliza (`npc` te ha alcanzado y no llevas nada): se pelea (minijuego
 ## Fight), cuesta arriba. Si ganas, te lo quitas de encima con algún golpe; si no, `lose`.
 func _beating(npc: Npc, lose: Callable) -> void:
-	play_minigame(Fight.new(npc), Defs.BEATING_FIGHT_CHANCE, func(result: String, _stats: Dictionary):
+	var chance := Defs.BEATING_FIGHT_CHANCE - (npc.stat("fuerza") - 5) * Defs.STAT_FIGHT
+	play_minigame(Fight.new(npc), chance, func(result: String, _stats: Dictionary):
 		if result != "ok":
 			lose.call()
 			return
@@ -1154,9 +1162,12 @@ func remove_random_npc(kind: String) -> void:
 ## Quita un bot de la calle al cabo de unos segundos (se va con alguien, se mete en un portal...).
 func remove_npc_later(npc: Npc, seconds: float) -> void:
 	npcs.erase(npc)
+	# referencia débil: el temporizador es del árbol y puede saltar con la partida ya cerrada
+	var ref: WeakRef = weakref(npc)
 	get_tree().create_timer(seconds, false).timeout.connect(func():
-		if is_instance_valid(npc):
-			npc.queue_free())
+		var n = ref.get_ref()
+		if n != null:
+			n.queue_free())
 
 
 ## Conversación libre (IA) con un bot que tiene ficha.
@@ -1195,7 +1206,10 @@ func highlight_poi(poi: Dictionary) -> void:
 	for m in markers:
 		if m.poi == poi:
 			m.highlighted = true
-			get_tree().create_timer(12.0, false).timeout.connect(func(): m.highlighted = false)
+			var ref: WeakRef = weakref(m)  # (ver remove_npc_later)
+			get_tree().create_timer(12.0, false).timeout.connect(func():
+				if ref.get_ref() != null:
+					ref.get_ref().highlighted = false)
 
 
 ## Retira, lejos de tu vista, a los que ya no están en su horario y repone en el censo los

@@ -102,7 +102,7 @@ for p in PERSONAJES:
     tipo, nombre, g, edad = p["tipo"], p["nombre"], p["g"], p["edad"]
     d = {
         "version": 1, "id": slug(nombre), "nombre": nombre, "apodo": p.get("apodo", ""), "edad": edad,
-        "genero": g, "tipo": tipo, "historia": p["historia"],
+        "genero": g, "tipo": tipo, "amo": p.get("amo", ""), "historia": p["historia"],
         "fuentes": p.get("fuentes", FUENTES.get(tipo, "")),
         "aspecto": look(tipo, nombre, g, edad, p.get("look", {})),
         "zona": {"tipo": KINDS.get(tipo, {}).get("zone", "barrio"), "poligono": [], "casa": []},

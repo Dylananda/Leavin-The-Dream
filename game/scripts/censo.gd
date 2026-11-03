@@ -71,6 +71,16 @@ func de_personaje(d: Dictionary) -> Dictionary:
 	return r
 
 
+## Le da al dueño (`d["amo"]`) el perro del editor `d`: sale y se duerme con él. false si
+## el dueño no está en el censo.
+func con_amo(d: Dictionary) -> bool:
+	for r in registros:
+		if r["personaje"].get("id", "") == d["amo"]:
+			r["perros"] = r.get("perros", []) + [d]
+			return true
+	return false
+
+
 ## Si anda por la calle a la hora `h`.
 func activo(r: Dictionary, h: int) -> bool:
 	if not r["personaje"].is_empty():
@@ -218,6 +228,8 @@ func despertar(r: Dictionary, junto_a := Vector2i(-1, -1)) -> Npc:
 		npc.bed = r["bed"]
 	for kind in r["seguidores"]:
 		world._spawn_follower(kind, npc)
+	for d in r.get("perros", []):
+		world._spawn_follower("perro", npc, d)
 	r["npc"] = npc
 	return npc
 

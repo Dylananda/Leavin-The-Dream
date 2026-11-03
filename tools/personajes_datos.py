@@ -436,10 +436,10 @@ PERSONAJES = [
      "frases": ["¿Tienes chapas?", "Mi padre es Hamid.", "Esa fuente no funciona."],
      "notas": "Hija de Hamid (frutero)."},
 
-    {"tipo": "perro", "nombre": "Tula", "g": "f", "edad": 6, "look": {"shirt": "c8963c"},
+    {"tipo": "perro", "nombre": "Tula", "g": "f", "edad": 6, "amo": "txell", "look": {"shirt": "c8963c"},
      "historia": "La perra de Txell. La sigue a todas partes y gruñe a los que le deben dinero.",
-     "notas": "Va con Txell (el juego aún no ata perros a personajes del editor)."},
-    {"tipo": "perro", "nombre": "Lenin", "g": "m", "edad": 4, "look": {"shirt": "1c1a18"},
+     "notas": "Va con Txell."},
+    {"tipo": "perro", "nombre": "Lenin", "g": "m", "edad": 4, "amo": "txus", "look": {"shirt": "1c1a18"},
      "historia": "Uno de los perros de Txus. Es el más listo y abre bolsas de basura con una sola pata.",
      "notas": "Va con Txus (punki)."},
 

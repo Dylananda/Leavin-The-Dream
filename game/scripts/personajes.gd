@@ -39,7 +39,8 @@ const LUGARES := {
 const LUGAR_WANDER := 2
 ## Lo que el juego ya usa de cada personaje; el resto se guarda para más adelante.
 const USADO := ["nombre", "genero", "tipo", "historia", "aspecto", "zona", "horario", "lugares",
-	"dinero", "velocidad", "frases", "ficha"]
+	"dinero", "velocidad", "fuerza", "valor", "agresividad", "llama_policia", "quiere", "lleva", "vende",
+	"frases", "ficha", "amo"]
 ## Colores del aspecto, que se guardan en hexadecimal ("" = sin chaqueta).
 const COLORES := ["skin", "shirt", "pants", "hair", "jacket"]
 
@@ -54,6 +55,7 @@ static func nuevo(tipo := "yonki") -> Dictionary:
 		"edad": 40,
 		"genero": "m",
 		"tipo": tipo,
+		"amo": "",  ## (perros) id del personaje con el que va
 		"historia": "",
 		"fuentes": "",
 		"aspecto": {

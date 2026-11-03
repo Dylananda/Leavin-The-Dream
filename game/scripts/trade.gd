@@ -30,7 +30,8 @@ func offers_for(npc: Npc) -> Array:
 			npc.say("A ti no te compro nada más. Aquello era yeso")
 		return acts
 	acts.append_array(_sales(npc))
-	if npc.kind == "yonki":
+	acts.append_array(_purchases(npc))
+	if npc.kind == "yonki" or not _own_stash(npc).is_empty():
 		acts.append_array(_swaps(npc))
 	return acts
 
@@ -42,9 +43,19 @@ func client_kind(npc: Npc) -> String:
 	return "turista" if npc.kind == "urbano_secreta" else npc.kind
 
 
-## Lo que paga `npc` ahora por una dosis de `id` (más si ya te compró antes).
+## Lo que compra `npc`: lo que quiere si es un personaje del editor (Personajes), si no lo de
+## su tipo en Defs.CLIENTS.
+func wants(npc: Npc) -> Array:
+	var q: Array = npc.personaje.get("stats", {}).get("quiere", [])
+	if not q.is_empty():
+		return q
+	return Defs.CLIENTS.get(client_kind(npc), {}).get("wants", [])
+
+
+## Lo que paga `npc` ahora por una dosis de `id` (más si ya te compró antes). Los personajes
+## de un tipo que no es cliente pagan como un yonki.
 func price_for(npc: Npc, id: String) -> int:
-	var c: Dictionary = Defs.CLIENTS[client_kind(npc)]
+	var c: Dictionary = Defs.CLIENTS.get(client_kind(npc), Defs.CLIENTS["yonki"])
 	var regular := mini(npc.remembers("cliente"), Defs.REGULAR_MAX)
 	var base: float = Defs.SUBSTANCES[id]["price"] * c["markup"]
 	return maxi(1, roundi(base * (1.0 + Defs.REGULAR_BONUS * regular)))
@@ -58,10 +69,8 @@ func undercover(npc: Npc) -> bool:
 
 func _sales(npc: Npc) -> Array:
 	var acts := []
-	if not Defs.CLIENTS.has(client_kind(npc)):
-		return acts
 	var gs := GameState
-	for id in Defs.CLIENTS[client_kind(npc)]["wants"]:
+	for id in wants(npc):
 		if not gs.has_item(id):
 			continue
 		var price := price_for(npc, id)
@@ -130,13 +139,71 @@ func _after_deal(client: Npc) -> void:
 
 ## Lo que lleva encima un yonki hoy: {"id", "n"}. Siempre la misma sustancia para el mismo
 ## nombre; se repone cada día.
+## Los personajes del editor llevan lo que pone su ficha («Lo que lleva»).
 func stash(npc: Npc) -> Dictionary:
 	var s: Dictionary = npc.get_meta("trapi", {})
 	if s.get("day", -1) != GameState.day:
-		var ids: Array = Defs.YONKI_STASH
-		s = {"id": ids[int(npc._trait("alijo") * ids.size())], "n": randi_range(1, 2), "day": GameState.day}
+		var own := _own_stash(npc)
+		if not own.is_empty():
+			s = {"id": own["id"], "n": own["n"], "day": GameState.day}
+		else:
+			var ids: Array = Defs.YONKI_STASH
+			s = {"id": ids[int(npc._trait("alijo") * ids.size())], "n": randi_range(1, 2), "day": GameState.day}
 		npc.set_meta("trapi", s)
 	return s
+
+
+## La primera sustancia que lleva un personaje del editor: {"id", "n"}, o {} si ninguna.
+func _own_stash(npc: Npc) -> Dictionary:
+	var lleva: Dictionary = npc.personaje.get("stats", {}).get("lleva", {})
+	for id in lleva:
+		if Defs.SUBSTANCES.has(id) and int(lleva[id]) > 0:
+			return {"id": id, "n": int(lleva[id])}
+	return {}
+
+
+# -------------------------------------------------------------------- comprar
+
+## Lo que te vende un personaje del editor («Lo vende a»): de lo que lleva, hasta que se le
+## acabe (se repone cada día); si no lo lleva apuntado, no se le acaba.
+func _purchases(npc: Npc) -> Array:
+	var acts := []
+	var vende: Dictionary = npc.personaje.get("stats", {}).get("vende", {})
+	for id in vende:
+		var price := int(vende[id])
+		if price <= 0 or GameState.money < price or _left(npc, id) == 0:
+			continue
+		acts.append(Interactions._act("Comprarle %s (%d €)" % [Defs.item_name(id).to_lower(), price], func(): buy(npc, id)))
+	return acts
+
+
+## Unidades de `id` que le quedan hoy a `npc` para venderte (-1: no se le acaban).
+func _left(npc: Npc, id: String) -> int:
+	var lleva: Dictionary = npc.personaje.get("stats", {}).get("lleva", {})
+	if not lleva.has(id):
+		return -1
+	var sold: Dictionary = npc.get_meta("vendido", {})
+	if sold.get("day", -1) != GameState.day:
+		sold = {"day": GameState.day}
+		npc.set_meta("vendido", sold)
+	return maxi(0, int(lleva[id]) - sold.get(id, 0))
+
+
+## Le compras una unidad de `id` a `npc` al precio de su ficha.
+func buy(npc: Npc, id: String) -> void:
+	var gs := GameState
+	var price := int(npc.personaje["stats"]["vende"][id])
+	gs.advance(5)
+	gs.add_money(-price)
+	npc.money += price
+	gs.add_item(id)
+	if _left(npc, id) > 0:
+		var sold: Dictionary = npc.get_meta("vendido")
+		sold[id] = sold.get(id, 0) + 1
+	npc.say(["Toma, y no me has visto", "Aquí tienes", "Lo mejor del barrio"].pick_random())
+	gs.log_msg("Le compras %s a %s por %d €." % [Defs.item_name(id).to_lower(), npc.display_name, price], G.C_GOOD)
+	if Defs.SUBSTANCES.has(id):
+		_after_deal(npc)
 
 
 ## Dosis de lo suyo que te da un yonki por tu `item` (0 si no le interesa).

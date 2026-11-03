@@ -59,8 +59,10 @@ sí y una memoria poco fiable**, que puede ir creciendo hacia misiones de rol en
     - [x] Fase 1: identidad, aspecto con el muñeco, zona (barrio, zona hecha o polígono),
       casa y lugares con horas, estadísticas, ficha de conversación y frases; el juego los
       saca a la calle y se puede hablar con ellos; botón «Probar en el juego»
-    - [ ] Que el juego use lo que se guarda y aún no usa (◌): fuerza en las peleas, valor,
-      agresividad, si llama a la policía, qué quiere, qué lleva y qué vende
+    - [x] El juego usa las estadísticas (`Npc.stat`, `Defs.STAT_*`): la fuerza en las peleas,
+      el valor y la agresividad en cómo reacciona (enfrentarse, ir a por ti), si siempre llama
+      a la policía; qué quiere (te lo compra), qué lleva (lo cambia) y qué vende (se lo compras)
+    - [x] Perros del editor con su dueño («Va con»): salen y se duermen con él
     - [ ] Fase 2: misiones en el editor (condiciones, objetivo con los encargos y minijuegos
       que ya hay, plazo y resultados al cumplir o fallar)
     - [ ] Fase 3: relaciones entre personajes y esquema de las cadenas de misiones

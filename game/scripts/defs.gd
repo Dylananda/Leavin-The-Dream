@@ -88,6 +88,12 @@ const CROWD := {
 	"fiestero": 4.0, "skater": 3.0, "yonki": 2.0, "mendigo": 2.0, "chaval": 2.0, "musico": 2.0,
 	"rosero": 2.0, "chatarrero": 2.0,
 }
+## Estadísticas de los personajes del editor (scripts/personajes.gd), de 0 a 10; con 5 son
+## como un bot corriente de su tipo.
+const STAT_FIGHT := 0.06  ## probabilidad de ganarle una pelea que quita cada punto de fuerza por encima de 5
+const STAT_BRAVE := 0.05  ## lo que suma cada punto de valor sobre 5 a que se enfrente en un escándalo...
+const STAT_AVENGE := 0.06  ## ... y cada punto de valor o agresividad a que vaya a por ti si le robas
+const STAT_HOTHEAD := 7  ## desde esta agresividad, al que pegas o pides demasiado va a por ti en vez de apartarse
 ## Bots latentes (scripts/censo.gd): lo que se pone al día al volver a verlos.
 const LATENT_ROBBED_FORGET := 24.0 * 60.0  ## minutos tras los que al que robaron vuelve a llevar dinero
 const LATENT_MEMORY_FADE := 3.0 * 24.0 * 60.0  ## minutos latente por cada vez que olvida algo que le hiciste...

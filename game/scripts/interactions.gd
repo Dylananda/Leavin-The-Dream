@@ -385,15 +385,17 @@ func _fight(npc: Npc) -> void:
 	npc.remember("pegado")
 	if world.police_watching() > 0:
 		gs.mark_wanted("un agente te ha visto pelearte", "violencia")
-	world.play_minigame(Fight.new(npc), _fight_chance(), func(result: String, _stats: Dictionary):
+	world.play_minigame(Fight.new(npc), _fight_chance(npc), func(result: String, _stats: Dictionary):
 		_fight_done(npc, result == "ok"))
 
 
-## Probabilidad de ganar una pelea a un yonki: la salud y el colocón ayudan, el mono no.
-## (La tirada de antes: tú, salud + colocón·0,3 − mono·0,3 ± 20, contra él, entre 30 y 70.)
-func _fight_chance() -> float:
+## Probabilidad de ganar una pelea a `npc`: la salud y el colocón ayudan, el mono no, y su
+## fuerza (Npc.stat) cuenta. (La tirada de antes: tú, salud + colocón·0,3 − mono·0,3 ± 20,
+## contra él, entre 30 y 70.)
+func _fight_chance(npc: Npc) -> float:
 	var gs := GameState
-	return clampf(0.5 + (gs.health + gs.high * 0.3 - gs.mono * 0.3 - 50.0) / 80.0, 0.05, 0.95)
+	var p := 0.5 + (gs.health + gs.high * 0.3 - gs.mono * 0.3 - 50.0) / 80.0
+	return clampf(p - (npc.stat("fuerza") - 5) * Defs.STAT_FIGHT, 0.05, 0.95)
 
 
 func _fight_done(npc: Npc, won: bool) -> void:

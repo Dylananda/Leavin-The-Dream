@@ -748,7 +748,7 @@ func grudge() -> String:
 		# los que viven de la calle no van con cuentos a la policía
 		return "aparta" if kind in Defs.NEVER_INTERVENE else "denuncia"
 	if remembers("pegado") > 0 or remembers("pedido") >= Defs.BEG_ANNOY:
-		return "aparta"
+		return "venganza" if stat("agresividad") >= Defs.STAT_HOTHEAD else "aparta"
 	if remembers("ayudado") > 0 or remembers("cliente") > 0:
 		return "acerca"
 	return ""
@@ -759,6 +759,7 @@ func avenger() -> bool:
 	var p: float = Defs.AVENGER_CHANCE[gender]
 	if kind == "fiestero":
 		p += 0.2  # van en grupo y van ciegos
+	p += (stat("valor") + stat("agresividad") - 10) * Defs.STAT_AVENGE
 	return _trait("venganza") < p
 
 
@@ -768,9 +769,18 @@ func temper() -> String:
 	if kind in Defs.NEVER_INTERVENE or is_police():
 		return "pasa"
 	var r := _trait("caracter")
-	if r < Defs.BRAVE_CHANCE:
+	var brave := Defs.BRAVE_CHANCE + (stat("valor") - 5) * Defs.STAT_BRAVE
+	if r < brave:
 		return "valiente"
-	return "llama" if r < Defs.BRAVE_CHANCE + Defs.CALLER_CHANCE else "pasa"
+	if personaje.get("stats", {}).get("llama_policia", false):
+		return "llama"
+	return "llama" if r < brave + Defs.CALLER_CHANCE else "pasa"
+
+
+## Estadística de 0 a 10 del editor de personajes ("fuerza", "valor", "agresividad"); los
+## bots corrientes, 5.
+func stat(what: String) -> int:
+	return int(personaje.get("stats", {}).get(what, 5))
 
 
 ## Tirada 0..1 que depende solo del personaje y de `salt`: el mismo siempre hace lo mismo.

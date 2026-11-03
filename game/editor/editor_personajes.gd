@@ -24,6 +24,8 @@ var _lista: OptionButton
 var _guardados: Array[Dictionary] = []
 var _tipo: OptionButton
 var _tipo_desc: Label
+var _amo: OptionButton  ## (perros) con quién va
+var _amo_label: Label
 var _muneco: VistaMuneco
 var _resumen: RichTextLabel
 var _avisos: RichTextLabel
@@ -188,6 +190,17 @@ func _tab_identidad() -> Control:
 	_tipo_desc.add_theme_color_override("font_color", C_SUAVE)
 	_tipo_desc.custom_minimum_size.x = 300
 	g.add_child(_tipo_desc)
+	# perros: con qué personaje van
+	_amo_label = _lbl("Va con")
+	g.add_child(_amo_label)
+	_amo = OptionButton.new()
+	_amo.tooltip_text = "Sale a la calle y se va con este personaje"
+	_amo.item_selected.connect(func(i):
+		if not _cargando:
+			_def["amo"] = _amo.get_item_metadata(i)
+			_cambio())
+	g.add_child(_amo)
+	_refrescos.append(_rehacer_amos)
 	_text(g, "Historia", ["historia"], "Quién es, de dónde viene, qué le pasó, qué quiere. Es lo que te cuenta si le preguntas (y lo que sabe la IA).", 150)
 	_text(g, "Fuentes", ["fuentes"], "En qué fenómeno documentado del barrio se basa: noticias, informes, entrevistas (enlaces).", 70)
 	return tab
@@ -757,6 +770,25 @@ func _hora_spin() -> SpinBox:
 
 # ------------------------------------------------------------------ estado
 
+## El desplegable de dueño (solo para perros): nadie o uno de los personajes guardados.
+func _rehacer_amos() -> void:
+	var perro: bool = _def["tipo"] == "perro"
+	_amo_label.visible = perro
+	_amo.visible = perro
+	var was := _cargando
+	_cargando = true
+	_amo.clear()
+	_amo.add_item("Nadie (va solo)")
+	_amo.set_item_metadata(0, "")
+	for d in _guardados:
+		if d["tipo"] != "perro":
+			_amo.add_item(d["nombre"])
+			_amo.set_item_metadata(_amo.item_count - 1, d["id"])
+			if d["id"] == _def.get("amo", ""):
+				_amo.select(_amo.item_count - 1)
+	_cargando = was
+
+
 ## Rellena la lista de tipos, agrupados, con su nombre en el género del personaje.
 func _actualizar_tipos() -> void:
 	var was := _cargando
@@ -925,9 +957,9 @@ func _comprobar() -> Array:
 			break
 	if _def["historia"].strip_edges() == "":
 		out.append([false, "Sin historia: es lo que cuenta si le preguntas."])
-	if _def["fuentes"].strip_edges() == "":
+	if _def["fuentes"].strip_edges() == "" and _def["tipo"] != "perro":
 		out.append([false, "Sin fuentes: los personajes se basan en fenómenos documentados del barrio."])
-	if _def["ficha"]["quien"].strip_edges() == "" and not Fichas.has(_def["tipo"]):
+	if _def["ficha"]["quien"].strip_edges() == "" and not Fichas.has(_def["tipo"]) and _def["tipo"] != "perro":
 		out.append([false, "Sin ficha de conversación y su tipo no tiene: no se podrá hablar con él con la IA."])
 	return out
 

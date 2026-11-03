@@ -14,6 +14,7 @@ func _initialize() -> void:
 		var world = current_scene
 		world.censo.pausado = true  # que no se duerma nadie a media prueba (el censo se prueba aparte)
 		_test_censo(world)
+		_test_personajes(world)
 		# los que no salen a esta hora (despedidas, lateros...) se crean a mano para probarlos
 		for kind in world.BASE_NPCS:
 			if world.npcs.filter(func(n): return n.kind == kind).is_empty():
@@ -107,6 +108,36 @@ var _failures := 0
 ## Conversación con IA sin depender de Ollama: contra un puerto en el que no escucha nadie
 ## (el juego debe seguir y avisar en el registro) y con una respuesta inventada que usa
 ## todas las acciones de juego.
+## Personajes del editor: su fuerza cuenta en las peleas, venden lo que pone su ficha y los
+## perros salen con su dueño.
+func _test_personajes(world) -> void:
+	var censo = world.censo
+	var me: Vector2i = world.player.cell
+	var quique = null
+	var txell = null
+	for r in censo.registros:
+		match r["personaje"].get("id", ""):
+			"quique_el_nano":
+				quique = censo.despertar(r, me) if r["npc"] == null else r["npc"]
+			"txell":
+				txell = censo.despertar(r, me) if r["npc"] == null else r["npc"]
+	if quique == null or txell == null:
+		print("  personajes: sin los de ejemplo, no se prueban")
+		return
+	var gs = root.get_node("GameState")
+	var plain = world._spawn_npc("yonki")
+	_check(world.interactions._fight_chance(quique) <= world.interactions._fight_chance(plain),
+		"personajes: la fuerza no cuenta en las peleas")
+	gs.money = 100
+	var buy: Array = world.trade.offers_for(quique).filter(func(a): return a["label"].begins_with("Comprarle base"))
+	_check(not buy.is_empty(), "personajes: Quique no vende lo que pone su ficha")
+	if not buy.is_empty():
+		buy[0]["do"].call()
+		_check(gs.has_item("base"), "personajes: comprar no te da la sustancia")
+	_check(world.npcs.any(func(n): return n.amo == txell and n.display_name == "Tula"), "personajes: Tula no sale con Txell")
+	print("  personajes: OK")
+
+
 ## Censo: el que se aleja se duerme con lo que le ha pasado, el que tiene asuntos contigo no,
 ## al volver se acuerda (y con el tiempo olvida).
 func _test_censo(world) -> void:
