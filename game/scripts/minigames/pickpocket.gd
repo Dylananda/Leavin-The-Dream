@@ -6,6 +6,9 @@ extends Minigame
 ## sospecha («?» amarillo) y, llena la sospecha, te pilla («!» rojo).
 ## La víctima mira a su aire: a los lados, a ti de frente o, si es desconfiada, se palpa el
 ## bolsillo. La cartera en la mochila solo se alcanza cuando se gira del todo.
+## También sirve para robar en una tienda: con `loot` "litrona" (el estante del súper, con el
+## dependiente vigilando) o "propina" (el platito de la barra, con el camarero), el botín no
+## está en un bolsillo sino en un sitio fijo junto a quien vigila.
 ## Resultados: "ok" (lo sacas), "pillado" o "nada" (se va o lo dejas).
 
 const YAW_MAX := 80.0  ## grados que gira la víctima a cada lado
@@ -17,11 +20,23 @@ const NEAR := 150.0  ## píxeles: más cerca del bolsillo, la mano ya es sospech
 const C_WALLET := Color("6b4226")
 const C_PHONE := Color("1c1c22")
 const C_MAP := Color("efe6c8")
+const C_BOTTLE := Color("3a7a3a")
+const C_COINS := Color("e0b040")
+## Lo que se dice de cada botín: [título, nombre en el marcador, lo que te llevas, lo que dice
+## la mano que distrae].
+const LOOT := {
+	"cartera": ["Robarle la cartera a %s", "Cartera", "la cartera", "Excuse me... ¿Sagrada Familia?"],
+	"movil": ["Robarle el móvil a %s", "Móvil", "el móvil", "Bro, ¿tienes fuego?"],
+	"litrona": ["Robar una litrona en el súper", "Litrona", "la litrona", "Perdona, ¿tenéis tabaco?"],
+	"propina": ["Robar la propina del platito", "Propina", "la propina", "¿Me cobras? ¿Cuánto es?"],
+}
 
 var _npc: Npc
 var _loot := "cartera"  ## "cartera" o "movil"
 var _victim: Actor
 var _in_backpack := false
+var _fixed := false  ## el botín está en un sitio fijo (tienda), no en un bolsillo
+var _target := Vector3.ZERO  ## (fijo) dónde está, en la escena
 var _side := 1.0  ## bolsillo en el lado +X (izquierda de la víctima) o -X
 var _look := 0.0  ## hacia dónde mira: -1 izquierda de la pantalla, 0 a ti, 1 derecha
 var _look_target := 0.0
@@ -40,7 +55,10 @@ var _talk := 0.0  ## segundos que le queda al bocadillo de lo que le dices
 func _init(npc: Npc, loot: String) -> void:
 	_npc = npc
 	_loot = loot
-	title = "Robarle %s a %s" % ["la cartera" if loot == "cartera" else "el móvil", npc.display_name]
+	title = LOOT[loot][0] % npc.display_name if "%s" in LOOT[loot][0] else LOOT[loot][0]
+	_fixed = loot in ["litrona", "propina"]
+	if _fixed:
+		help = "WASD: la mano que distrae   ·   Ratón: la otra mano   ·   Mantén el clic en %s para cogerla" % ("el estante" if loot == "litrona" else "el platito")
 	help = "WASD: la mano que distrae   ·   Ratón: la otra mano   ·   Mantén el clic en el bolsillo para sacarlo"
 	give_up_result = "nada"
 
@@ -50,12 +68,23 @@ func auto_result(chance: float) -> String:
 
 
 func _setup_stage() -> void:
-	_lighting(Color("b98a5e"))
-	_box(Vector3(5, 3.2, 0.3), Color("2a3a44"), Vector3(-4.5, 2.4, -13.6))  # escaparate
-	_box(Vector3(3, 2.4, 0.3), Color("ffd890") if GameState.is_night() else Color("4a5a64"), Vector3(4, 2.0, -13.6))
 	_victim = puppet_of(_npc)
 	_stage.add_child(_victim)
 	_side = [-1.0, 1.0].pick_random()
+	if _loot == "litrona":
+		_lighting(Color("d8dce0"))
+		_box(Vector3(8, 3.4, 0.3), Color("c8ccd0"), Vector3(0, 2.4, -13.6))  # la pared del súper
+		_box(Vector3(1.2, 1.9, 0.5), Color("8a9098"), Vector3(_side * 1.5, 0.95, -0.2))  # el estante
+		_target = Vector3(_side * 1.5, 1.35, 0.1)
+	elif _loot == "propina":
+		_lighting(Color("c08a50"))
+		_box(Vector3(8, 3.4, 0.3), Color("4a3020"), Vector3(0, 2.4, -13.6))  # el fondo del bar
+		_box(Vector3(3.6, 1.1, 0.6), Color("6a4a30"), Vector3(0, 0.55, 0.7))  # la barra
+		_target = Vector3(_side * 0.9, 1.15, 0.75)
+	else:
+		_lighting(Color("b98a5e"))
+		_box(Vector3(5, 3.2, 0.3), Color("2a3a44"), Vector3(-4.5, 2.4, -13.6))  # escaparate
+		_box(Vector3(3, 2.4, 0.3), Color("ffd890") if GameState.is_night() else Color("4a5a64"), Vector3(4, 2.0, -13.6))
 	_in_backpack = _loot == "cartera" and _victim.accessory == "mochila" and randf() < 0.5
 	_camera.fov = 40.0
 	_camera.look_at_from_position(Vector3(0.5, 2.25, 3.5), Vector3(0, 2.05, 0), Vector3.UP)
@@ -113,10 +142,10 @@ func _tick(delta: float) -> void:
 	if inside and _reachable():
 		_progress += delta / (Defs.PICK_EXTRACT * (0.8 + 0.5 * difficulty))
 		if _progress >= 1.0:
-			finish("ok", "¡Fuera! Te llevas %s." % ("la cartera" if _loot == "cartera" else "el móvil"), C_GOOD)
+			finish("ok", "¡Fuera! Te llevas %s." % LOOT[_loot][2], C_GOOD)
 			return
 	_status.text = "Sospecha %d %%   ·   %s %d %%   ·   Se va en %d s" % [
-		roundi(_suspicion * 100.0), "Cartera" if _loot == "cartera" else "Móvil", roundi(_progress * 100.0), ceili(_left)]
+		roundi(_suspicion * 100.0), LOOT[_loot][1], roundi(_progress * 100.0), ceili(_left)]
 
 
 ## A dónde mira: a la mano que distrae si le interesa; si no, a su aire (y, cuanto más
@@ -162,11 +191,15 @@ func _pocket_local() -> Vector3:
 
 
 func _pocket() -> Vector2:
+	if _fixed:
+		return to_frame(_target)
 	return to_frame(_victim.transform * _pocket_local())
 
 
 ## El bolsillo (o la mochila) queda a tu alcance: no está del todo de espaldas a ti.
 func _reachable() -> bool:
+	if _fixed:
+		return true
 	var normal := Vector3(0, 0, -1) if _in_backpack else Vector3(_side, 0, 0)
 	return (_victim.basis * normal).z > -0.45
 
@@ -177,12 +210,18 @@ func _draw_overlay(c: Control) -> void:
 	# el botín asomando del bolsillo (sale según lo que lo has sacado)
 	if _reachable() and _progress < 1.0:
 		var p := _pocket() + Vector2(0, -_progress * 22.0)
-		var col := C_WALLET if _loot == "cartera" else C_PHONE
-		var r := Rect2(p - Vector2(11, 8), Vector2(22, 16) if _loot == "cartera" else Vector2(14, 24))
-		c.draw_rect(r.grow(2.0), Color.BLACK)
-		c.draw_rect(r, col)
+		if _loot == "propina":
+			for i in 4:
+				c.draw_circle(p + Vector2(-9 + i * 6, -i % 2 * 3), 7.0, Color.BLACK)
+				c.draw_circle(p + Vector2(-9 + i * 6, -i % 2 * 3), 5.0, C_COINS)
+		else:
+			var col: Color = {"cartera": C_WALLET, "movil": C_PHONE, "litrona": C_BOTTLE}[_loot]
+			var size: Vector2 = {"cartera": Vector2(22, 16), "movil": Vector2(14, 24), "litrona": Vector2(14, 36)}[_loot]
+			var r := Rect2(p - size / 2.0, size)
+			c.draw_rect(r.grow(2.0), Color.BLACK)
+			c.draw_rect(r, col)
 	if _pat > 0.0:
-		_icon(c, _pocket() + Vector2(0, 34), "*se palpa*", Color(1, 1, 1, 0.85), 16)
+		_icon(c, _pocket() + Vector2(0, 34), "*mira el estante*" if _loot == "litrona" else ("*mira el platito*" if _loot == "propina" else "*se palpa*"), Color(1, 1, 1, 0.85), 16)
 	# sospecha sobre la cabeza
 	var head := _head() + Vector2(0, -95)
 	if _suspicion > 0.7:
@@ -207,10 +246,10 @@ func _draw_overlay(c: Control) -> void:
 	var pinch := Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)
 	_hand(c, _hand_r, skin, pinch)
 	if _progress > 0.0 and pinch and _hand_r.distance_to(_pocket()) < REACH:
-		var col := C_WALLET if _loot == "cartera" else C_PHONE
+		var col: Color = {"cartera": C_WALLET, "movil": C_PHONE, "litrona": C_BOTTLE, "propina": C_COINS}[_loot]
 		c.draw_rect(Rect2(_hand_r - Vector2(9, 14), Vector2(18, 12)), col)
 	if _talk > 0.0:
-		var line := "Excuse me... ¿Sagrada Familia?" if _loot == "cartera" else "Bro, ¿tienes fuego?"
+		var line: String = LOOT[_loot][3]
 		_icon(c, _hand_l + Vector2(10, -78), line, Color("fffbe8"), 16)
 
 

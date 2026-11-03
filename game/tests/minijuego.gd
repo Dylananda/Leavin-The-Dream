@@ -1,6 +1,6 @@
 extends SceneTree
 ## Captura de un minijuego a medias, sin jugarlo: para revisar la vista y el dibujo.
-## Uso: godot --path game --resolution 1600x900 --script res://tests/minijuego.gd -- <salida.png> <robo|movil|vigia|aguador|pelea> [hora] [sustancias]
+## Uso: godot --path game --resolution 1600x900 --script res://tests/minijuego.gd -- <salida.png> <robo|movil|litrona|propina|vigia|aguador|pelea> [hora] [sustancias]
 ## En el robo, la mano que distrae se pone a un lado y la otra en el bolsillo; en el vigía
 ## pasan unos segundos de gente.
 
@@ -20,7 +20,7 @@ func _initialize() -> void:
 		gs.add_item(id)
 		gs.consume(id, true)
 	var world = current_scene
-	var kind: String = {"robo": "turista", "movil": "fiestero", "vigia": "mantero", "aguador": "camello", "pelea": "yonki"}[which]
+	var kind: String = {"robo": "turista", "movil": "fiestero", "litrona": "vecino", "propina": "vecino", "vigia": "mantero", "aguador": "camello", "pelea": "yonki"}[which]
 	var npc = null
 	for n in world.npcs:
 		if n.kind == kind:
@@ -31,15 +31,16 @@ func _initialize() -> void:
 	for i in 10:
 		await process_frame
 	var game
-	if which in ["robo", "movil"]:
-		game = load("res://scripts/minigames/pickpocket.gd").new(npc, "cartera" if which == "robo" else "movil")
+	if which in ["robo", "movil", "litrona", "propina"]:
+		var loot: String = {"robo": "cartera", "movil": "movil"}.get(which, which)
+		game = load("res://scripts/minigames/pickpocket.gd").new(npc, loot)
 	elif which == "pelea":
 		game = load("res://scripts/minigames/fight.gd").new(npc)
 	else:
 		game = load("res://scripts/minigames/lookout.gd").new(npc)
 	world.play_minigame(game, 0.5, func(result, stats): print("resultado: ", result, " ", stats))
 	await process_frame
-	if which in ["robo", "movil"]:
+	if which in ["robo", "movil", "litrona", "propina"]:
 		game._hand_l = Vector2(160, 170)
 		game._interest = 1.0
 		for i in 60:

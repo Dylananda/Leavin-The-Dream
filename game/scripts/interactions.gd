@@ -18,6 +18,16 @@ static func _act(label: String, fn: Callable) -> Dictionary:
 	return {"label": label, "do": fn}
 
 
+## Quien vigila una tienda o un bar en los minijuegos de robar: un bot de usar y tirar (no
+## sale a la calle; se libera al acabar), con la camiseta de su uniforme.
+func _clerk(name: String, shirt: Color) -> Npc:
+	var n := Npc.new()
+	n.init_kind("vecino", name)
+	n.look["shirt"] = shirt
+	n.look.erase("jacket")
+	return n
+
+
 func _chance(p: float) -> bool:
 	return randf() < clampf(p, 0.02, 0.95)
 
@@ -1219,15 +1229,20 @@ func for_poi(poi: Dictionary) -> Array:
 			acts.append(_buy("Comprar una litrona", 2, "litrona"))
 			acts.append(_buy("Comprar un bocadillo", 3, "bocadillo"))
 			acts.append(_act("Robar una litrona", func():
-				if _chance(0.6 - 0.2 * world.police_watching()):
-					gs.add_item("litrona")
-					gs.log_msg("Litrona bajo el abrigo. Nadie ha visto nada.", G.C_GOOD)
-					gs.milestone("primer_robo")
-				else:
-					_heat(40)
-					gs.log_msg("El de seguridad te pilla y te echa a empujones.", G.C_BAD)
-					world.scandal(null, "«¡Al ladrón!», grita el de seguridad.")
-				gs.change_dignity(-2)))
+				# minijuego: distraer al dependiente y coger la litrona del estante
+				var clerk := _clerk("El dependiente", Color("2a6ab0"))
+				world.play_minigame(Pickpocket.new(clerk, "litrona"), 0.6 - 0.2 * world.police_watching(), func(result: String, _stats: Dictionary):
+					clerk.free()
+					if result == "ok":
+						gs.add_item("litrona")
+						gs.log_msg("Litrona bajo el abrigo. Nadie ha visto nada.", G.C_GOOD)
+						gs.milestone("primer_robo")
+						gs.change_dignity(-2)
+					elif result == "pillado":
+						_heat(40)
+						gs.log_msg("El dependiente te pilla y te echa a empujones.", G.C_BAD)
+						world.scandal(null, "«¡Al ladrón!», grita el dependiente.")
+						gs.change_dignity(-2))))
 		"farmacia":
 			if gs.can_get_meds():
 				acts.append(_act("Recoger tu medicación", func():
@@ -1253,15 +1268,20 @@ func for_poi(poi: Dictionary) -> Array:
 					gs.log_msg("El camarero te echa con un trapo.")
 				gs.change_dignity(-3, "Mendigar en una terraza")))
 			acts.append(_act("Robar la propina del platito", func():
-				if _chance(0.5):
-					var n := randi_range(2, 6)
-					gs.add_money(n)
-					gs.log_msg("%d € de propina ajena." % n, G.C_GOOD)
-					gs.milestone("primer_robo")
-				else:
-					_heat(40)
-					world.scandal(null, "«¡Eh, tú! ¡Esa propina!» Sales por patas.")
-				gs.change_dignity(-2)))
+				# minijuego: distraer al camarero y coger las monedas del platito de la barra
+				var waiter := _clerk("El camarero", Color("f0f0ea"))
+				world.play_minigame(Pickpocket.new(waiter, "propina"), 0.5, func(result: String, _stats: Dictionary):
+					waiter.free()
+					if result == "ok":
+						var n := randi_range(2, 6)
+						gs.add_money(n)
+						gs.log_msg("%d € de propina ajena." % n, G.C_GOOD)
+						gs.milestone("primer_robo")
+						gs.change_dignity(-2)
+					elif result == "pillado":
+						_heat(40)
+						world.scandal(null, "«¡Eh, tú! ¡Esa propina!» Sales por patas.")
+						gs.change_dignity(-2))))
 		"kebab":
 			acts.append(_buy_effect("Comerte un dürüm", 4, func():
 				gs.add_item("durum")

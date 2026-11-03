@@ -46,6 +46,8 @@ oficio de carterista) ahora sube o baja la dificultad. Esc: dejarlo.
   botín. Si te ve la mano metida sospecha («?») y te pilla («!»). Mira a su aire: a los lados,
   a ti, o se palpa el bolsillo; la cartera de la mochila solo se alcanza si se gira del todo.
   Si se va sin que haya ocasión, se queda mosca y no se deja intentar otra vez.
+  Robar una litrona en el súper o la propina del platito de un bar es igual, pero el botín
+  está en el estante o en la barra y quien vigila es el dependiente o el camarero.
 - **Hacer de vigía** (del mantero, del trilero o de aguador del camello): pasa gente por la
   calle. Clic izquierdo («¡Agua!») a la policía antes de que llegue a la manta; clic derecho
   para llamar a un cliente. Las secretas van de paisano, más despacio, se paran a mirar y se
