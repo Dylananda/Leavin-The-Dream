@@ -5,6 +5,7 @@ extends SceneTree
 
 func _initialize() -> void:
 	var gs = root.get_node("GameState")
+	load("res://scripts/partida.gd").automatico = false  # que no se guarde sola en user:// durante la prueba
 	for profile in Defs.PROFILES:
 		gs.new_game(profile["id"])
 		gs.money = 500
@@ -106,6 +107,7 @@ func _initialize() -> void:
 			gs.day, gs.caida, gs.dignity, gs.health, gs.hunger, gs.fatigue, gs.sanity, gs.alive, gs.milestones])
 		get_root().get_tree().paused = false
 	await _test_finales()
+	await _test_partida()
 	await _test_editor()
 	print("FALLOS: %d" % _failures if _failures > 0 else "OK")
 	quit(1 if _failures > 0 else 0)
@@ -716,6 +718,82 @@ func _test_misiones(gs, world) -> void:
 	print("  misiones: OK")
 
 
+## Partidas guardadas: se guarda a media partida (con un encargo en marcha, un vecino que te
+## recuerda, lo hablado con la IA...), se carga en un mundo nuevo y todo coincide.
+func _test_partida() -> void:
+	var gs = root.get_node("GameState")
+	var Pa = load("res://scripts/partida.gd")
+	gs.new_game(Defs.PROFILES[1]["id"])
+	change_scene_to_file("res://scenes/world.tscn")
+	await process_frame
+	await process_frame
+	var world = current_scene
+	world.censo.pausado = true
+	_steady(gs)
+	gs.money = 123
+	gs.add_item("bici")
+	gs.add_item("speed", 2)
+	gs.day = 3
+	gs.minute_of_day = 15.0 * 60.0 + 20.0
+	gs.milestone("chivato")
+	gs.mark_wanted("prueba de la partida", "hurto")
+	gs.apartados["vera"] = INF
+	gs.favores = {"txell": {"curar": INF}}
+	gs.misiones = {"antonio/el_cajero_de_antonio": {"estado": "hecho", "dia": 2}}
+	var npc = _fresh(world, "vecino")
+	npc.remember("ayudado")
+	npc.remember("ayudado")
+	npc.consumo = {"id": "litrona", "enganche": 33.0, "colocon": 20.0, "mono": 5.0, "dosis": 1, "t": gs.now()}
+	var name: String = npc.display_name
+	var dealer = _npc_of(world, "camello")
+	dealer.known = true
+	dealer.debt = 0
+	dealer.remove_meta("encargo_dia")
+	dealer.remove_meta("enemigo")
+	var offer = world.interactions.for_npc(dealer).filter(func(a): return a["label"].begins_with("Encargo:"))
+	_check(not offer.is_empty(), "partida: el camello no ofrece su encargo")
+	if not offer.is_empty():
+		offer[0]["do"].call()
+	var dealer_name: String = dealer.display_name
+	world.conversation._memory["yonki|Paco"] = {"messages": [{"role": "user", "content": "Hola"}], "facts": ["Le has caído bien"]}
+	var cell: Vector2i = world.player.cell
+	var regs: int = world.censo.registros.size()
+	var path := "user://partidas/prueba_humo.json"
+	_check(Pa.guardar(world, path) == OK, "partida: no se guarda")
+	_check(not Pa.cabecera(path).is_empty() and Pa.cabecera(path)["dia"] == 3, "partida: la cabecera no dice el día")
+	gs.money = 0
+	_check(Pa.cargar(path), "partida: no se carga")
+	change_scene_to_file("res://scenes/world.tscn")
+	await process_frame
+	await process_frame
+	world = current_scene
+	world.censo.pausado = true
+	_check(gs.money == 123 and gs.inventory.get("speed", 0) == 2 and gs.has_item("bici"), "partida: no vuelven el dinero o el inventario")
+	_check(gs.day == 3 and gs.hour() == 15 and "chivato" in gs.milestones and gs.is_wanted(), "partida: no vuelven el día, la hora, los hitos o el fichaje")
+	_check(gs.apartados.get("vera", 0.0) == INF and gs.favores["txell"]["curar"] == INF and gs.misiones.has("antonio/el_cajero_de_antonio"),
+		"partida: no vuelven los detenidos, los favores o las misiones")
+	_check(world.player.cell == cell, "partida: no vuelves a donde estabas")
+	_check(world.censo.registros.size() == regs, "partida: el censo no es el mismo (%d de %d)" % [world.censo.registros.size(), regs])
+	var found := false
+	for r in world.censo.registros:
+		if r["kind"] == "vecino" and r["name"] == name:
+			var mem: Dictionary = r["npc"].memory if r["npc"] != null else r["estado"].get("memory", {})
+			var con: Dictionary = r["npc"].consumo if r["npc"] != null else r["estado"].get("consumo", {})
+			if mem.get("ayudado", 0) == 2 and con.get("id", "") == "litrona":
+				found = true
+	_check(found, "partida: el vecino al que ayudaste no se acuerda (o no consume lo suyo)")
+	var active: Array = gs.errands.filter(func(e): return e["state"] == "activo")
+	_check(active.size() == 1 and is_instance_valid(active[0]["giver"]) and active[0]["giver"].display_name == dealer_name,
+		"partida: el encargo en marcha no vuelve con quien te lo dio")
+	if not active.is_empty() and is_instance_valid(active[0]["giver"]):
+		_check(world.errands.marker_for(active[0]["giver"]) == "★", "partida: quien te dio el encargo no lleva la estrella")
+	_check(not gs.notes.is_empty() and is_same(gs.notes[-1]["errand"], gs.errands[-1]), "partida: la libreta no apunta a sus encargos")
+	_check(world.conversation._memory.has("yonki|Paco"), "partida: no vuelve lo hablado con la IA")
+	_check(Pa.pendiente.is_empty(), "partida: queda algo por aplicar")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+	print("  partida guardada y cargada: OK")
+
+
 ## Fase 3: relaciones entre personajes y misiones encadenadas y cruzadas. Te chivas de Vera
 ## por el pasaporte de Grzegorz (El Mudo se entera y ya no te vende el acordeón; sin Vera,
 ## nadie le roba a Margit por el camino), el Sr. Feliu o Pol (una u otra), las pruebas del
@@ -1177,6 +1255,7 @@ func _test_consumo(gs, world) -> void:
 	var r: Dictionary = world.censo.nuevo("yonki")
 	var z = world.censo.despertar(r, world.player.cell)
 	z.consumo = {"id": "caballo", "enganche": 70.0, "colocon": 50.0, "mono": 0.0, "dosis": 0, "t": gs.now()}
+	z.money = 0  # (sin dinero no pilla: que no se vuelva a colocar mientras está latente)
 	world.censo.dormir(r)
 	r["estado"]["consumo"]["t"] -= 600.0
 	r["visto"] -= 600.0

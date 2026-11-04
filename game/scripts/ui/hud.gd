@@ -8,6 +8,7 @@ signal menu_closed
 signal restart_requested
 signal use_item_requested(id: String)
 signal find_place_requested(poi: Dictionary)
+signal save_requested  ## «Guardar» en la pausa (World.guardar_partida)
 
 ## [variable de GameState, etiqueta, color, si es mala cuando sube, explicación]
 const BARS := [
@@ -506,7 +507,7 @@ func _build_pause() -> void:
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	sub.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
 	v.add_child(sub)
-	for b in [["Seguir (P)", toggle_pause], ["Mapa del barrio (M)", toggle_map]]:
+	for b in [["Seguir (P)", toggle_pause], ["Mapa del barrio (M)", toggle_map], ["Guardar la partida", func(): save_requested.emit()]]:
 		var btn := Button.new()
 		btn.text = b[0]
 		btn.custom_minimum_size.y = 40

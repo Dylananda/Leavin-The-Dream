@@ -11,6 +11,7 @@ signal message(text: String, color: Color)
 signal game_over(reason: String)
 ## Algo te ha dejado fuera de juego y apareces en otro sitio ("cap": urgencias o el alta del psiquiátrico).
 signal relocated(place: String)
+signal new_day  ## empieza un día (World guarda la partida: ver Partida)
 
 const C_INFO := Color(0.85, 0.85, 0.8)
 const C_GOOD := Color(0.55, 0.85, 0.5)
@@ -19,6 +20,7 @@ const C_FALL := Color(0.85, 0.55, 0.95)
 const C_VOICE := Color(0.6, 0.8, 1.0)
 
 var profile: Dictionary = {}
+var partida_id := ""  ## archivo de la partida guardada (ver Partida); "" hasta que se guarda
 var money := 0
 var bank := 0
 var health := 100.0
@@ -100,6 +102,7 @@ var discretion: float:
 
 func new_game(profile_id: String) -> void:
 	profile = Defs.profile(profile_id)
+	partida_id = ""
 	money = profile["money"]
 	bank = 0
 	health = profile["health"]
@@ -362,6 +365,7 @@ func _update_body(m: float) -> void:
 
 func _new_day() -> void:
 	day += 1
+	new_day.emit()
 	# Borja: si cae demasiado, su familia viene a por él (y eso, aquí, es perder)
 	if profile.get("id") == "nino_bien" and dignity < Defs.HOME_RESCUE_DIGNITY and alive and randf() < Defs.HOME_RESCUE_CHANCE:
 		_end("Un domingo aparece tu madre con el chófer y una psicóloga. Te meten en el coche sin preguntar. Una clínica en Suiza, luego un máster. En las cenas de Navidad, lo del Raval es «aquella etapa».",

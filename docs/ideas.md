@@ -124,7 +124,23 @@ sí y una memoria poco fiable**, que puede ir creciendo hacia misiones de rol en
       esté latente o lejos: aparece fuera de la vista y va hacia ti (`Censo.despertadores`,
       `Npc.come_for`); si no pagas, vuelve cada `Defs.DEBT_VISIT_EVERY` horas. Las deudas ya
       no tienen al acreedor siempre con cuerpo.
-    - [ ] Guardar el censo en la partida guardada (cuando haya partidas guardadas)
+    - [x] Guardar el censo en la partida guardada (hecho con las partidas guardadas, abajo)
+13. **Partidas guardadas** — hecho (`scripts/partida.gd`)
+    - [x] Un archivo JSON por partida en `user://partidas/`, con número de versión y una cabecera
+      legible (perfil, día, hora, cuándo se guardó, si sigue viva); los datos van con sus tipos
+      (`JSON.from_native`). Se guarda todo `GameState` por nombre de campo (`Partida.CAMPOS`):
+      al cargar se empieza una partida nueva del mismo perfil y se ponen los campos que haya,
+      así que añadir campos no rompe las partidas viejas (se quedan como en una nueva).
+    - [x] El censo entero, con lo que recuerda cada uno y lo que consume, también los personajes
+      del editor (por su id); los que tienen cuerpo, como si se durmieran (`Censo.foto`). Los
+      encargos y misiones en marcha vuelven con quien te los dio; la libreta, con sus encargos.
+    - [x] Lo hablado con la IA, dónde estás y si vas en bici.
+    - [x] Se guarda sola al dormir y al empezar un día; a mano, «Guardar la partida» en la pausa.
+      En el menú de inicio, «Continuar» carga la última que sigue viva (al acabar una partida
+      queda como terminada).
+    - [ ] Pendiente: elegir entre varias partidas guardadas y borrarlas; guardar los objetos de
+      la calle y los marcadores de los sitios; el relevo y el legado (otro yonki con lo que dejó
+      el anterior) tirarán de aquí.
 
 ## 2. Estado del personaje
 

@@ -10,6 +10,8 @@ Abre `game/project.godot` con Godot 4.7 y pulsa F5.
 - WASD o flechas: andar (Shift: correr)
 - Clic: ir a un sitio, o hablar con un bot / entrar en un lugar
 - I: inventario · L: libreta · M: mapa del barrio · P: pausa (también con los botones de arriba a la derecha)
+- La partida se guarda sola al dormir y al empezar cada día, y a mano desde la pausa; «Continuar»
+  en el menú de inicio sigue la última
 - R: rebuscar en la basura · Z: dormir donde estés · B: montar en la bici (si llevas una)
 - V: ver los conos de visión de todos los que tienes cerca
 - Q/E: girar la cámara · Rueda: zoom
@@ -256,6 +258,8 @@ python tools/make_textures.py
   ido mientras estaban latentes (equilibrio en `Defs.NPC_HABITS` y `Defs.NPC_*`)
 - `game/scripts/errands.gd` — encargos con plazo (ofrecer, cumplir, fallar) y la libreta que
   se apunta y se lee peor cuanto más ido vas (equilibrio en `Defs.ERRANDS`)
+- `game/scripts/partida.gd` — partidas guardadas: un JSON por partida en `user://partidas/` con
+  `GameState`, el censo, la memoria de la IA y dónde estás (`Partida.CAMPOS`, `Partida.VERSION`)
 - `game/scripts/relaciones.gd` — relaciones entre personajes y cómo se corre la voz de lo que les haces
 - `game/editor/esquema.gd` — el esquema de las cadenas de misiones del diseñador
 - `game/scripts/misiones.gd` — misiones de los personajes del editor: formato (`Misiones.nueva()`,

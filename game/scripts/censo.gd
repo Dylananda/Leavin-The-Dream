@@ -226,6 +226,21 @@ func dormir(r: Dictionary) -> void:
 	var npc: Npc = r["npc"]
 	if npc == null:
 		return
+	foto(r)
+	for f in world.npcs.filter(func(n): return n.amo == npc):
+		world.npcs.erase(f)
+		f.queue_free()
+	world.npcs.erase(npc)
+	npc.queue_free()
+	r["npc"] = null
+
+
+## Guarda en el registro lo que le ha pasado al que tiene cuerpo, como si se durmiera ahora
+## (sin quitárselo): lo usan dormir() y las partidas guardadas (Partida).
+func foto(r: Dictionary) -> void:
+	var npc: Npc = r["npc"]
+	if npc == null or not is_instance_valid(npc):
+		return
 	for k in ESTADO:
 		var v = npc.get(k)
 		r["estado"][k] = v.duplicate(true) if v is Dictionary else v
@@ -236,12 +251,6 @@ func dormir(r: Dictionary) -> void:
 	r["home"] = npc.home
 	r["bed"] = npc.bed
 	r["visto"] = GameState.now()
-	for f in world.npcs.filter(func(n): return n.amo == npc):
-		world.npcs.erase(f)
-		f.queue_free()
-	world.npcs.erase(npc)
-	npc.queue_free()
-	r["npc"] = null
 
 
 ## Le da cuerpo donde le toca estar: lejos de la vista si está cerca, y yendo hacia su sitio.

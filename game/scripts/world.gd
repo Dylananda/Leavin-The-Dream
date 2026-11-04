@@ -124,6 +124,7 @@ var _marker_timer := 0.0
 var _xray_m := XRAY_RADIUS_M
 var _all_cones := false  ## tecla V: ver los conos de visión de todos los cercanos
 var _grabbed := 0.0  ## segundos que te quedan agarrado por un transeúnte
+var _autoguardado_pendiente := false
 
 
 func _ready() -> void:
@@ -172,7 +173,8 @@ func _ready() -> void:
 	add_child(conversation)
 	_place_markers()
 	_personajes = Personajes.cargar_todos()
-	misiones.preparar()
+	if Partida.pendiente.is_empty():
+		misiones.preparar()  # (una partida cargada ya trae lo que debes)
 	Npc.reservados.clear()
 	for d in _personajes:
 		Npc.reservados[d["tipo"] + "|" + d["nombre"]] = true
@@ -205,8 +207,35 @@ func _ready() -> void:
 	hud.find_place_requested.connect(highlight_poi)
 	GameState.game_over.connect(_on_game_over)
 	GameState.relocated.connect(_on_relocated)
+	GameState.new_day.connect(_autoguardar)
+	hud.save_requested.connect(guardar_partida)
 
-	_intro()
+	if not Partida.pendiente.is_empty():
+		Partida.aplicar_mundo(self)
+		GameState.log_msg("Partida cargada: día %d, %s. Sigues donde lo dejaste." % [GameState.day, Partida.hora()])
+	else:
+		_intro()
+
+
+## Guarda la partida (desde la pausa) y lo dice en el registro.
+func guardar_partida() -> void:
+	var err := Partida.guardar(self)
+	if err == OK:
+		GameState.log_msg("Partida guardada (día %d, %s)." % [GameState.day, Partida.hora()], GameState.C_GOOD)
+	else:
+		GameState.log_msg("No se ha podido guardar la partida (%s)." % error_string(err), GameState.C_BAD)
+
+
+## Guardado automático al dormir y al empezar un día: al final del frame, una sola vez aunque
+## pasen las dos cosas a la vez (dormir hasta el día siguiente).
+func _autoguardar() -> void:
+	if not Partida.automatico or not GameState.alive or _autoguardado_pendiente:
+		return
+	_autoguardado_pendiente = true
+	(func():
+		_autoguardado_pendiente = false
+		if GameState.alive and is_inside_tree():
+			Partida.guardar(self)).call_deferred()
 
 
 func _setup_lighting() -> void:
@@ -893,8 +922,10 @@ func sleep(minutes: float, robbery_risk: float, heal: float, quality: float, pla
 		GameState.milestone("desalojo")
 		player.setup(city, city.random_walkable_near(player.cell, 15))
 		_camera_focus = player.position
+		_autoguardar()
 		return
 	GameState.rest(minutes, quality, robbery_risk, heal)
+	_autoguardar()
 
 
 ## Si, durmiendo a la vista en `place`, la Guàrdia Urbana te despierta y te echa: casi seguro
@@ -1528,6 +1559,9 @@ func _exit_tree() -> void:
 
 func _on_game_over(reason: String) -> void:
 	Engine.time_scale = 1.0
+	# la partida guardada queda como terminada: «Continuar» ya no la ofrece
+	if Partida.automatico and GameState.partida_id != "":
+		Partida.guardar(self)
 	player.stop()
 	hud.close_menu()
 	hud.show_game_over(reason)
