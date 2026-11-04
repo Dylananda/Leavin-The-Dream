@@ -55,6 +55,17 @@
 		"*desaparece*"
 	],
 	"misiones": [],
-	"relaciones": [],
-	"notas": "Tiene el pasaporte de Grzegorz. Xavi (urbana de paisano) va tras ella. Misión: recuperar el pasaporte (comprárselo, robárselo o chivarte)."
+	"relaciones": [
+		{
+			"con": "el_mudo",
+			"tipo": "amigo",
+			"nota": "Carteristas de la Rambla: se cubren y se avisan"
+		},
+		{
+			"con": "xavi",
+			"tipo": "enemigo",
+			"nota": "Xavi, de paisano, va tras ella"
+		}
+	],
+	"notas": "Tiene el pasaporte de Grzegorz (te lo vende, se lo robas o te chivas a Xavi). Sigue a Margit por la Rambla: puede robarle mientras la acompañas. Amiga de El Mudo; Xavi (urbana de paisano) va tras ella."
 }

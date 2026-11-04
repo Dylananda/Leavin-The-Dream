@@ -11,6 +11,7 @@ signal message(text: String, color: Color)
 signal game_over(reason: String)
 ## Algo te ha dejado fuera de juego y apareces en otro sitio ("cap": urgencias o el alta del psiquiátrico).
 signal relocated(place: String)
+signal new_day  ## empieza un día (World guarda la partida: ver Partida)
 
 const C_INFO := Color(0.85, 0.85, 0.8)
 const C_GOOD := Color(0.55, 0.85, 0.5)
@@ -19,6 +20,7 @@ const C_FALL := Color(0.85, 0.55, 0.95)
 const C_VOICE := Color(0.6, 0.8, 1.0)
 
 var profile: Dictionary = {}
+var partida_id := ""  ## archivo de la partida guardada (ver Partida); "" hasta que se guarda
 var money := 0
 var bank := 0
 var health := 100.0
@@ -48,6 +50,10 @@ var fines := 0  ## Multas de la Guàrdia Urbana (ver fine())
 var admissions := 0  ## Ingresos en el psiquiátrico
 ## Sustancias que conoces: id -> {"high": colocón, "mono": mono, "addiction": enganche, "crash": minutos de bajón}
 var subs: Dictionary = {}
+## Resacas en curso: {sustancia: {"nivel": 0..Defs.RESACA_MAX, "left": minutos, "total": minutos}}.
+## Empiezan al dormir con lo consumido desde la última vez (subs[id]["resaca_pend"]).
+var resacas: Dictionary = {}
+var _next_receta_day := 0  ## (CAP) desde qué día te vuelve a hacer una receta el médico
 ## Encargos aceptados y lo que apuntaste de ellos en la libreta (ver scripts/errands.gd).
 ## Cada nota guarda lo que crees que te dijeron, que no siempre coincide con el encargo.
 var errands: Array = []
@@ -61,6 +67,7 @@ var pistas: Array = []
 var misiones: Dictionary = {}
 var favores: Dictionary = {}
 var debe_a: Dictionary = {}
+var apartados: Dictionary = {}  ## {personaje: now() hasta el que está fuera del barrio (detenido)}
 ## Minutos que adelanta (o retrasa) el reloj del HUD mientras miente; ver _update_clock_lie().
 var clock_skew := 0.0
 var _clock_lie_left := 0.0  ## minutos que le quedan a la mentira del reloj
@@ -99,6 +106,7 @@ var discretion: float:
 
 func new_game(profile_id: String) -> void:
 	profile = Defs.profile(profile_id)
+	partida_id = ""
 	money = profile["money"]
 	bank = 0
 	health = profile["health"]
@@ -111,6 +119,8 @@ func new_game(profile_id: String) -> void:
 	riding = false
 	starving = 0.0
 	subs = {}
+	resacas = {}
+	_next_receta_day = 0
 	for id in profile["knows"]:
 		_learn(id, float(profile["knows"][id]))
 	heat = 0.0
@@ -140,6 +150,7 @@ func new_game(profile_id: String) -> void:
 	misiones = {}
 	favores = {}
 	debe_a = {}
+	apartados = {}
 	clock_skew = 0.0
 	_clock_lie_left = 0.0
 	_clock_blank = false
@@ -247,7 +258,7 @@ func _update_clock_lie(m: float) -> void:
 	var dir := 1.0 if randf() < 0.5 else -1.0
 	if intensity("porro") > 0.3:
 		dir = -1.0
-	elif intensity("farlopa") + intensity("base") > 0.3:
+	elif intensity("farlopa") + intensity("base") + intensity("speed") > 0.3:
 		dir = 1.0
 	clock_skew = dir * snappedf(randf_range(20.0, 60.0) * (0.5 + b), 5.0)
 
@@ -262,6 +273,7 @@ func advance(minutes: float) -> void:
 		return
 	var m := minutes
 	_update_subs(m)
+	_update_resacas(m)
 	_update_body(m)
 	heat = maxf(heat - Defs.HEAT_DECAY * m, exposure())
 	_update_clock_lie(m)
@@ -297,6 +309,7 @@ func _update_subs(m: float) -> void:
 		var was_high: bool = s["high"] >= 10.0
 		s["high"] = maxf(0.0, s["high"] - d.get("decay", 0.12) * m)
 		s["crash"] = maxf(0.0, s["crash"] - m)
+		s["malviaje"] = maxf(0.0, s.get("malviaje", 0.0) - m)
 		if was_high and s["high"] < 10.0 and d.has("crash"):
 			_crash(id)
 		if s["high"] < 10.0 and not _relieved(id):
@@ -306,6 +319,43 @@ func _update_subs(m: float) -> void:
 		# sin tomarla, el enganche se va soltando muy despacio
 		if s["high"] < 1.0:
 			s["addiction"] = maxf(0.0, s["addiction"] - 0.003 * m)
+
+
+## Las resacas se van pasando (y mientras duran, bajan la mente lo que diga cada una).
+func _update_resacas(m: float) -> void:
+	for id in resacas.keys():
+		var r: Dictionary = resacas[id]
+		var i := resaca_intensity(id)
+		sanity = clampf(sanity + Defs.SUBSTANCES[id]["resaca"].get("mente", 0.0) * i * m / 60.0, 0.0, 100.0)
+		r["left"] -= m
+		if r["left"] <= 0.0:
+			resacas.erase(id)
+
+
+## Lo fuerte que es ahora la resaca de `id` (0..1): su nivel, que se va pasando con las horas.
+func resaca_intensity(id: String) -> float:
+	if not resacas.has(id):
+		return 0.0
+	var r: Dictionary = resacas[id]
+	return clampf(r["nivel"] / Defs.RESACA_MAX * 1.5 * clampf(r["left"] / maxf(r["total"], 1.0), 0.0, 1.0), 0.0, 1.0)
+
+
+## Al despertar: lo consumido desde la última vez que dormiste se convierte en resaca.
+func _despertar_con_resaca() -> void:
+	var nombres := []
+	for id in subs:
+		var pend: float = subs[id].get("resaca_pend", 0.0)
+		if pend <= 0.0 or not Defs.SUBSTANCES[id].has("resaca"):
+			continue
+		subs[id]["resaca_pend"] = 0.0
+		var nivel := clampf(pend, 0.2, Defs.RESACA_MAX)
+		var total: float = Defs.SUBSTANCES[id]["resaca"]["horas"] * 60.0 * clampf(nivel, 0.5, Defs.RESACA_MAX)
+		var old: Dictionary = resacas.get(id, {})
+		if old.is_empty() or old["left"] < total:
+			resacas[id] = {"nivel": maxf(nivel, old.get("nivel", 0.0)), "left": total, "total": total}
+		nombres.append(Defs.item_name(id).to_lower())
+	if not nombres.is_empty():
+		log_msg("Te despiertas con resaca (%s)." % ", ".join(nombres), C_BAD)
 
 
 ## Hambre, sueño, salud y salud mental.
@@ -318,6 +368,8 @@ func _update_body(m: float) -> void:
 			var d: Dictionary = Defs.SUBSTANCES[id]
 			hunger_rate *= lerpf(1.0, d.get("hunger_rate", 1.0), i)
 			fatigue_rate *= lerpf(1.0, d.get("fatigue_rate", 1.0), i)
+			# los antidepresivos, tomados, sostienen la cabeza poco a poco
+			sanity = minf(100.0, sanity + d.get("sanity_rate", 0.0) * i * m)
 	if sleeping:
 		hunger += Defs.HUNGER_RATE * 0.5 * m
 		fatigue -= Defs.SLEEP_RECOVERY * _sleep_quality * m
@@ -360,6 +412,7 @@ func _update_body(m: float) -> void:
 
 func _new_day() -> void:
 	day += 1
+	new_day.emit()
 	# Borja: si cae demasiado, su familia viene a por él (y eso, aquí, es perder)
 	if profile.get("id") == "nino_bien" and dignity < Defs.HOME_RESCUE_DIGNITY and alive and randf() < Defs.HOME_RESCUE_CHANCE:
 		_end("Un domingo aparece tu madre con el chófer y una psicóloga. Te meten en el coche sin preguntar. Una clínica en Suiza, luego un máster. En las cenas de Navidad, lo del Raval es «aquella etapa».",
@@ -439,8 +492,16 @@ func remove_item(id: String, count := 1) -> void:
 
 ## Vitalidad máxima ahora: la bajan el hambre y el sueño altos, el mono y la salud perdida.
 func vitality_max() -> float:
-	var m := 100.0 - maxf(0.0, hunger - 50.0) * Defs.VITALITY_HUNGER 		- maxf(0.0, fatigue - 50.0) * Defs.VITALITY_FATIGUE 		- mono * Defs.VITALITY_MONO - (100.0 - health) * Defs.VITALITY_HEALTH 		- starving * Defs.VITALITY_STARVE
+	var m := 100.0 - maxf(0.0, hunger - 50.0) * Defs.VITALITY_HUNGER 		- maxf(0.0, fatigue - 50.0) * Defs.VITALITY_FATIGUE 		- mono * Defs.VITALITY_MONO - (100.0 - health) * Defs.VITALITY_HEALTH 		- starving * Defs.VITALITY_STARVE - _resaca_total() * Defs.RESACA_VITALIDAD
 	return clampf(m, Defs.VITALITY_MIN_MAX, 100.0)
+
+
+## Cuánta resaca llevas encima, sumando todas (0..1).
+func _resaca_total() -> float:
+	var t := 0.0
+	for id in resacas:
+		t += resaca_intensity(id)
+	return clampf(t, 0.0, 1.0)
 
 
 ## Gasta (negativo) o recupera vitalidad, sin pasar del máximo. Al vaciarse quedas agotado.
@@ -526,7 +587,8 @@ func knows(id: String) -> bool:
 
 
 func _learn(id: String, enganche: float) -> void:
-	subs[id] = {"high": 0.0, "mono": enganche * 0.5, "addiction": enganche, "crash": 0.0}
+	subs[id] = {"high": 0.0, "mono": enganche * 0.5, "addiction": enganche, "crash": 0.0,
+		"resaca_pend": 0.0, "malviaje": 0.0}
 
 
 ## Conocer una sustancia nueva es un hito de la caída y le da una barra en el HUD.
@@ -599,8 +661,23 @@ func consume(id: String, safe := false) -> void:
 	var d: Dictionary = Defs.SUBSTANCES[id]
 	_discover(id)
 	var s: Dictionary = subs[id]
+	# mezclar depresores: mira lo que ya llevas antes de meterte esto
+	var mezcla := false
+	for other in d.get("mezcla", []):
+		if other != id and intensity(other) > 0.3:
+			mezcla = true
 	s["high"] += d["high"]
 	s["crash"] = 0.0
+	if d.has("resaca"):
+		s["resaca_pend"] = s.get("resaca_pend", 0.0) + d["resaca"]["dosis"]
+		if d["resaca"].get("se_quita", false) and resacas.has(id):
+			resacas[id]["left"] *= 0.5
+			log_msg("La del perro: la resaca se te pasa un poco... de momento.", C_INFO)
+	if d.has("malviaje") and randf() < (d["malviaje"]["chance"] if sanity < d["malviaje"]["cordura"] else Defs.MALVIAJE_SIEMPRE):
+		s["malviaje"] = d["malviaje"]["minutes"]
+		change_sanity(d["malviaje"]["sanity"], "Un mal viaje")
+		log_msg("El viaje se tuerce. Todo te mira, todo se te echa encima.", C_BAD)
+		milestone("malviaje")
 	s["addiction"] = clampf(s["addiction"] + d["addiction"], 0.0, 100.0)
 	s["mono"] = maxf(0.0, s["mono"] - d["high"] * 1.2)
 	if d.has("relieves") and knows(d["relieves"]):
@@ -611,7 +688,13 @@ func consume(id: String, safe := false) -> void:
 	change_sanity(Defs.MEDS_SANITY if meds else d["sanity"])
 	change_dignity(d["dignity"])
 	log_msg("Te metes: %s." % d["name"], C_INFO)
-	if not safe and high > 100.0 and randf() < (high - 100.0) * 0.02 * d["od"] + 0.05 * d["od"]:
+	if mezcla:
+		milestone("mezcla")
+		log_msg("Lo mezclas con lo que ya llevas encima. Mala idea.", C_BAD)
+	var od_chance: float = (high - 100.0) * 0.02 * d["od"] + 0.05 * d["od"] if high > 100.0 else 0.0
+	if mezcla:
+		od_chance += Defs.MEZCLA_OD * d["od"]
+	if not safe and od_chance > 0.0 and randf() < od_chance:
 		log_msg("Sobredosis. Te despiertas en el suelo con un desconocido encima.", C_BAD)
 		change_health(-45.0, "Sobredosis en un portal")
 		if alive:
@@ -647,6 +730,13 @@ func effects() -> Dictionary:
 		if i > 0.1:
 			_add_fx(fx, d["fx"], i)
 			causes.append(["%s: %s" % [d["name"], d["fx_text"]], d["color"]])
+		if subs[id].get("malviaje", 0.0) > 0.0:
+			_add_fx(fx, Defs.MALVIAJE_FX, clampf(subs[id]["malviaje"] / 30.0, 0.0, 1.0))
+			causes.append(["Mal viaje de %s: %s" % [d["name"].to_lower(), Defs.MALVIAJE_FX_TEXT], C_BAD])
+		var ri := resaca_intensity(id)
+		if ri > 0.05:
+			_add_fx(fx, d["resaca"]["fx"], ri)
+			causes.append(["Resaca de %s: %s" % [d["name"].to_lower(), d["resaca"]["text"]], Color("c0a060")])
 		if subs[id]["crash"] > 0.0:
 			_add_fx(fx, Defs.CRASH_FX, clampf(subs[id]["crash"] / 20.0, 0.0, 1.0))
 			causes.append(["Bajón de %s: %s" % [d["name"].to_lower(), Defs.CRASH_FX_TEXT], C_BAD])
@@ -690,6 +780,8 @@ func rest(minutes: float, quality: float, robbery_risk := 0.0, heal := 0.0) -> v
 	sleeping = false
 	if not alive:
 		return
+	if minutes >= Defs.RESACA_SUENO:
+		_despertar_con_resaca()
 	change_health(heal * q)
 	log_msg("Duermes %d horas. Son las %02d:%02d." % [int(minutes / 60), hour(), int(minute_of_day) % 60])
 	if money > 0 and randf() < robbery_risk:

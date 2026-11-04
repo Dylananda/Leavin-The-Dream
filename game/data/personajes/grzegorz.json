@@ -68,7 +68,60 @@
 		"Dziękuję.",
 		"Sin papeles no hay trabajo."
 	],
-	"misiones": [],
-	"relaciones": [],
-	"notas": "Le robaron la cartera con el pasaporte (Vera, carterista). Sin papeles no puede volver a casa ni cobrar ayudas. Misión: recuperar el pasaporte."
+	"misiones": [
+		{
+			"id": "el_pasaporte_de_grzegorz",
+			"titulo": "El pasaporte de Grzegorz",
+			"dice": "Mi cartera... con pasaporte. La chica de la Rambla, la del mapa. Sin pasaporte no puedo volver a casa. Por favor.",
+			"objetivo": {
+				"tipo": "traer",
+				"objeto": "pasaporte",
+				"lo_tiene": "vera",
+				"precio": 40,
+				"chivato": "xavi"
+			},
+			"plazo": 0.0,
+			"exito": {
+				"texto": "Grzegorz abre el pasaporte, mira la foto y se echa a llorar. Te da la bici que estaba arreglando: «Para ti. Funciona».",
+				"efectos": [
+					{
+						"tipo": "amigo",
+						"valor": 0,
+						"quien": "",
+						"que": ""
+					},
+					{
+						"tipo": "objeto",
+						"valor": 1,
+						"quien": "",
+						"que": "bici"
+					},
+					{
+						"tipo": "dignidad",
+						"valor": 6,
+						"quien": "",
+						"que": ""
+					},
+					{
+						"tipo": "mente",
+						"valor": 5,
+						"quien": "",
+						"que": ""
+					}
+				]
+			},
+			"fallo": {
+				"texto": "",
+				"efectos": []
+			}
+		}
+	],
+	"relaciones": [
+		{
+			"con": "antonio",
+			"tipo": "amigo",
+			"nota": "Se conocen de la calle y del albergue"
+		}
+	],
+	"notas": "Misión «El pasaporte de Grzegorz»: lo tiene Vera; se le compra (40 €), se le roba (minijuego) o te chivas a Xavi (Vera detenida dos días; El Mudo se entera). Duerme en el mismo albergue que Antonio."
 }

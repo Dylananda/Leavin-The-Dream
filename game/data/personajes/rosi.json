@@ -54,7 +54,69 @@
 		"Esa matrícula, apúntala.",
 		"Sin papeles no hay derechos."
 	],
-	"misiones": [],
-	"relaciones": [],
-	"notas": "Te pide que vigiles a Joy cuando trabaja. Conoce al agresor de Joy."
+	"misiones": [
+		{
+			"id": "que_joy_no_trabaje_sola",
+			"titulo": "Que Joy no trabaje sola",
+			"dice": "Joy no quiere estar sola desde lo de aquel cliente. Quédate por aquí un par de horas y avisa si ves algo raro.",
+			"condiciones": {
+				"desde": 18,
+				"hasta": 4
+			},
+			"objetivo": {
+				"tipo": "vigilar",
+				"minutos": 120,
+				"dificultad": 0.3
+			},
+			"plazo": 1.0,
+			"exito": {
+				"texto": "Dos horas en la esquina de Robadors. Joy te da las gracias con la mirada; Rosi te pasa un bocadillo y unos euros.",
+				"efectos": [
+					{
+						"tipo": "amigo",
+						"valor": 0,
+						"quien": "",
+						"que": ""
+					},
+					{
+						"tipo": "amigo",
+						"valor": 0,
+						"quien": "joy",
+						"que": ""
+					},
+					{
+						"tipo": "dinero",
+						"valor": 15,
+						"quien": "",
+						"que": ""
+					},
+					{
+						"tipo": "objeto",
+						"valor": 1,
+						"quien": "",
+						"que": "bocadillo"
+					}
+				]
+			},
+			"fallo": {
+				"texto": "Rosi no te dice nada, pero no le ha gustado.",
+				"efectos": [
+					{
+						"tipo": "mente",
+						"valor": -2,
+						"quien": "",
+						"que": ""
+					}
+				]
+			}
+		}
+	],
+	"relaciones": [
+		{
+			"con": "joy",
+			"tipo": "amigo",
+			"nota": "Rosi organiza a las compañeras para que no trabajen solas"
+		}
+	],
+	"notas": "Misión «Que Joy no trabaje sola» (vigilar dos horas de noche): abre las misiones de Agent Ortega. Conoce al agresor de Joy."
 }

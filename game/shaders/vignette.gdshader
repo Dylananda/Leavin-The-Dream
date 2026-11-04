@@ -1,8 +1,11 @@
 // Filtro de pantalla completa con lo que le pasa al personaje (ver GameState.effects()):
 // viñeta roja que late con el mono, bordes de colores con mucho colocón, colores chillones
 // con pastillas, visión doble con alcohol, brillo con la euforia de la base, túnel oscuro
-// con hambre o bajón, párpados que se cierran con sueño y aberración cromática con la
-// salud mental por los suelos.
+// con hambre o bajón, párpados que se cierran con sueño, aberración cromática con la
+// salud mental por los suelos, bordes duros y contraste con speed y, con MDMA, todo cálido,
+// con un halo suave que late al ritmo de la música; con setas y LSD la imagen ondula y los
+// colores respiran; con ketamina todo se aleja y se desdobla; y con resaca, la luz molesta y
+// la cabeza late.
 shader_type canvas_item;
 
 uniform sampler2D screen : hint_screen_texture, filter_linear;
@@ -14,10 +17,19 @@ uniform float glow = 0.0;
 uniform float tunnel = 0.0;
 uniform float drowsy = 0.0;
 uniform float paranoia = 0.0;
+uniform float sharp = 0.0;
+uniform float love = 0.0;
+uniform float psico = 0.0;
+uniform float disocia = 0.0;
+uniform float resaca = 0.0;
 
 void fragment() {
 	vec2 uv = SCREEN_UV;
 	float t = TIME;
+	// setas, LSD: la imagen ondula (las paredes respiran)
+	uv += vec2(sin(uv.y * 14.0 + t * 1.3), cos(uv.x * 11.0 + t * 1.1)) * 0.005 * psico;
+	// ketamina: todo se aleja del centro
+	uv = mix(uv, vec2(0.5) + (uv - vec2(0.5)) * 1.08, disocia * 0.5);
 	float ab = paranoia * 0.006 * (0.6 + 0.4 * sin(t * 2.3));
 	vec3 c = vec3(
 		texture(screen, uv + vec2(ab, 0.0)).r,
@@ -32,6 +44,44 @@ void fragment() {
 	c = mix(c, c.gbr, saturate * 0.15 * (0.5 + 0.5 * sin(t * 0.7)));
 	// euforia: todo brilla
 	c += glow * 0.12 * (0.7 + 0.3 * sin(t * 5.0));
+	// speed: bordes marcados, contraste y un punto frío
+	if (sharp > 0.0) {
+		vec2 px = vec2(0.0015, 0.0025);
+		vec3 around = (texture(screen, uv + vec2(px.x, 0.0)).rgb + texture(screen, uv - vec2(px.x, 0.0)).rgb
+			+ texture(screen, uv + vec2(0.0, px.y)).rgb + texture(screen, uv - vec2(0.0, px.y)).rgb) * 0.25;
+		c += (c - around) * 1.6 * sharp;
+		c = mix(c, (c - 0.5) * 1.3 + 0.5, 0.6 * sharp);
+		c = mix(c, c * vec3(0.94, 1.0, 1.06), 0.5 * sharp);
+	}
+	// setas, LSD: los colores respiran y cambian de tono poco a poco
+	if (psico > 0.0) {
+		vec3 shift = 0.5 + 0.5 * cos(t * 0.6 + c * 6.0 + vec3(0.0, 2.1, 4.2));
+		c = mix(c, shift, 0.25 * psico * (0.6 + 0.4 * sin(t * 0.9)));
+	}
+	// ketamina: desaturado y desdoblado, como mirarlo desde fuera
+	if (disocia > 0.0) {
+		vec3 lejos = texture(screen, vec2(0.5) + (uv - vec2(0.5)) * 0.94).rgb;
+		c = mix(c, lejos, 0.35 * disocia);
+		float g = dot(c, vec3(0.299, 0.587, 0.114));
+		c = mix(c, vec3(g) * vec3(0.95, 1.0, 1.08), 0.55 * disocia);
+	}
+	// resaca: la luz molesta (lavado en el centro) y la cabeza late
+	if (resaca > 0.0) {
+		float throb = pow(0.5 + 0.5 * sin(t * 2.2), 3.0);
+		float dc = distance(UV, vec2(0.5));
+		c = mix(c, vec3(1.0, 0.98, 0.92), (1.0 - smoothstep(0.0, 0.55, dc)) * 0.22 * resaca * (0.5 + 0.5 * throb));
+		c *= 1.0 - smoothstep(0.35, 0.75, dc) * 0.35 * resaca * throb;
+	}
+	// MDMA: halo suave, tono cálido y un latido a unos 128 golpes por minuto
+	if (love > 0.0) {
+		float beat = pow(0.5 + 0.5 * sin(t * 13.4), 4.0);
+		vec2 r = vec2(0.006, 0.01) * (1.0 + beat);
+		vec3 halo = (texture(screen, uv + r).rgb + texture(screen, uv - r).rgb
+			+ texture(screen, uv + vec2(r.x, -r.y)).rgb + texture(screen, uv + vec2(-r.x, r.y)).rgb) * 0.25;
+		c = mix(c, max(c, halo), 0.6 * love);
+		c = mix(c, c * vec3(1.15, 0.96, 1.02) + vec3(0.05, 0.0, 0.04), love * 0.7);
+		c += vec3(0.08, 0.02, 0.06) * beat * love;
+	}
 
 	float d = distance(UV, vec2(0.5));
 	c *= 1.0 - smoothstep(0.25, 0.7, d) * tunnel * 0.85;

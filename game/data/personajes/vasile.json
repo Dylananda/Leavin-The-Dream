@@ -71,7 +71,58 @@
 		"*toca la flauta, mal*",
 		"¿Has visto mi acordeón?"
 	],
-	"misiones": [],
+	"misiones": [
+		{
+			"id": "el_acordeon_de_vasile",
+			"titulo": "El acordeón de Vasile",
+			"dice": "Mi acordeón, treinta años conmigo. Lo tiene el que no habla, el del metro. Tráemelo y te presento a los que saben de todo.",
+			"condiciones": {
+				"desde": 10,
+				"hasta": 23
+			},
+			"objetivo": {
+				"tipo": "traer",
+				"objeto": "acordeon",
+				"lo_tiene": "el_mudo",
+				"precio": 35,
+				"chivato": "nadia"
+			},
+			"plazo": 0.0,
+			"exito": {
+				"texto": "Vasile se cuelga el acordeón y toca un vals delante de toda la plaza del Pi. Luego te presenta a los músicos de la calle: lo ven todo desde su esquina.",
+				"efectos": [
+					{
+						"tipo": "amigo",
+						"valor": 0,
+						"quien": "",
+						"que": ""
+					},
+					{
+						"tipo": "favor",
+						"valor": 0,
+						"quien": "",
+						"que": "soplo"
+					},
+					{
+						"tipo": "mente",
+						"valor": 6,
+						"quien": "",
+						"que": ""
+					},
+					{
+						"tipo": "dignidad",
+						"valor": 3,
+						"quien": "",
+						"que": ""
+					}
+				]
+			},
+			"fallo": {
+				"texto": "",
+				"efectos": []
+			}
+		}
+	],
 	"relaciones": [],
-	"notas": "Misión: recuperar su acordeón (lo tiene El Mudo o está en la compraventa de la calle Hospital). Recompensa: te presenta a los músicos que saben de todo."
+	"notas": "Misión «El acordeón de Vasile»: lo tiene El Mudo (te lo vende por 35 €, se lo robas o te chivas a Nadia). Recompensa: te cuenta lo que ven los músicos (dónde anda la policía). Pendiente: que el acordeón pueda estar en la compraventa de la calle Hospital."
 }

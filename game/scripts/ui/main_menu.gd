@@ -31,6 +31,18 @@ func _ready() -> void:
 	sub.text = "El Raval, Barcelona. El objetivo: caer lo más bajo posible.  Elige quién eres."
 	sub.add_theme_color_override("font_color", Color(0.8, 0.75, 0.7))
 	root.add_child(sub)
+	# la última partida guardada que sigue viva (ver Partida)
+	var ultima := Partida.ultima()
+	if not ultima.is_empty():
+		var cont := Button.new()
+		cont.text = "Continuar: %s, día %d, %s (guardada el %s)" % [ultima.get("nombre", "?"), int(ultima.get("dia", 1)),
+			ultima.get("hora", ""), str(ultima.get("guardada", "")).replace("T", " a las ").left(-3)]
+		cont.custom_minimum_size = Vector2(0, 48)
+		cont.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		cont.pressed.connect(func():
+			if Partida.cargar(ultima["ruta"]):
+				get_tree().change_scene_to_file("res://scenes/world.tscn"))
+		root.add_child(cont)
 
 	var cols := HBoxContainer.new()
 	cols.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -94,5 +106,6 @@ func _select(i: int) -> void:
 
 
 func _start() -> void:
+	Partida.pendiente = {}
 	GameState.new_game(Defs.PROFILES[_selected]["id"])
 	get_tree().change_scene_to_file("res://scenes/world.tscn")

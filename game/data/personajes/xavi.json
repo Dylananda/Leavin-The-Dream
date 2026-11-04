@@ -55,6 +55,12 @@
 		"Sorry, the Boqueria?"
 	],
 	"misiones": [],
-	"relaciones": [],
-	"notas": "Misión cruzada: si le das un chivatazo sobre Vera, te borra una multa. Pero Vera tiene a gente en la Rambla y se entera de quién habla."
+	"relaciones": [
+		{
+			"con": "nadia",
+			"tipo": "amigo",
+			"nota": "Compañeros de la unidad de paisano de la Urbana"
+		}
+	],
+	"notas": "Es a quien te chivas de Vera en «El pasaporte de Grzegorz». Pendiente: que el chivatazo te borre una multa."
 }

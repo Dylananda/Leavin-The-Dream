@@ -57,7 +57,61 @@
 		"Ya he llamado a los Mossos.",
 		"Antes aquí se vivía bien."
 	],
-	"misiones": [],
-	"relaciones": [],
-	"notas": "Misión: conseguirle pruebas del piso de Quique el Nano. Ver Agent Serra. Si te descubre Quique, venganza."
+	"misiones": [
+		{
+			"id": "las_pruebas_del_piso",
+			"titulo": "Las pruebas del piso",
+			"dice": "En el piso de enfrente entra y sale gente toda la noche. Necesito pruebas: quién entra y a qué horas. A mí ya me conocen; a ti no te mirarán.",
+			"objetivo": {
+				"tipo": "espiar",
+				"personaje": "quique_el_nano",
+				"objeto": "pruebas_piso",
+				"minutos": 60,
+				"dificultad": 0.5
+			},
+			"plazo": 0.0,
+			"exito": {
+				"texto": "Lo tienes todo apuntado: horas, caras, quién entra y quién sale. La Sra. Encarna dice que se lo lleves al agente Serra, que ella ya le ha llamado veinte veces.",
+				"efectos": [
+					{
+						"tipo": "amigo",
+						"valor": 0,
+						"quien": "",
+						"que": ""
+					},
+					{
+						"tipo": "dignidad",
+						"valor": 2,
+						"quien": "",
+						"que": ""
+					}
+				]
+			},
+			"fallo": {
+				"texto": "Quique ya sabe que alguien le vigila, y sabe quién.",
+				"efectos": [
+					{
+						"tipo": "venganza",
+						"valor": 0,
+						"quien": "quique_el_nano",
+						"que": ""
+					},
+					{
+						"tipo": "enemigo",
+						"valor": 0,
+						"quien": "quique_el_nano",
+						"que": ""
+					}
+				]
+			}
+		}
+	],
+	"relaciones": [
+		{
+			"con": "quique_el_nano",
+			"tipo": "enemigo",
+			"nota": "Vive enfrente de su piso y llama a la policía"
+		}
+	],
+	"notas": "Misión «Las pruebas del piso»: espiar a Quique el Nano. Si te pilla, viene a por ti. Las pruebas, para el agente Serra («El piso de Quique»)."
 }

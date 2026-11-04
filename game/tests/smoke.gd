@@ -5,6 +5,7 @@ extends SceneTree
 
 func _initialize() -> void:
 	var gs = root.get_node("GameState")
+	load("res://scripts/partida.gd").automatico = false  # que no se guarde sola en user:// durante la prueba
 	for profile in Defs.PROFILES:
 		gs.new_game(profile["id"])
 		gs.money = 500
@@ -59,9 +60,14 @@ func _initialize() -> void:
 		_test_peticiones(world)
 		_test_misiones(gs, world)
 		if profile == Defs.PROFILES[0]:
+			_test_cadenas(gs, world)
+		if profile == Defs.PROFILES[0]:
 			_test_vision(gs, world)
 		_test_street_items(gs, world)
 		_test_trade(gs, world)
+		if profile == Defs.PROFILES[0]:
+			_test_consumo(gs, world)
+			_test_resacas(gs, world)
 		if profile == Defs.PROFILES[0]:
 			_test_police_and_fauna(gs, world)
 		world._rummage()
@@ -94,6 +100,9 @@ func _initialize() -> void:
 		gs.advance(1)
 		_check(gs.fatigue < 100.0 and "frito" in gs.milestones, "el sueño al máximo no te tumba")
 		_steady(gs)
+		for id in gs.subs:
+			gs.subs[id]["high"] = 0.0  # (los antidepresivos, tomados, subirían la mente)
+		gs.resacas = {}
 		gs.sanity = 0.0
 		gs.advance(1)
 		_check(gs.sanity > 0.0 and "psiquiatrico" in gs.milestones, "la salud mental a 0 no acaba en ingreso")
@@ -102,7 +111,9 @@ func _initialize() -> void:
 			gs.day, gs.caida, gs.dignity, gs.health, gs.hunger, gs.fatigue, gs.sanity, gs.alive, gs.milestones])
 		get_root().get_tree().paused = false
 	await _test_finales()
+	await _test_partida()
 	await _test_editor()
+	await _test_sustancias()
 	print("FALLOS: %d" % _failures if _failures > 0 else "OK")
 	quit(1 if _failures > 0 else 0)
 
@@ -233,8 +244,12 @@ func _test_personajes(world) -> void:
 		return
 	var gs = root.get_node("GameState")
 	var plain = world._spawn_npc("yonki")
+	plain.consumo = {}  # (lo que lleva encima también cuenta en las peleas: aquí solo la fuerza)
+	var quique_consumo: Dictionary = quique.consumo
+	quique.consumo = {}
 	_check(world.interactions._fight_chance(quique) <= world.interactions._fight_chance(plain),
 		"personajes: la fuerza no cuenta en las peleas")
+	quique.consumo = quique_consumo
 	gs.money = 100
 	var buy: Array = world.trade.offers_for(quique).filter(func(a): return a["label"].begins_with("Comprarle base"))
 	_check(not buy.is_empty(), "personajes: Quique no vende lo que pone su ficha")
@@ -708,6 +723,227 @@ func _test_misiones(gs, world) -> void:
 	print("  misiones: OK")
 
 
+## Partidas guardadas: se guarda a media partida (con un encargo en marcha, un vecino que te
+## recuerda, lo hablado con la IA...), se carga en un mundo nuevo y todo coincide.
+func _test_partida() -> void:
+	var gs = root.get_node("GameState")
+	var Pa = load("res://scripts/partida.gd")
+	gs.new_game(Defs.PROFILES[1]["id"])
+	change_scene_to_file("res://scenes/world.tscn")
+	await process_frame
+	await process_frame
+	var world = current_scene
+	world.censo.pausado = true
+	_steady(gs)
+	gs.money = 123
+	gs.add_item("bici")
+	gs.add_item("speed", 2)
+	gs.day = 3
+	gs.minute_of_day = 15.0 * 60.0 + 20.0
+	gs.milestone("chivato")
+	gs.mark_wanted("prueba de la partida", "hurto")
+	gs.apartados["vera"] = INF
+	gs.favores = {"txell": {"curar": INF}}
+	gs.misiones = {"antonio/el_cajero_de_antonio": {"estado": "hecho", "dia": 2}}
+	var npc = _fresh(world, "vecino")
+	npc.remember("ayudado")
+	npc.remember("ayudado")
+	npc.consumo = {"id": "litrona", "enganche": 33.0, "colocon": 20.0, "mono": 5.0, "dosis": 1, "t": gs.now()}
+	var name: String = npc.display_name
+	var dealer = _npc_of(world, "camello")
+	dealer.known = true
+	dealer.debt = 0
+	dealer.remove_meta("encargo_dia")
+	dealer.remove_meta("enemigo")
+	var offer = world.interactions.for_npc(dealer).filter(func(a): return a["label"].begins_with("Encargo:"))
+	_check(not offer.is_empty(), "partida: el camello no ofrece su encargo")
+	if not offer.is_empty():
+		offer[0]["do"].call()
+	var dealer_name: String = dealer.display_name
+	world.conversation._memory["yonki|Paco"] = {"messages": [{"role": "user", "content": "Hola"}], "facts": ["Le has caído bien"]}
+	var cell: Vector2i = world.player.cell
+	var regs: int = world.censo.registros.size()
+	var path := "user://partidas/prueba_humo.json"
+	_check(Pa.guardar(world, path) == OK, "partida: no se guarda")
+	_check(not Pa.cabecera(path).is_empty() and Pa.cabecera(path)["dia"] == 3, "partida: la cabecera no dice el día")
+	gs.money = 0
+	_check(Pa.cargar(path), "partida: no se carga")
+	change_scene_to_file("res://scenes/world.tscn")
+	await process_frame
+	await process_frame
+	world = current_scene
+	world.censo.pausado = true
+	_check(gs.money == 123 and gs.inventory.get("speed", 0) == 2 and gs.has_item("bici"), "partida: no vuelven el dinero o el inventario")
+	_check(gs.day == 3 and gs.hour() == 15 and "chivato" in gs.milestones and gs.is_wanted(), "partida: no vuelven el día, la hora, los hitos o el fichaje")
+	_check(gs.apartados.get("vera", 0.0) == INF and gs.favores["txell"]["curar"] == INF and gs.misiones.has("antonio/el_cajero_de_antonio"),
+		"partida: no vuelven los detenidos, los favores o las misiones")
+	_check(world.player.cell == cell, "partida: no vuelves a donde estabas")
+	_check(world.censo.registros.size() == regs, "partida: el censo no es el mismo (%d de %d)" % [world.censo.registros.size(), regs])
+	var found := false
+	for r in world.censo.registros:
+		if r["kind"] == "vecino" and r["name"] == name:
+			var mem: Dictionary = r["npc"].memory if r["npc"] != null else r["estado"].get("memory", {})
+			var con: Dictionary = r["npc"].consumo if r["npc"] != null else r["estado"].get("consumo", {})
+			if mem.get("ayudado", 0) == 2 and con.get("id", "") == "litrona":
+				found = true
+	_check(found, "partida: el vecino al que ayudaste no se acuerda (o no consume lo suyo)")
+	var active: Array = gs.errands.filter(func(e): return e["state"] == "activo")
+	_check(active.size() == 1 and is_instance_valid(active[0]["giver"]) and active[0]["giver"].display_name == dealer_name,
+		"partida: el encargo en marcha no vuelve con quien te lo dio")
+	if not active.is_empty() and is_instance_valid(active[0]["giver"]):
+		_check(world.errands.marker_for(active[0]["giver"]) == "★", "partida: quien te dio el encargo no lleva la estrella")
+	_check(not gs.notes.is_empty() and is_same(gs.notes[-1]["errand"], gs.errands[-1]), "partida: la libreta no apunta a sus encargos")
+	_check(world.conversation._memory.has("yonki|Paco"), "partida: no vuelve lo hablado con la IA")
+	_check(Pa.pendiente.is_empty(), "partida: queda algo por aplicar")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+	print("  partida guardada y cargada: OK")
+
+
+## Fase 3: relaciones entre personajes y misiones encadenadas y cruzadas. Te chivas de Vera
+## por el pasaporte de Grzegorz (El Mudo se entera y ya no te vende el acordeón; sin Vera,
+## nadie le roba a Margit por el camino), el Sr. Feliu o Pol (una u otra), las pruebas del
+## piso de Quique para Serra (Quique detenido, La Rubia a por ti) y Joy (Rosi, Ortega).
+func _test_cadenas(gs, world) -> void:
+	var misiones = world.misiones
+	var R = load("res://scripts/relaciones.gd")
+	var ids: Array = world._personajes.map(func(d): return d["id"])
+	for d in world._personajes:
+		for a in R.comprobar(d, ids):
+			_check(not a[0], "relaciones de %s: %s" % [d["nombre"], a[1]])
+	var need := ["grzegorz", "vera", "xavi", "el_mudo", "vasile", "margit", "sr_feliu", "pol", "sra_encarna",
+		"quique_el_nano", "agent_serra", "la_rubia", "rosi", "joy", "agent_ortega"]
+	var n := {}
+	for pid in need:
+		n[pid] = misiones.npc_de(pid)
+		if n[pid] == null:
+			print("  cadenas: sin %s, no se prueban" % pid)
+			return
+		n[pid].known = true
+		n[pid].memory = {}
+		n[pid].debt = 0
+		for meta in ["enemigo", "venganza", "receloso"]:
+			n[pid].remove_meta(meta)
+	_steady(gs)
+	gs.errands = []
+	gs.notes = []
+	gs.misiones = {}
+	gs.favores = {}
+	gs.apartados = {}
+	gs.heat = 0.0
+	gs.wanted_until = -1.0
+	gs.arrests = 0
+	gs.money = 300
+	gs.debt = 0
+	gs.dignity = 80.0
+	gs.minute_of_day = 12.0 * 60.0
+	for id in ["pasaporte", "acordeon", "pruebas_piso", "bici"]:
+		gs.inventory.erase(id)
+	# el pasaporte: se le puede comprar a Vera; te chivas a Xavi
+	_take(world, n["grzegorz"], "Misión «El pasaporte de Grzegorz»")
+	_check(_labels(world, n["vera"]).any(func(l): return l.begins_with("Comprarle: pasaporte")), "cadenas: Vera no te vende el pasaporte")
+	_check(_labels(world, n["vera"]).any(func(l): return l.begins_with("Robarle: pasaporte")), "cadenas: no se le puede robar el pasaporte a Vera")
+	_take(world, n["xavi"], "Chivarte: Vera")
+	_check(gs.has_item("pasaporte") and misiones.apartado("vera"), "cadenas: chivarte no te da el pasaporte ni detiene a Vera")
+	_check(world.censo.registros.filter(func(r): return r["personaje"].get("id", "") == "vera" and r["npc"] != null).is_empty(), "cadenas: Vera detenida sigue en la calle")
+	_check(n["el_mudo"].remembers("oido_mal") > 0 and n["xavi"].remembers("oido_bien") > 0, "cadenas: los amigos y enemigos de Vera no se enteran")
+	_take(world, n["grzegorz"], "Darle: pasaporte")
+	_check(_estado(gs, "grzegorz/el_pasaporte_de_grzegorz") == "hecho" and gs.has_item("bici"), "cadenas: darle el pasaporte no cumple ni te da la bici")
+	# el acordeón: El Mudo ya no se fía (no te lo vende), pero se le puede robar
+	_take(world, n["vasile"], "Misión «El acordeón de Vasile»")
+	var mudo: Array = _labels(world, n["el_mudo"])
+	_check(not mudo.any(func(l): return l.begins_with("Comprarle")) and mudo.any(func(l): return l.begins_with("Robarle: acordeón")),
+		"cadenas: El Mudo te vende el acordeón aunque te chivaste de Vera %s" % [mudo])
+	_check(n["el_mudo"].grudge() in ["aparta", "venganza"], "cadenas: El Mudo no se aparta de ti")
+	# Margit: sin Vera, nadie os acecha; va contigo y se cumple al llegar al bar con ella
+	_take(world, n["margit"], "Misión «El bar de 1979»")
+	var e: Dictionary = misiones.activas().filter(func(x): return x["key"] == "margit/el_bar_de_1979")[0]
+	n["margit"].setup(world.city, world.player.cell)
+	misiones.update()
+	_check(n["margit"].mode == "acompana", "cadenas: Margit no va contigo")
+	var money: int = gs.money
+	var llegar = misiones.actions_for_poi(e).filter(func(a): return a["label"].begins_with("Llegar aquí"))
+	_check(llegar.size() == 1, "cadenas: no se puede llegar al bar con Margit")
+	if not llegar.is_empty():
+		llegar[0]["do"].call()
+	_check(_estado(gs, "margit/el_bar_de_1979") == "hecho" and gs.money == money + 60 and n["margit"].mode == "", "cadenas: llegar con Margit no paga o no la suelta")
+	# el Sr. Feliu o Pol: una u otra
+	_check(_labels(world, n["pol"]).any(func(l): return l.begins_with("Misión «El edificio del Sr. Feliu»")), "cadenas: Pol no ofrece su misión")
+	_take(world, n["sr_feliu"], "Misión «Que no me echen»")
+	e = misiones.activas().filter(func(x): return x["key"] == "sr_feliu/que_no_me_echen")[0]
+	misiones.actions_for_poi(e)[0]["do"].call()  # esperar a la cita y cumplirla
+	_check(_estado(gs, "sr_feliu/que_no_me_echen") == "hecho", "cadenas: la cita con el Sr. Feliu no se cumple")
+	_check(not _labels(world, n["pol"]).any(func(l): return l.begins_with("Misión")), "cadenas: Pol sigue ofreciendo su misión después de ayudar a Feliu")
+	_check(n["sra_encarna"].remembers("oido_bien") > 0, "cadenas: la Sra. Encarna no se entera de que ayudaste a Feliu")
+	# las pruebas del piso: si Quique te pilla, va a por ti; si no, a Serra
+	var hecho := false
+	for i in 12:
+		gs.misiones.erase("sra_encarna/las_pruebas_del_piso")
+		n["quique_el_nano"].remove_meta("venganza")
+		n["quique_el_nano"].remove_meta("enemigo")
+		_steady(gs)
+		_take(world, n["sra_encarna"], "Misión «Las pruebas del piso»")
+		_take(world, n["quique_el_nano"], "Espiarle")
+		if _estado(gs, "sra_encarna/las_pruebas_del_piso") == "hecho":
+			hecho = true
+			break
+		_check(n["quique_el_nano"].grudge() == "venganza", "cadenas: Quique te pilla espiando y no va a por ti")
+	_check(hecho and gs.has_item("pruebas_piso"), "cadenas: espiar a Quique nunca sale bien")
+	if hecho:
+		n["quique_el_nano"].add_debt(30, 12.0)
+		gs.debt = 30
+		_take(world, n["agent_serra"], "Misión «El piso de Quique»")
+		_take(world, n["agent_serra"], "Darle: pruebas")
+		_check(misiones.apartado("quique_el_nano") and gs.debt == 0, "cadenas: Serra no detiene a Quique o no se va tu deuda")
+		_check(n["la_rubia"].grudge() == "venganza", "cadenas: La Rubia no va a por ti")
+	# Joy: vigilar con Rosi, convencer a Joy (Ortega) y testigo en comisaría
+	for i in 12:
+		if _estado(gs, "rosi/que_joy_no_trabaje_sola") == "hecho":
+			break
+		gs.misiones.erase("rosi/que_joy_no_trabaje_sola")
+		gs.minute_of_day = 20.0 * 60.0
+		_steady(gs)
+		_take(world, n["rosi"], "Misión «Que Joy no trabaje sola»")
+		_take(world, n["rosi"], "Hacerle de vigía")
+	_check(_estado(gs, "rosi/que_joy_no_trabaje_sola") == "hecho", "cadenas: vigilar para Rosi nunca sale bien")
+	for i in 12:
+		if _estado(gs, "agent_ortega/la_denuncia_de_joy") == "hecho":
+			break
+		gs.misiones.erase("agent_ortega/la_denuncia_de_joy")
+		n["joy"].remove_meta("enemigo")
+		gs.dignity = 90.0
+		gs.sanity = 90.0
+		_take(world, n["agent_ortega"], "Misión «La denuncia de Joy»")
+		_take(world, n["joy"], "Convencerle")
+	_check(_estado(gs, "agent_ortega/la_denuncia_de_joy") == "hecho", "cadenas: nunca se convence a Joy")
+	gs.wanted_until = -1.0
+	gs.arrests = 0
+	_take(world, n["agent_ortega"], "Misión «Testigo en comisaría»")
+	e = misiones.activas().filter(func(x): return x["key"] == "agent_ortega/testigo_en_comisaria")[0]
+	misiones.actions_for_poi(e)[0]["do"].call()
+	_check(_estado(gs, "agent_ortega/testigo_en_comisaria") == "hecho" and gs.arrests == 0, "cadenas: ir de testigo no se cumple (o te detienen sin estar fichado)")
+	_check(misiones.favor("rosi", "soplo"), "cadenas: Rosi no te hace el favor después del juicio")
+	_steady(gs)
+	gs.apartados = {}
+	print("  relaciones y misiones encadenadas: OK")
+
+
+func _labels(world, npc) -> Array:
+	return world.interactions.for_npc(npc).map(func(a): return a["label"])
+
+
+## Hace la acción del menú de `npc` que empieza por `prefix` (y falla si no la hay).
+func _take(world, npc, prefix: String) -> void:
+	for a in world.interactions.for_npc(npc):
+		if a["label"].begins_with(prefix):
+			a["do"].call()
+			return
+	_check(false, "%s no tiene la acción «%s...» %s" % [npc.display_name, prefix, _labels(world, npc)])
+
+
+func _estado(gs, key: String) -> String:
+	return gs.misiones.get(key, {}).get("estado", "")
+
+
 ## La pestaña de misiones del diseñador de personajes: monta los paneles de las misiones de
 ## ejemplo y de cada tipo de objetivo y de resultado sin errores (no guarda nada).
 func _test_editor() -> void:
@@ -732,7 +968,52 @@ func _test_editor() -> void:
 		await process_frame
 	_check(ed._misiones_box.get_child_count() == 2, "editor: no salen los paneles de las misiones")
 	_check(ed._comprobar().any(func(a): return a[1].contains("le falta qué")), "editor: no avisa de los resultados a medias")
-	print("  editor de misiones: OK")
+	# relaciones y esquema de las cadenas
+	ed._editar(P.cargar(P.DIR + "vera.json"), "vera")
+	_check(ed._comprobar().all(func(a): return not a[0]), "editor: Vera tiene errores %s" % [ed._comprobar()])
+	ed._def["relaciones"].append(P.nueva_relacion())
+	ed._rehacer_relaciones()
+	await process_frame
+	_check(ed._comprobar().any(func(a): return a[1].contains("relación sin personaje")), "editor: no avisa de una relación sin personaje")
+	ed._rehacer_esquema()
+	var cajas: Array = ed._esquema.cajas()
+	_check(cajas.size() >= 12, "editor: el esquema no tiene todas las misiones (%d)" % cajas.size())
+	_check(cajas.any(func(c): return c["key"] == "agent_serra/el_piso_de_quique" and c["tras"] == "sra_encarna/las_pruebas_del_piso"),
+		"editor: el esquema no encadena «El piso de Quique» tras «Las pruebas del piso»")
+	ed._esquema.queue_redraw()
+	await process_frame
+	print("  editor de misiones, relaciones y esquema: OK")
+
+
+## El diseñador de sustancias: monta todas las tablas, un retoque cambia el valor (con su
+## tipo) y quitarlo lo devuelve al de Defs; y Equilibrio pone los retoques encima de una tabla.
+## No toca data/equilibrio.json.
+func _test_sustancias() -> void:
+	change_scene_to_file("res://editor/editor_sustancias.tscn")
+	await process_frame
+	await process_frame
+	var ed = current_scene
+	_check(ed._tabs.get_tab_count() == ed.PESTANAS.size(), "sustancias: faltan pestañas")
+	_check(ed._celdas.all(func(r): return not r.is_empty()), "sustancias: hay una pestaña sin columnas")
+	ed._ajustes = {}
+	ed._retocar("sustancias", "speed", "price", 9.0)
+	_check(ed._valor("sustancias", "speed", "price") is int and ed._valor("sustancias", "speed", "price") == 9, "sustancias: el retoque del precio no vale")
+	ed._retocar("sustancias", "speed", "fx.psico", 0.5)
+	ed._retocar("habitos", "yonki", "enganche.1", 95.0)
+	_check(ed._ajustes["habitos"]["yonki"]["enganche"]["1"] == 95.0, "sustancias: no se retoca dentro de una lista")
+	ed._retocar("sustancias", "speed", "price", float(Defs.SUBSTANCES["speed"]["price"]))
+	_check(not ed._ajustes["sustancias"]["speed"].has("price"), "sustancias: volver al valor de Defs no quita el retoque")
+	ed._retocar("sustancias", "speed", "fx.psico", null)
+	_check(not ed._ajustes.has("sustancias"), "sustancias: no se limpian los retoques vacíos")
+	var tabla := {"a": {"n": 1, "fx": {"x": 0.5}, "l": [10.0, 20.0]}}
+	Equilibrio.mezclar(tabla, {"a": {"n": 3.0, "fx": {"y": 0.2}, "l": {"1": 25.0}}, "b": {"n": 1}})
+	_check(tabla["a"]["n"] is int and tabla["a"]["n"] == 3 and tabla["a"]["fx"]["y"] == 0.2 and tabla["a"]["l"][1] == 25.0,
+		"sustancias: Equilibrio no mezcla bien %s" % [tabla])
+	_check(not tabla.has("b") or tabla["b"] is Dictionary, "sustancias: Equilibrio rompe con ids nuevos")
+	ed._sucio = false
+	ed._quitar_pestana()
+	await process_frame
+	print("  diseñador de sustancias: OK")
 
 
 ## Visión en cono tapada por los edificios, memoria de cada personaje, policía que solo
@@ -931,6 +1212,216 @@ func _test_vision(gs, world) -> void:
 	gs.wanted_until = -1.0
 	gs.heat = 0.0
 	print("  visión, memoria y escándalo: OK")
+
+
+## Los bots también consumen (scripts/consumo.gd): su sustancia es siempre la misma para el
+## mismo nombre; sin nada encima les sube el mono y vienen a pedirte, comprarte o darte el
+## tirón; colocados cabecean o buscan bronca; el censo los pone al día al despertarlos.
+## Speed y MDMA: se venden, se compran y tienen sus efectos de pantalla.
+func _test_consumo(gs, world) -> void:
+	var C = load("res://scripts/consumo.gd")  # (ver la nota de _initialize sobre el autoload)
+	_steady(gs)
+	gs.heat = 0.0
+	gs.wanted_until = -1.0
+	_check(C.habito("yonki", "Paco", {}) == C.habito("yonki", "Paco", {}), "consumo: el mismo yonki cambia de sustancia")
+	var ids := {}
+	for i in 200:
+		var id: String = C.habito("fiestero", "Fiestero %d" % i, {})
+		ids[id] = ids.get(id, 0) + 1
+	_check(ids.has("mdma") and ids.has("litrona"), "consumo: las despedidas no consumen lo suyo %s" % ids)
+	_check(C.habito("chaval", "Nadie", {}) == "" and C.habito("urbano", "Nadie", {}) == "", "consumo: los chavales o la policía consumen")
+	_check(C.habito("vecino", "X", {"stats": {"quiere": ["caballo"]}}) == "caballo", "consumo: un personaje no consume lo que quiere")
+	# sin nada encima y sin dinero, le sube el mono hasta pedirte
+	var npc = _fresh(world, "yonki")
+	npc.money = 100
+	npc.consumo = {"id": "caballo", "enganche": 80.0, "colocon": 0.0, "mono": 0.0, "dosis": 0, "t": gs.now()}
+	var price0: int = world.trade.price_for(npc, "caballo")
+	C.avanzar(npc.consumo, 600.0, 0)
+	_check(C.necesita(npc.consumo) and C.estado(npc.consumo) == "mono", "consumo: sin nada encima no le sube el mono (%s)" % npc.consumo)
+	_check(npc.grudge() == "pide", "consumo: con mono no viene a pedirte (%s)" % npc.grudge())
+	_check(world.trade.price_for(npc, "caballo") > price0, "consumo: con mono no paga más")
+	gs.add_item("caballo", 2)
+	var sale = world.interactions.for_npc(npc).filter(func(a): return a["label"].begins_with("Venderle caballo ("))
+	_check(sale.size() == 1, "consumo: con mono no te compra lo suyo")
+	if not sale.is_empty():
+		sale[0]["do"].call()
+	_check(C.estado(npc.consumo) == "colocado", "consumo: no se mete lo que le vendes")
+	_check(C.cabecea(npc.consumo) or C.intensidad(npc.consumo) < 0.7, "consumo: colocado de caballo no cabecea")
+	npc.pasa_consumo()
+	_check(npc.slow_factor < 1.0, "consumo: con caballo no va más lento")
+	# darle una dosis a quien tiene mono
+	npc.consumo["colocon"] = 0.0
+	npc.consumo["mono"] = 80.0
+	var gift = world.interactions.for_npc(npc).filter(func(a): return a["label"].begins_with("Darle caballo"))
+	_check(gift.size() == 1, "consumo: no se le puede dar una dosis a quien tiene mono")
+	if not gift.is_empty():
+		gift[0]["do"].call()
+	_check(npc.remembers("ayudado") > 0 and npc.consumo["mono"] < 80.0, "consumo: darle una dosis no le alivia ni se acuerda")
+	# el tirón: con mono a tope y sin dinero
+	npc.consumo["colocon"] = 0.0
+	npc.consumo["mono"] = 95.0
+	npc.money = 0
+	var tiron := false
+	for i in 30:
+		var y = _fresh(world, "yonki")
+		y.money = 0
+		y.consumo = {"id": "caballo", "enganche": 80.0, "colocon": 0.0, "mono": 95.0, "dosis": 0, "t": gs.now()}
+		if y.grudge() == "tiron":
+			tiron = true
+			gs.add_item("caballo")
+			var had: int = gs.inventory.get("caballo", 0)
+			world._tiron(y)
+			_check(gs.inventory.get("caballo", 0) == had - 1 and y.consumo["dosis"] == 1, "consumo: el tirón no se lleva lo suyo")
+			break
+	_check(tiron, "consumo: nadie con mono y sin dinero da el tirón")
+	# acelerado busca bronca (alguno) y pega más fuerte
+	var bronca := false
+	for i in 30:
+		var y = _fresh(world, "yonki")
+		y.consumo = {"id": "base", "enganche": 50.0, "colocon": 50.0, "mono": 0.0, "dosis": 1, "t": gs.now()}
+		if y.grudge() == "bronca":
+			bronca = true
+			_check(world.interactions._fight_chance(y) < world.interactions._fight_chance(_fresh(world, "vecino")) + 0.01, "consumo: acelerado no pega más fuerte")
+			_steady(gs)
+			world._bronca(y)
+			break
+	_check(bronca, "consumo: nadie acelerado busca bronca")
+	# el censo: al despertar a un latente, lo que le ha pasado mientras tanto
+	_steady(gs)
+	var r: Dictionary = world.censo.nuevo("yonki")
+	var z = world.censo.despertar(r, world.player.cell)
+	z.consumo = {"id": "caballo", "enganche": 70.0, "colocon": 50.0, "mono": 0.0, "dosis": 0, "t": gs.now()}
+	z.money = 0  # (sin dinero no pilla: que no se vuelva a colocar mientras está latente)
+	world.censo.dormir(r)
+	r["estado"]["consumo"]["t"] -= 600.0
+	r["visto"] -= 600.0
+	z = world.censo.despertar(r, world.player.cell)
+	_check(z.consumo["colocon"] < 50.0 and (z.consumo["mono"] > 0.0 or z.consumo["colocon"] > 0.0), "censo: al despertar no ha pasado el tiempo para lo que consume (%s)" % z.consumo)
+	# speed y MDMA: los vende el camello, los compran las despedidas, y tienen sus efectos
+	gs.money = 200
+	var dealer = _npc_of(world, "camello")
+	dealer.debt = 0
+	var labels: Array = world.interactions.for_npc(dealer).map(func(a): return a["label"])
+	_check(labels.any(func(l): return l.begins_with("Comprar Speed")) and labels.any(func(l): return l.begins_with("Comprar MDMA")), "consumo: el camello no vende speed ni MDMA (%s)" % [labels])
+	_check("mdma" in Defs.CLIENTS["fiestero"]["wants"] and "speed" in Defs.CLIENTS["fiestero"]["wants"], "consumo: nadie quiere speed ni MDMA")
+	for id in ["speed", "mdma"]:
+		_steady(gs)
+		gs.add_item(id)
+		world.use_item(id)
+		_check(("probar_" + id) in gs.milestones, "%s: no es un hito probarlo" % id)
+		_check(gs.effects()["fx"].has("sharp" if id == "speed" else "love"), "%s: no tiene su efecto de pantalla" % id)
+		gs.subs[id]["high"] = 12.0
+		gs.advance(60)
+		_check(gs.subs[id]["crash"] > 0.0, "%s: no da bajón" % id)
+	_steady(gs)
+	print("  consumo de los bots, speed y MDMA: OK")
+
+
+## Las sustancias nuevas (setas, LSD, ketamina, ansiolíticos, antidepresivos, tramadol, tabaco)
+## y las resacas: empiezan al dormir tras consumir, se notan y se pasan; mal viaje, mezclas de
+## depresores, la receta del CAP y la farmacia, el tabaco del bar.
+func _test_resacas(gs, world) -> void:
+	var C = load("res://scripts/consumo.gd")
+	for id in ["setas", "lsd", "ketamina", "ansioliticos", "antidepresivos", "tramadol", "tabaco"]:
+		_check(Defs.SUBSTANCES.has(id) and Defs.MILESTONES.has("probar_" + id), "%s: no existe o no tiene su hito" % id)
+	# resaca de litrona: no al consumir, sí al dormir; se nota y se pasa
+	_steady(gs)
+	gs.resacas = {}
+	for id in gs.subs:
+		gs.subs[id]["resaca_pend"] = 0.0
+		gs.subs[id]["high"] = 0.0
+		gs.subs[id]["crash"] = 0.0
+	gs.add_item("litrona", 3)
+	for i in 3:
+		world.use_item("litrona")
+	_check(gs.resacas.is_empty(), "resaca: empieza sin haber dormido")
+	gs.rest(480, 1.0)
+	_check(gs.resacas.has("litrona"), "resaca: tres latas y una noche no dan resaca")
+	var fx: Dictionary = gs.effects()
+	_check(fx["fx"].get("resaca", 0.0) > 0.0 and fx["causes"].any(func(c): return c[0].begins_with("Resaca de litrona")), "resaca: no se nota (%s)" % [fx["causes"]])
+	_check(gs.vitality_max() < 100.0, "resaca: no baja la vitalidad máxima")
+	var left: float = gs.resacas["litrona"]["left"]
+	gs.add_item("litrona")
+	world.use_item("litrona")
+	_check(gs.resacas["litrona"]["left"] < left, "resaca: la del perro no la quita a medias")
+	gs.advance(24 * 60)
+	_check(not gs.resacas.has("litrona"), "resaca: no se pasa con las horas")
+	# el caballo no da resaca (da mono)
+	_steady(gs)
+	gs.resacas = {}
+	gs.add_item("caballo")
+	world.use_item("caballo")
+	gs.rest(480, 1.0)
+	_check(not gs.resacas.has("caballo"), "resaca: el caballo da resaca")
+	# el MDMA: martes negro, baja la mente
+	_steady(gs)
+	gs.resacas = {}
+	gs.add_item("mdma")
+	world.use_item("mdma")
+	gs.subs["mdma"]["high"] = 0.0
+	gs.rest(480, 1.0)
+	_check(gs.resacas.has("mdma"), "resaca: el MDMA no da resaca")
+	gs.sanity = 80.0
+	gs.advance(120)
+	_check(gs.sanity < 80.0, "resaca: la del MDMA no baja la mente")
+	# mal viaje con la cabeza mal
+	var trip := false
+	for i in 30:
+		_steady(gs)
+		gs.sanity = 20.0
+		gs.subs.get("lsd", {})["malviaje"] = 0.0
+		gs.add_item("lsd")
+		world.use_item("lsd")
+		gs.subs["lsd"]["high"] = 0.0
+		if gs.subs["lsd"]["malviaje"] > 0.0:
+			trip = true
+			break
+	_check(trip and gs.effects()["causes"].any(func(c): return c[0].begins_with("Mal viaje")), "lsd: con la cabeza mal nunca hay mal viaje")
+	# mezclar depresores
+	_steady(gs)
+	gs.add_item("litrona", 2)
+	world.use_item("litrona")
+	world.use_item("litrona")
+	gs.add_item("ansioliticos")
+	world.use_item("ansioliticos")
+	_check("mezcla" in gs.milestones, "ansiolíticos: mezclarlos con alcohol no cuenta como mezcla")
+	# receta del CAP y farmacia; tabaco del bar
+	_steady(gs)
+	gs.alive = true
+	gs.money = 100
+	gs._next_receta_day = 0
+	gs.inventory.erase("receta")
+	gs.inventory.erase("antidepresivos")
+	var cap: Dictionary = world.city.pois_of_kind("cap")[0]
+	var farmacia: Dictionary = world.city.pois_of_kind("farmacia")[0]
+	var bar: Dictionary = world.city.pois_of_kind("bar")[0]
+	var cita = world.interactions.for_poi(cap).filter(func(a): return a["label"].begins_with("Pedir cita con el médico"))
+	_check(cita.size() == 1, "CAP: no se puede pedir cita con el médico")
+	if not cita.is_empty():
+		cita[0]["do"].call()
+	_check(gs.has_item("receta"), "CAP: el médico no hace receta")
+	_check(world.interactions.for_poi(cap).all(func(a): return not a["label"].begins_with("Pedir cita")), "CAP: te hace otra receta el mismo día")
+	var caja = world.interactions.for_poi(farmacia).filter(func(a): return a["label"].begins_with("Con la receta: antidepresivos"))
+	_check(caja.size() == 1, "farmacia: no se compra con receta")
+	if not caja.is_empty():
+		caja[0]["do"].call()
+	_check(gs.inventory.get("antidepresivos", 0) == Defs.RECETA["antidepresivos"]["cantidad"] and not gs.has_item("receta"), "farmacia: la receta no da la caja")
+	var tabaco: int = gs.inventory.get("tabaco", 0)
+	var maquina = world.interactions.for_poi(bar).filter(func(a): return a["label"].begins_with("Sacar tabaco"))
+	_check(maquina.size() == 1, "bar: no hay máquina de tabaco")
+	if not maquina.is_empty():
+		maquina[0]["do"].call()
+	_check(gs.inventory.get("tabaco", 0) == tabaco + Defs.PRECIOS["bar_tabaco"]["cantidad"], "bar: la máquina no da tabaco")
+	# los bots también: alguno fuma, alguno toma ansiolíticos
+	var habitos := {}
+	for i in 300:
+		habitos[C.habito("vecino", "Vecino %d" % i, {})] = true
+		habitos[C.habito("fiestero", "Fiestero %d" % i, {})] = true
+	for id in ["tabaco", "ansioliticos", "antidepresivos", "ketamina"]:
+		_check(habitos.has(id), "consumo: ningún bot consume %s" % id)
+	_steady(gs)
+	gs.resacas = {}
+	print("  sustancias nuevas y resacas: OK")
 
 
 ## Un bot nuevo del tipo `kind`, sin pasado contigo.
@@ -1171,6 +1662,7 @@ func _test_trade(gs, world) -> void:
 	var client = _npc_of(world, "fiestero")
 	client.memory = {}
 	client.money = 1000
+	client.consumo = {}  # (sin mono que le haga pagar más: se prueba lo de repetir)
 	gs.add_item("farlopa", 3)
 	var p0: int = trade.price_for(client, "farlopa")
 	_check(p0 > Defs.SUBSTANCES["farlopa"]["price"], "la despedida no paga más que el camello")

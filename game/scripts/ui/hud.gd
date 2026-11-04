@@ -8,6 +8,7 @@ signal menu_closed
 signal restart_requested
 signal use_item_requested(id: String)
 signal find_place_requested(poi: Dictionary)
+signal save_requested  ## «Guardar» en la pausa (World.guardar_partida)
 
 ## [variable de GameState, etiqueta, color, si es mala cuando sube, explicación]
 const BARS := [
@@ -407,6 +408,11 @@ func show_effects(effects: Dictionary) -> void:
 	mat.set_shader_parameter("paranoia", clampf(fx.get("paranoia", 0.0), 0.0, 1.0))
 	mat.set_shader_parameter("double_vision", clampf(fx.get("double", 0.0), 0.0, 1.0))
 	mat.set_shader_parameter("glow", clampf(fx.get("glow", 0.0), 0.0, 1.0))
+	mat.set_shader_parameter("sharp", clampf(fx.get("sharp", 0.0), 0.0, 1.0))
+	mat.set_shader_parameter("love", clampf(fx.get("love", 0.0), 0.0, 1.0))
+	mat.set_shader_parameter("psico", clampf(fx.get("psico", 0.0), 0.0, 1.0))
+	mat.set_shader_parameter("disocia", clampf(fx.get("disocia", 0.0), 0.0, 1.0))
+	mat.set_shader_parameter("resaca", clampf(fx.get("resaca", 0.0), 0.0, 1.0))
 	var lines := []
 	for c in effects["causes"]:
 		lines.append("[color=#%s]• %s[/color]" % [c[1].to_html(false), c[0]])
@@ -504,7 +510,7 @@ func _build_pause() -> void:
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	sub.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
 	v.add_child(sub)
-	for b in [["Seguir (P)", toggle_pause], ["Mapa del barrio (M)", toggle_map]]:
+	for b in [["Seguir (P)", toggle_pause], ["Mapa del barrio (M)", toggle_map], ["Guardar la partida", func(): save_requested.emit()]]:
 		var btn := Button.new()
 		btn.text = b[0]
 		btn.custom_minimum_size.y = 40

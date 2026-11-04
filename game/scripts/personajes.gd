@@ -2,8 +2,8 @@ class_name Personajes
 extends RefCounted
 ## Personajes únicos hechos con el editor de personajes (editor/editor_personajes.tscn), uno por
 ## archivo en data/personajes/<id>.json. El juego los carga al empezar y saca a cada uno en su
-## zona y a sus horas (ver Censo), con sus misiones (ver Misiones). Lo que todavía no sabe
-## usar (relaciones...) se guarda igual, para cuando lo sepa: ver USADO.
+## zona y a sus horas (ver Censo), con sus misiones (ver Misiones) y sus relaciones con los
+## demás (ver Relaciones). Lo que todavía no sabe usar se guarda igual: ver USADO.
 ##
 ## Las posiciones (polígono de la zona, casa y lugares) van en casillas de la cuadrícula del
 ## mapa (CityMap, 2 m), como los pois de data/raval_map.json.
@@ -40,7 +40,17 @@ const LUGAR_WANDER := 2
 ## Lo que el juego ya usa de cada personaje; el resto se guarda para más adelante.
 const USADO := ["nombre", "genero", "tipo", "historia", "aspecto", "zona", "horario", "lugares",
 	"dinero", "velocidad", "fuerza", "valor", "agresividad", "llama_policia", "quiere", "lleva", "vende",
-	"frases", "ficha", "amo", "misiones", "le_debes"]
+	"frases", "ficha", "amo", "misiones", "le_debes", "relaciones"]
+## Tipos de relación entre personajes (ver Relaciones): los que son «de los suyos» se enteran
+## de lo que le haces y lo sienten como propio; los enemigos, al revés.
+const RELACIONES := {
+	"amigo": "Se lleva bien con",
+	"familia": "Es familia de",
+	"pareja": "Es pareja de",
+	"trabaja_para": "Trabaja para",
+	"le_debe": "Le debe dinero a",
+	"enemigo": "Se lleva mal con",
+}
 ## Colores del aspecto, que se guardan en hexadecimal ("" = sin chaqueta).
 const COLORES := ["skin", "shirt", "pants", "hair", "jacket"]
 
@@ -91,6 +101,7 @@ static func nueva_mision() -> Dictionary:
 			"tras": "",  ## "personaje/misión" que tienes que haber cumplido antes ("" nada)
 			"dignidad": 0,  ## dignidad mínima: a quien va muy tirado no le confía nada
 			"repetible": false,  ## se puede volver a hacer (una vez al día)
+			"excepto": "",  ## "personaje/misión" que NO tienes que haber cumplido (para elegir entre dos)
 		},
 		"objetivo": {
 			"tipo": "llevar_lugar",
@@ -102,6 +113,10 @@ static func nueva_mision() -> Dictionary:
 			"desde": 10, "hasta": 11,  ## horas de la cita (del día siguiente)
 			"minutos": 120,  ## lo que dura hacer de vigía
 			"dificultad": 0.5,  ## 0..1, del minijuego o de colar la mentira
+			"lo_tiene": "",  ## (conseguirle algo) personaje que lo tiene: te lo vende o se lo robas
+			"precio": 0,  ## ... por cuánto te lo vende (0 = no lo vende)
+			"chivato": "",  ## ... policía al que chivarte: se lo quita y te lo da (y lo detienen)
+			"acecha": "",  ## (acompañar) personaje que os sigue y le puede robar por el camino
 		},
 		"plazo": 2.0,  ## horas de juego desde que la aceptas (0 = sin plazo; la cita lleva el suyo)
 		"exito": {"texto": "", "efectos": []},
@@ -112,6 +127,11 @@ static func nueva_mision() -> Dictionary:
 ## Un efecto nuevo del tipo `tipo`.
 static func nuevo_efecto(tipo := "dinero") -> Dictionary:
 	return {"tipo": tipo, "valor": 0, "quien": "", "que": ""}
+
+
+## Una relación nueva: con quién (id de personaje), de qué tipo (RELACIONES) y una nota.
+static func nueva_relacion() -> Dictionary:
+	return {"con": "", "tipo": "amigo", "nota": ""}
 
 
 ## La misión `m` completada con la plantilla (por si es de una versión anterior del editor).
@@ -161,6 +181,10 @@ static func cargar(path: String) -> Dictionary:
 		else:
 			d[k] = data[k]
 	d["misiones"] = d["misiones"].map(func(m): return completar_mision(m))
+	d["relaciones"] = d["relaciones"].filter(func(r): return r is Dictionary).map(func(r):
+		var full := nueva_relacion()
+		full.merge(r, true)
+		return full)
 	return d
 
 

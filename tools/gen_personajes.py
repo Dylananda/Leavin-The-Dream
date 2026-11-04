@@ -94,6 +94,7 @@ def slug(s):
 
 FUENTES = {}
 MISIONES = {}
+RELACIONES = {}
 exec(open(os.path.join(os.path.dirname(__file__), "personajes_datos.py"), encoding="utf-8").read())
 
 out_dir = os.path.join(G, "data/personajes")
@@ -114,7 +115,7 @@ for p in PERSONAJES:
                   "llama_policia": p.get("llama_policia", False), "quiere": p.get("quiere", []),
                   "lleva": p.get("lleva", {}), "vende": p.get("vende", {}), "le_debes": p.get("le_debes", 0)},
         "ficha": {"quien": "", "habla": "", "sabe": "", "no_sabe": "", "quiere": ""},
-        "frases": p.get("frases", []), "misiones": MISIONES.get(slug(nombre), []), "relaciones": [],
+        "frases": p.get("frases", []), "misiones": MISIONES.get(slug(nombre), []), "relaciones": RELACIONES.get(slug(nombre), []),
         "notas": p.get("notas", ""),
     }
     d["ficha"].update(p.get("ficha", {}))

@@ -28,7 +28,7 @@ const VAGA_DESDE := 40  ## a partir de este radio de paseo, mientras duerme se l
 const VAGA_CADA := 30.0  ## ... cada tantos minutos de juego
 ## Campos del Npc que se guardan al dormirlo y se le devuelven al despertar.
 const ESTADO := ["display_name", "gender", "look", "accessory", "body_size", "speed", "wander_radius",
-	"money", "debt", "debt_due", "robbed", "known", "memory", "last_interaction_day"]
+	"money", "debt", "debt_due", "robbed", "known", "memory", "last_interaction_day", "consumo"]
 
 var world: World
 var registros: Array[Dictionary] = []
@@ -93,7 +93,8 @@ func con_amo(d: Dictionary) -> bool:
 ## Si anda por la calle a la hora `h`.
 func activo(r: Dictionary, h: int) -> bool:
 	if not r["personaje"].is_empty():
-		return Personajes.activo(r["personaje"], h)
+		# los detenidos por una misión (Misiones.apartar) no andan por el barrio
+		return Personajes.activo(r["personaje"], h) and not Misiones.apartado(r["personaje"].get("id", ""))
 	return Npc.active_at(r["kind"], h)
 
 
@@ -192,7 +193,7 @@ func despertadores() -> void:
 			npc = null
 		var debt: int = npc.debt if npc != null else r["estado"].get("debt", 0)
 		var due: float = npc.debt_due if npc != null else r["estado"].get("debt_due", 0.0)
-		if debt <= 0 or now < due or now < r.get("visita", -INF):
+		if debt <= 0 or now < due or now < r.get("visita", -INF) or Misiones.apartado(r["personaje"].get("id", "")):
 			continue
 		if npc != null and (npc.mode != "" or npc.distance_to_cell(me) <= RADIO_VISTA):
 			continue  # ya está en ello, o a la vista: te cobrará cuando te vea
@@ -225,6 +226,21 @@ func dormir(r: Dictionary) -> void:
 	var npc: Npc = r["npc"]
 	if npc == null:
 		return
+	foto(r)
+	for f in world.npcs.filter(func(n): return n.amo == npc):
+		world.npcs.erase(f)
+		f.queue_free()
+	world.npcs.erase(npc)
+	npc.queue_free()
+	r["npc"] = null
+
+
+## Guarda en el registro lo que le ha pasado al que tiene cuerpo, como si se durmiera ahora
+## (sin quitárselo): lo usan dormir() y las partidas guardadas (Partida).
+func foto(r: Dictionary) -> void:
+	var npc: Npc = r["npc"]
+	if npc == null or not is_instance_valid(npc):
+		return
 	for k in ESTADO:
 		var v = npc.get(k)
 		r["estado"][k] = v.duplicate(true) if v is Dictionary else v
@@ -235,12 +251,6 @@ func dormir(r: Dictionary) -> void:
 	r["home"] = npc.home
 	r["bed"] = npc.bed
 	r["visto"] = GameState.now()
-	for f in world.npcs.filter(func(n): return n.amo == npc):
-		world.npcs.erase(f)
-		f.queue_free()
-	world.npcs.erase(npc)
-	npc.queue_free()
-	r["npc"] = null
 
 
 ## Le da cuerpo donde le toca estar: lejos de la vista si está cerca, y yendo hacia su sitio.
@@ -300,6 +310,8 @@ func _al_dia(npc: Npc, r: Dictionary) -> void:
 	for m in e.get("metas", {}):
 		npc.set_meta(m, e["metas"][m])
 	var minutes: float = GameState.now() - r["visto"]
+	# lo que ha consumido mientras tanto: el colocón pasado, el mono acumulado, si ha pillado
+	npc.pasa_consumo()
 	if npc.robbed and minutes >= Defs.LATENT_ROBBED_FORGET:
 		npc.robbed = false
 		var fresh := Npc.new()

@@ -10,6 +10,8 @@ Abre `game/project.godot` con Godot 4.7 y pulsa F5.
 - WASD o flechas: andar (Shift: correr)
 - Clic: ir a un sitio, o hablar con un bot / entrar en un lugar
 - I: inventario · L: libreta · M: mapa del barrio · P: pausa (también con los botones de arriba a la derecha)
+- La partida se guarda sola al dormir y al empezar cada día, y a mano desde la pausa; «Continuar»
+  en el menú de inicio sigue la última
 - R: rebuscar en la basura · Z: dormir donde estés · B: montar en la bici (si llevas una)
 - V: ver los conos de visión de todos los que tienes cerca
 - Q/E: girar la cámara · Rueda: zoom
@@ -80,9 +82,24 @@ hito de la caída. Debajo se listan los efectos que tienes ahora y su causa: el 
 hace lento y balancea la cámara, la farlopa te acelera y la hace temblar, el porro estira
 el tiempo y acerca la cámara, el alcohol te hace andar en eses y responder tarde, las
 pastillas saturan los colores, la base da una euforia corta y un bajón brusco, y el mono
-trae temblores, viñeta roja y tropiezos.
+trae temblores, viñeta roja y tropiezos. El speed acelera durante horas y lo ve todo con
+los bordes duros; el MDMA lo pone todo cálido, con un halo que late, y el bajón llega después.
+Con setas o LSD la imagen ondula y los colores respiran (con la cabeza mal, el viaje se tuerce);
+con ketamina todo se aleja. Los ansiolíticos, los antidepresivos y el tramadol se sacan con
+receta del médico del CAP (o de estraperlo), y el tabaco en la máquina del bar. Mezclar
+depresores es jugársela.
+
+**Resaca**: lo que consumes se paga al despertar. Si duermes después de beber, de una noche de
+farlopa o de MDMA, te levantas con resaca: la luz molesta, vas hecho polvo o, con el MDMA, triste
+todo el día siguiente. El caballo no da resaca: da mono.
 
 ### Quién anda por la calle
+
+Todo el mundo está enganchado a algo: muchos bots tienen su sustancia (el yonki, el caballo
+o la base; la despedida, la litrona o el MDMA; el vecino, sus pastillas), con su colocón y su
+mono. Se nota: el colocado de caballo cabecea en un portal, el que va de farlopa o speed anda
+deprisa y a veces busca bronca, y el que tiene mono viene a pedirte, a comprarte (pagando lo
+que sea) o, si no tiene nada, a darte el tirón. Se le puede dar una dosis, y se acuerda.
 
 Cada tipo de bot sale a sus horas y en su zona: de día, trileros y carteristas (vestidos
 de guiri) en la Rambla; por la tarde y la noche, chavales que esnifan cola por la Rambla
@@ -139,6 +156,13 @@ Antonio, que convenzas a la agente Mas de que tiene plaza en el albergue (con lo
 cita en el CAS, o mintiendo, que si no cuela te ficha). Van a la libreta como los encargos, y
 quien está en una misión en marcha lleva una «★». Algunas acaban en un favor: que te curen,
 que te cuenten por dónde anda la policía o que una agente haga la vista gorda unos días.
+
+Las misiones se cruzan y obligan a elegir. El pasaporte de Grzegorz lo tiene Vera: se lo
+compras, se lo robas o te chivas a la Urbana de paisano, y entonces su amigo El Mudo (que tiene
+el acordeón de Vasile) ya no se fía de ti. O ayudas al Sr. Feliu o al inversor que lo quiere
+echar; si espías el piso de Quique para la Sra. Encarna y le llevas las pruebas al agente
+Serra, Quique cae... y La Rubia sabe quién habló. Lo que le haces a alguien lo saben los suyos:
+sus amigos se te acercan o se apartan, y sus enemigos, al revés.
 
 Cada encargo se apunta en la **libreta** (L), con un botón para marcar el sitio en el mapa.
 Casi siempre es fiable, pero cuanto más ido vas (colocón, mono, sueño, mente baja) más fácil
@@ -197,10 +221,27 @@ diseñador de personajes, una herramienta aparte del juego para crear personajes
   (dinero, objetos, deudas, favores, amigos y enemigos, las barras, la búsqueda, que te fichen).
   En el juego salen en su menú, se apuntan en la libreta como los encargos y quien te la da lleva la «!».
 - **Notas**: lo que el editor aún no sabe expresar, en texto libre, para programarlo a mano.
+- **Relaciones**: con quién se lleva bien o mal, familia, pareja, para quién trabaja, a quién le
+  debe dinero. En el juego, lo que le haces a uno lo saben los suyos (y sus enemigos).
+- **Esquema de misiones**: todas las misiones de todos los personajes y cómo se encadenan
+  («después de», una u otra, personajes compartidos, deudas, favores, enemigos).
 
 Cada personaje se guarda en `game/data/personajes/<id>.json` y el juego lo saca a la calle en
 su zona y a sus horas. Los campos marcados con ◌ se guardan pero el juego aún no los usa.
 «Probar en el juego» guarda y abre una partida con el personaje al lado.
+
+## Retocar precios y efectos
+
+`editor_sustancias.cmd` (o `godot --path game res://editor/editor_sustancias.tscn`) abre el
+diseñador de sustancias: tablas con los precios y efectos de todas las sustancias (lo básico,
+efectos de pantalla y manejo, bajón, resaca y mal viaje), lo que paga el compraventa por cada
+objeto, el recargo de cada cliente, lo que consume cada tipo de bot, los precios de las acciones
+y la caja de la receta. El fondo de cada casilla compara la columna (azul, más; rojo,
+negativo) y pasando el ratón por una columna se ve qué es.
+
+Los retoques se guardan en `game/data/equilibrio.json`, solo lo que difiere de `defs.gd`, y
+el juego los pone encima al arrancar (`scripts/equilibrio.gd`); con borde amarillo, lo
+retocado. Vaciar una casilla la devuelve a lo de `defs.gd`, y borrar el archivo, todo.
 
 ## Datos reales
 
@@ -233,8 +274,15 @@ python tools/make_textures.py
   con `scripts/city/street_item.gd` según lo que *te parece* que es (equilibrio en `Defs.STREET_ITEMS`)
 - `game/scripts/trade.gd` — trapicheo: revender a despedidas, guiris y yonkis (clientes que se
   acuerdan, mercancía cortada, secretas, la esquina del camello) y trueque con otros yonkis
+- `game/scripts/consumo.gd` — lo que consumen los bots: su sustancia, colocón, mono y enganche
+  simplificados, cómo se nota (andar, cabecear, bronca, pedir, comprar, el tirón) y cómo les ha
+  ido mientras estaban latentes (equilibrio en `Defs.NPC_HABITS` y `Defs.NPC_*`)
 - `game/scripts/errands.gd` — encargos con plazo (ofrecer, cumplir, fallar) y la libreta que
   se apunta y se lee peor cuanto más ido vas (equilibrio en `Defs.ERRANDS`)
+- `game/scripts/partida.gd` — partidas guardadas: un JSON por partida en `user://partidas/` con
+  `GameState`, el censo, la memoria de la IA y dónde estás (`Partida.CAMPOS`, `Partida.VERSION`)
+- `game/scripts/relaciones.gd` — relaciones entre personajes y cómo se corre la voz de lo que les haces
+- `game/editor/esquema.gd` — el esquema de las cadenas de misiones del diseñador
 - `game/scripts/misiones.gd` — misiones de los personajes del editor: formato (`Misiones.nueva()`,
   objetivos, resultados y favores), ofrecerlas, cumplirlas con quien toca y sus consecuencias.
   En la partida son encargos con la clave `mision`
@@ -269,6 +317,8 @@ python tools/make_textures.py
   contigo (te persiguen, les debes, te dieron un encargo). Gracias a esto el barrio tiene unos
   1.400 en el censo (`Defs.CROWD` multiplica la gente corriente) y 50–150 con cuerpo alrededor,
   a 60 FPS. `game/tests/paseo.gd [multiplica]` lo mide.
+- `game/editor/editor_sustancias.gd` — diseñador de sustancias: precios y efectos en tablas
+- `game/scripts/equilibrio.gd` — pone los retoques del diseñador de sustancias (`data/equilibrio.json`) encima de las tablas de `Defs`
 - `game/editor/` — diseñador de personajes (`editor_personajes.gd`): formulario, muñeco
   (`muneco.gd`), mapa para zona y rutina (`mapa_zona.gd`) y catálogo de tipos base (`tipos.gd`)
 - `game/scripts/personajes.gd` — formato de los personajes del diseñador, compartido por el

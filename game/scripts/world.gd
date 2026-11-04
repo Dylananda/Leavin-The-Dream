@@ -91,6 +91,7 @@ var hud: Hud
 var interactions: Interactions
 var errands: Errands  ## Encargos con plazo y libreta
 var misiones: Misiones  ## Misiones de los personajes del editor
+var relaciones: Relaciones  ## Lo que le haces a un personaje lo saben los suyos
 var street_items: StreetItems  ## Objetos tirados por la calle
 var trade: Trade  ## Trapicheo: revender y cambiar cosas con otros yonkis
 var conversation: Conversation  ## Conversación libre con IA (scripts/ai/)
@@ -123,6 +124,7 @@ var _marker_timer := 0.0
 var _xray_m := XRAY_RADIUS_M
 var _all_cones := false  ## tecla V: ver los conos de visión de todos los cercanos
 var _grabbed := 0.0  ## segundos que te quedan agarrado por un transeúnte
+var _autoguardado_pendiente := false
 
 
 func _ready() -> void:
@@ -163,6 +165,7 @@ func _ready() -> void:
 	interactions = Interactions.new(self)
 	errands = Errands.new(self)
 	misiones = Misiones.new(self)
+	relaciones = Relaciones.new(self)
 	street_items = StreetItems.new(self)
 	trade = Trade.new(self)
 	street_items.populate()
@@ -170,7 +173,8 @@ func _ready() -> void:
 	add_child(conversation)
 	_place_markers()
 	_personajes = Personajes.cargar_todos()
-	misiones.preparar()
+	if Partida.pendiente.is_empty():
+		misiones.preparar()  # (una partida cargada ya trae lo que debes)
 	Npc.reservados.clear()
 	for d in _personajes:
 		Npc.reservados[d["tipo"] + "|" + d["nombre"]] = true
@@ -203,8 +207,35 @@ func _ready() -> void:
 	hud.find_place_requested.connect(highlight_poi)
 	GameState.game_over.connect(_on_game_over)
 	GameState.relocated.connect(_on_relocated)
+	GameState.new_day.connect(_autoguardar)
+	hud.save_requested.connect(guardar_partida)
 
-	_intro()
+	if not Partida.pendiente.is_empty():
+		Partida.aplicar_mundo(self)
+		GameState.log_msg("Partida cargada: día %d, %s. Sigues donde lo dejaste." % [GameState.day, Partida.hora()])
+	else:
+		_intro()
+
+
+## Guarda la partida (desde la pausa) y lo dice en el registro.
+func guardar_partida() -> void:
+	var err := Partida.guardar(self)
+	if err == OK:
+		GameState.log_msg("Partida guardada (día %d, %s)." % [GameState.day, Partida.hora()], GameState.C_GOOD)
+	else:
+		GameState.log_msg("No se ha podido guardar la partida (%s)." % error_string(err), GameState.C_BAD)
+
+
+## Guardado automático al dormir y al empezar un día: al final del frame, una sola vez aunque
+## pasen las dos cosas a la vez (dormir hasta el día siguiente).
+func _autoguardar() -> void:
+	if not Partida.automatico or not GameState.alive or _autoguardado_pendiente:
+		return
+	_autoguardado_pendiente = true
+	(func():
+		_autoguardado_pendiente = false
+		if GameState.alive and is_inside_tree():
+			Partida.guardar(self)).call_deferred()
 
 
 func _setup_lighting() -> void:
@@ -436,6 +467,7 @@ func _process(delta: float) -> void:
 	if GameState.alive:
 		GameState.advance(delta * Defs.GAME_MINUTES_PER_SECOND)
 		errands.update()
+		misiones.update()
 		street_items.update()
 	_fx = GameState.effects()
 	hud.show_effects(_fx)
@@ -890,8 +922,10 @@ func sleep(minutes: float, robbery_risk: float, heal: float, quality: float, pla
 		GameState.milestone("desalojo")
 		player.setup(city, city.random_walkable_near(player.cell, 15))
 		_camera_focus = player.position
+		_autoguardar()
 		return
 	GameState.rest(minutes, quality, robbery_risk, heal)
+	_autoguardar()
 
 
 ## Si, durmiendo a la vista en `place`, la Guàrdia Urbana te despierta y te echa: casi seguro
@@ -1091,6 +1125,8 @@ func _on_caught(npc: Npc) -> void:
 		"venganza":
 			npc.memory.erase("robado")
 			npc.memory.erase("timado")
+			npc.memory.erase("oido_mal")
+			npc.remove_meta("venganza")
 			var loot := ""
 			if npc.has_meta("dueno_bici") and gs.has_item("bici"):
 				npc.remove_meta("dueno_bici")
@@ -1145,6 +1181,58 @@ func _on_caught(npc: Npc) -> void:
 			npc.say("¡Te tengo, ladrón!", 2.0)
 			gs.heat = minf(100.0, gs.heat + 10.0)
 			gs.log_msg("%s te agarra del brazo. Te sueltas como puedes." % npc.display_name, GameState.C_BAD)
+		"bronca":
+			_bronca(npc)
+		"tiron":
+			_tiron(npc)
+
+
+## Alguien que va acelerado (Consumo) te ha alcanzado buscando bronca: pelea (minijuego Fight)
+## con la probabilidad de una pelea normal. Si ganas, se le pasa; si no, te deja tocado.
+func _bronca(npc: Npc) -> void:
+	var gs := GameState
+	gs.change_vitality(-Defs.VITALITY_FIGHT)
+	play_minigame(Fight.new(npc), interactions._fight_chance(npc), func(result: String, _stats: Dictionary):
+		if result == "ok":
+			npc.say("Vale, vale... Ya está, tío.", 3.0)
+			gs.change_health(-randf_range(2, 6), "Una bronca de más")
+			gs.log_msg("Te quitas de encima a %s, que iba hasta arriba." % npc.display_name, GameState.C_GOOD)
+		else:
+			gs.change_health(-12, "Te mató a golpes alguien que iba hasta arriba")
+			gs.change_dignity(-3)
+			gs.log_msg("%s iba hasta arriba y te ha tocado a ti. Te deja en el suelo." % npc.display_name, GameState.C_BAD)
+			gs.milestone("pelea_perdida"))
+
+
+## Alguien con mono y sin nada con qué pagar (Consumo) te ha alcanzado: te arranca una dosis de
+## lo suyo (o de lo que lleves) o unos euros, y se lo mete en cuanto puede.
+func _tiron(npc: Npc) -> void:
+	var gs := GameState
+	var c: Dictionary = npc.consumo
+	var take := ""
+	if not c.is_empty() and gs.has_item(c["id"]):
+		take = c["id"]
+	else:
+		for id in gs.inventory.keys():
+			if Defs.SUBSTANCES.has(id):
+				take = id
+				break
+	if take != "":
+		gs.remove_item(take)
+		if not c.is_empty() and take == c["id"]:
+			c["dosis"] += 1
+		npc.say("Lo siento, tío... lo necesito.", 3.0)
+		gs.log_msg("%s te da el tirón y se lleva tu %s." % [npc.display_name, Defs.item_name(take).to_lower()], GameState.C_BAD)
+	elif gs.money > 0:
+		var n := mini(gs.money, Defs.NPC_TIRON_MAX)
+		gs.add_money(-n)
+		npc.money += n
+		npc.say("Lo siento... lo necesito.", 3.0)
+		gs.log_msg("%s te mete la mano en el bolsillo y sale corriendo con %d €." % [npc.display_name, n], GameState.C_BAD)
+	else:
+		npc.say("¿No llevas nada? Mierda...", 3.0)
+		gs.log_msg("%s te registra a empujones. No llevas nada." % npc.display_name, GameState.C_BAD)
+	gs.change_dignity(-2)
 
 
 ## Te van a dar una paliza (`npc` te ha alcanzado y no llevas nada): se pelea (minijuego
@@ -1471,6 +1559,9 @@ func _exit_tree() -> void:
 
 func _on_game_over(reason: String) -> void:
 	Engine.time_scale = 1.0
+	# la partida guardada queda como terminada: «Continuar» ya no la ofrece
+	if Partida.automatico and GameState.partida_id != "":
+		Partida.guardar(self)
 	player.stop()
 	hud.close_menu()
 	hud.show_game_over(reason)

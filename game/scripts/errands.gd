@@ -436,7 +436,7 @@ func jot(e: Dictionary) -> Dictionary:
 func _slip_kind() -> String:
 	var gs := GameState
 	var lose := gs.intensity("caballo") + gs.intensity("pastillas") + maxf(0.0, (gs.fatigue - 70.0) / 30.0)
-	var alter := gs.intensity("farlopa") + gs.intensity("base") + maxf(0.0, (40.0 - gs.sanity) / 40.0)
+	var alter := gs.intensity("farlopa") + gs.intensity("base") + gs.intensity("speed") + maxf(0.0, (40.0 - gs.sanity) / 40.0)
 	if lose + alter <= 0.0:
 		return SLIPS.pick_random()
 	if randf() * (lose + alter) < lose:

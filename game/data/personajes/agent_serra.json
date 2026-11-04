@@ -51,7 +51,54 @@
 		"¿Qué llevas ahí?",
 		"Circula."
 	],
-	"misiones": [],
+	"misiones": [
+		{
+			"id": "el_piso_de_quique",
+			"titulo": "El piso de Quique",
+			"dice": "Si alguien me trae algo más que quejas sobre el piso de Sant Ramon, entramos. Aunque ya sabes lo que pienso: cerrar uno abre otro dos calles más allá.",
+			"condiciones": {
+				"tras": "sra_encarna/las_pruebas_del_piso"
+			},
+			"objetivo": {
+				"tipo": "traer",
+				"objeto": "pruebas_piso"
+			},
+			"plazo": 0.0,
+			"exito": {
+				"texto": "Los Mossos entran en el piso de Sant Ramon de madrugada. Quique sale esposado, y lo que le debías se va con él. Al día siguiente La Rubia ya vende en su esquina, y sabe quién habló.",
+				"efectos": [
+					{
+						"tipo": "saldar",
+						"valor": 0,
+						"quien": "quique_el_nano",
+						"que": ""
+					},
+					{
+						"tipo": "detenido",
+						"valor": 0,
+						"quien": "quique_el_nano",
+						"que": ""
+					},
+					{
+						"tipo": "venganza",
+						"valor": 0,
+						"quien": "la_rubia",
+						"que": ""
+					},
+					{
+						"tipo": "mente",
+						"valor": 3,
+						"quien": "",
+						"que": ""
+					}
+				]
+			},
+			"fallo": {
+				"texto": "",
+				"efectos": []
+			}
+		}
+	],
 	"relaciones": [],
-	"notas": "Misión cruzada: si le llevas pruebas del piso de Quique el Nano (las que pide la Sra. Encarna), detiene a Quique y tu deuda con él desaparece... pero La Rubia ocupa su sitio y sabe que fuiste tú."
+	"notas": "Misión «El piso de Quique» (después de «Las pruebas del piso»): con las pruebas, detiene a Quique y tu deuda con él desaparece... pero La Rubia ocupa su sitio y sabe que fuiste tú."
 }

@@ -74,6 +74,12 @@
 		"Hoy estoy mala."
 	],
 	"misiones": [],
-	"relaciones": [],
+	"relaciones": [
+		{
+			"con": "quique_el_nano",
+			"tipo": "le_debe",
+			"nota": "Le compra fiado"
+		}
+	],
 	"notas": "Le debes 40 € (en sus estadísticas). La misión «El paquete para Txell» es de Quique el Nano: si se lo llevas, estáis en paz y te cura las heridas cuando lo necesites. Tiene una perra, Tula."
 }

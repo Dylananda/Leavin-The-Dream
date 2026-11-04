@@ -55,7 +55,7 @@ sí y una memoria poco fiable**, que puede ir creciendo hacia misiones de rol en
 10. **Ciudad más grande y metro**
 11. **Diseñador de personajes**: herramienta aparte para crear personajes únicos con su
     historia, aspecto, zona, rutina, estadísticas, ficha de IA y misiones, que el juego carga
-    solo. — hechas las fases 1 (rama `feat/editor-personajes`) y 2 (misiones)
+    solo. — hechas las fases 1 (rama `feat/editor-personajes`), 2 (misiones) y 3 (relaciones y cadenas)
     - [x] Fase 1: identidad, aspecto con el muñeco, zona (barrio, zona hecha o polígono),
       casa y lugares con horas, estadísticas, ficha de conversación y frases; el juego los
       saca a la calle y se puede hablar con ellos; botón «Probar en el juego»
@@ -84,7 +84,31 @@ sí y una memoria poco fiable**, que puede ir creciendo hacia misiones de rol en
         cuela te ficha. Si sale bien, hace la vista gorda tres días y Antonio te cuenta lo que ve).
       - [ ] Pendiente: pasar a misiones las demás notas de los personajes de ejemplo; probarlas
         jugando y ajustar plazos y premios; capturas de la pestaña en el PC (en la nube no hay pantalla).
-    - [ ] Fase 3: relaciones entre personajes y esquema de las cadenas de misiones
+    - [x] Fase 3: relaciones entre personajes y esquema de las cadenas de misiones
+      - **Relaciones** (pestaña «Relaciones», `scripts/relaciones.gd`): se lleva bien o mal con,
+        familia, pareja, trabaja para, le debe dinero a. Valen en los dos sentidos. Lo que le haces
+        a uno (ayudarle, robarle, pegarle, timarle, chivarte) lo saben los suyos y, al revés, sus
+        enemigos (`oido_bien` y `oido_mal` en su memoria, también latentes): se acercan a
+        saludarte, se apartan o, los de mala sangre, van a por ti, y no te dan misiones.
+      - **Esquema de misiones** (pestaña nueva, `editor/esquema.gd`): una caja por misión de todos
+        los personajes, en columnas por «después de», con flechas para las cadenas, líneas rojas
+        entre las excluyentes y amarillas entre las que comparten personajes, y lo que pasa al
+        cumplirla o fallarla. Clic en una caja: abre su personaje.
+      - Lo nuevo en las misiones: condición «si no has hecho» (elegir entre dos), objetivos
+        **espiar** (consigues algo; si te pillan, falla) y **acompañar** (va contigo hasta el
+        sitio; alguien os puede acechar), y en «conseguirle algo», **quién lo tiene** (te lo vende o
+        se lo robas, minijuego) y **a qué policía chivarte** (se lo quita, te lo da y al otro lo
+        detienen dos días). Resultados nuevos: lo detienen (sale del barrio unos días o para
+        siempre; los suyos se enteran), va a por ti, y el riesgo de ir a comisaría con antecedentes.
+      - Hechas, cruzadas entre ellas: **el pasaporte de Grzegorz** (lo tiene Vera: comprarlo,
+        robarlo o chivarte a Xavi), **el acordeón de Vasile** (El Mudo, amigo de Vera: si te chivaste
+        de ella, ya no te lo vende), **«Que Joy no trabaje sola»** (Rosi, vigilar) → **«La denuncia
+        de Joy»** → **«Testigo en comisaría»** (Agent Ortega), **el Sr. Feliu o Pol** (una u otra;
+        traicionar a Feliu te cierra a la Sra. Encarna), **las pruebas del piso** (espiar a Quique
+        para la Sra. Encarna) → **«El piso de Quique»** (Serra lo detiene, tu deuda se va y La
+        Rubia va a por ti) y **«El bar de 1979»** (acompañar a Margit; Vera os acecha si no está detenida).
+      - [ ] Pendiente: que el acordeón pueda acabar en la compraventa; la multa que te borra Xavi;
+        la bolsa de Mari Carmen; capturas de las pestañas nuevas en el PC; jugarlas y ajustar.
 12. **Bots latentes (censo)**: todos los del barrio en un registro de datos y cuerpo solo para
     los que tienes cerca; al volver a verlos se ponen al día. — hecho lo básico (rama `feat/editor-personajes`)
     - [x] Dormir y despertar según la distancia, con lo que les pasó; no se duermen los que
@@ -100,7 +124,23 @@ sí y una memoria poco fiable**, que puede ir creciendo hacia misiones de rol en
       esté latente o lejos: aparece fuera de la vista y va hacia ti (`Censo.despertadores`,
       `Npc.come_for`); si no pagas, vuelve cada `Defs.DEBT_VISIT_EVERY` horas. Las deudas ya
       no tienen al acreedor siempre con cuerpo.
-    - [ ] Guardar el censo en la partida guardada (cuando haya partidas guardadas)
+    - [x] Guardar el censo en la partida guardada (hecho con las partidas guardadas, abajo)
+13. **Partidas guardadas** — hecho (`scripts/partida.gd`)
+    - [x] Un archivo JSON por partida en `user://partidas/`, con número de versión y una cabecera
+      legible (perfil, día, hora, cuándo se guardó, si sigue viva); los datos van con sus tipos
+      (`JSON.from_native`). Se guarda todo `GameState` por nombre de campo (`Partida.CAMPOS`):
+      al cargar se empieza una partida nueva del mismo perfil y se ponen los campos que haya,
+      así que añadir campos no rompe las partidas viejas (se quedan como en una nueva).
+    - [x] El censo entero, con lo que recuerda cada uno y lo que consume, también los personajes
+      del editor (por su id); los que tienen cuerpo, como si se durmieran (`Censo.foto`). Los
+      encargos y misiones en marcha vuelven con quien te los dio; la libreta, con sus encargos.
+    - [x] Lo hablado con la IA, dónde estás y si vas en bici.
+    - [x] Se guarda sola al dormir y al empezar un día; a mano, «Guardar la partida» en la pausa.
+      En el menú de inicio, «Continuar» carga la última que sigue viva (al acabar una partida
+      queda como terminada).
+    - [ ] Pendiente: elegir entre varias partidas guardadas y borrarlas; guardar los objetos de
+      la calle y los marcadores de los sitios; el relevo y el legado (otro yonki con lo que dejó
+      el anterior) tirarán de aquí.
 
 ## 2. Estado del personaje
 
@@ -577,17 +617,68 @@ personajes como tipo base. Zonas nuevas en `World.ZONE_STREETS` y `World.ZONE_LA
 La idea de fondo: no hay «yonkis» y «gente normal», todo el mundo está enganchado a algo.
 El barrio entero tiende a engancharse, también el jugador, y salir de ahí es lo más difícil.
 
-- [ ] **Los bots también consumen**: cada uno con sus sustancias, su colocón, su mono y su
+- [x] **Los bots también consumen**: cada uno con sus sustancias, su colocón, su mono y su
   enganche, y se nota en cómo se comportan (el de farlopa va acelerado y busca bronca, el de
   caballo se duerme en un portal, el de pastillas está ido...). Encaja con el censo: al
   despertar a un latente se calcula cómo le ha ido desde la última vez.
+  Hecho, primer paso (`scripts/consumo.gd`, equilibrio en `Defs.NPC_HABITS` y `Defs.NPC_*`):
+  - Cada tipo tiene sus sustancias más probables y un enganche; cada bot, una sustancia de
+    cabecera fija por su nombre (los personajes del editor, la primera que quieren). Los
+    niños, los chavales, la policía y quien trabaja en lo social no consumen.
+  - Colocón, mono y enganche simplificados (`Npc.consumo`): el colocón baja como el del
+    jugador, sin él sube el mono y, con mono, se mete lo que lleva o sale a pillar (y lo paga).
+  - Se nota: anda más rápido o más lento y hace eses según la sustancia (y el mono le frena);
+    colocado de caballo, pastillas o alcohol cabecea, dormido en un portal; acelerado de
+    farlopa, base o speed, algunos buscan bronca (pelea de verdad, minijuego) y pegan más
+    fuerte; con mono y nada encima viene a pedirte o a comprarte (paga más cuanto peor está)
+    y, sin dinero y a tope, te da el tirón (se lleva una dosis o unos euros). Se le puede dar
+    una dosis (se acuerda). Dicen frases según cómo van.
+  - El censo lo guarda al dormirlos y, al despertarlos, simula el tiempo latente a tramos de
+    15 minutos (`Consumo.avanzar`): el colocón pasado, el mono acumulado y si ha pillado.
+  - [ ] Pendiente: que se vean colocados (posturas, tumbados en el suelo), que se pasen
+    cosas entre ellos, sobredosis de bots, y el contagio (ver abajo); jugarlo y ajustar.
 - [ ] **Adicciones sin sustancia**: yonkis de pantalla (a los que es más fácil venderles un
   móvil, que no lo sueltan y no ven que les robas), del juego (tragaperras de los bares),
   del trabajo, de las compras...
 - [ ] **Más sustancias**, cada una con sus efectos visuales, de manejo y de enganche:
-  speed, MDMA, LSD, setas, DMT, ketamina; de farmacia: benzodiacepinas y otros ansiolíticos,
+  ~~speed, MDMA, LSD, setas, ketamina~~ (hechas), DMT; de farmacia: benzodiacepinas y otros ansiolíticos,
   antidepresivos, opioides de receta (tramadol, fentanilo en parches), y el alcohol y el tabaco
   de todos los días. Las de farmacia, con receta (médico del CAP) o de estraperlo.
+  - [x] **Speed** (8 €): dura horas, acelera, la cámara tiembla un poco y la pantalla se ve
+    con bordes duros y contraste (`sharp` en el shader de viñeta); bajón largo y con sueño.
+    **MDMA** (10 €): engancha poco, sube la mente y la dignidad, todo cálido con un halo que
+    late a 128 golpes por minuto (`love`), y el bajón de días después es de la cabeza. Los
+    venden los camellos (y La Rubia, el MDMA); los compran las despedidas, los pijos (MDMA)
+    y los yonkis (speed). Cada una con su hito de la caída.
+  - [x] **Setas** y **LSD** (10 €): casi no enganchan; la imagen ondula y los colores respiran
+    (`psico` en el shader), el tiempo se estira; el LSD dura unas diez horas y no te deja dormir.
+    Con la salud mental baja (o, a veces, sin más) el viaje se tuerce: **mal viaje** (paranoia,
+    túnel, temblor y un golpe a la mente; `malviaje` en `Defs.SUBSTANCES`).
+    **Ketamina** (15 €): corta e intensa, todo se aleja y se desdobla (`disocia`), vas lento y
+    a la deriva. Las tres las venden los camellos; las compran despedidas, pijos y guiris (setas).
+  - [x] **De farmacia**, con **receta** (el médico de cabecera del CAP, una vez por semana; con
+    ella, una caja en la farmacia: `Defs.RECETA`) o de estraperlo (los yonkis las llevan y las
+    cambian): **ansiolíticos** (quitan la paranoia y el miedo, dan sueño, enganchan bastante),
+    **antidepresivos** (casi no se notan, pero tomados cada día sostienen la mente;
+    `sanity_rate`; dejarlos de golpe da su síndrome) y **tramadol** (opioide: calma el mono del
+    caballo, da sueño, puede dar sobredosis).
+  - [x] **Tabaco**: un cigarro casi no hace nada, pero engancha y calma el temblor de las manos.
+    Paquetes de 20 en la máquina del bar (6 €); los skaters y los punkis te dan alguno.
+  - [x] **Mezclar depresores** (ansiolíticos, tramadol o ketamina con alcohol o caballo, `mezcla`)
+    sube mucho el riesgo de sobredosis (`Defs.MEZCLA_OD`) y es un hito.
+  - [x] Los bots también: fuman (vecinos, chatarreros, camellos...), los vecinos y los abuelos
+    toman ansiolíticos y antidepresivos, las despedidas ketamina y LSD, los punkis setas.
+- [x] **Resacas** (las sustancias que la dan en la vida real: alcohol, porros, pastillas,
+  farlopa, base, speed, MDMA, ketamina, ansiolíticos, tramadol, setas, LSD; no el caballo, la
+  metadona, el tabaco ni los antidepresivos). Cada dosis suma resaca pendiente y, **al dormir**,
+  se convierte en resaca de verdad, más larga y fuerte cuanto más consumiste
+  (`Defs.RESACA_*`, `resaca` en `Defs.SUBSTANCES`). Cada una con sus efectos (la de alcohol:
+  luz que molesta y cabeza que late, `resaca` en el shader; la de speed, hecho polvo; la del MDMA,
+  el martes negro que te baja la mente durante un día), te quita vitalidad máxima y sale en la
+  lista de efectos. Con las que lo permiten, «la del perro» (volver a meterte lo mismo) te la
+  quita a medias.
+  - [ ] Pendiente: DMT, fentanilo en parches; que las del médico tengan efectos con el tiempo
+    (los antidepresivos tardan semanas); jugarlo y ajustar duraciones y precios.
 - [ ] **Contagio y conversiones** entre yonki y «no yonki», en los dos sentidos, con una
   tendencia general a engancharse (ver «Contagio» en «Personajes que viven»).
 - [ ] **Equilibrio**: consumo, enganche, precios y premios de las misiones. Ahora mismo es
@@ -597,6 +688,12 @@ El barrio entero tiende a engancharse, también el jugador, y salir de ahí es l
     una de cada diez 60–140 €), reventa más barata (móvil 18 €, patinete 28 €, bici 15 €),
     menos margen al trapichear (despedidas ×1,7, guiris ×2,5, pijos ×2) y pagas de los
     perfiles más realistas (paro 120 € y pensión 140 € por semana; papá, 150 € cada 4 días).
+  - [x] **Diseñador de sustancias** (`editor_sustancias.cmd`, 4 de noviembre): tablas con
+    precios y efectos de sustancias, objetos, clientes, consumo de los bots, precios de las
+    acciones (`Defs.PRECIOS`, antes escritos a mano en `interactions.gd`) y receta. Los
+    retoques van a `data/equilibrio.json` y mandan sobre `defs.gd` (`Equilibrio`).
+    - [ ] Pendiente: los premios de los encargos y misiones, las multas, las carteras y las
+      demás constantes sueltas de `defs.gd`; ordenar por columna y fijar la columna de nombres.
   - [ ] Jugarlo y seguir: comida, precio de la droga según la hora y el barrio, premios.
 
 ### Lo que sale de jugar las misiones (3 de noviembre de 2026)

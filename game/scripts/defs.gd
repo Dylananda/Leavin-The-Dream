@@ -1,6 +1,9 @@
 class_name Defs
 ## Datos fijos del juego: perfiles de yonki, sustancias, objetos y títulos.
-## Para equilibrar el juego, casi todo se toca aquí.
+## Para equilibrar el juego, casi todo se toca aquí. Las tablas `static var ... Equilibrio.aplicar`
+## (sustancias, objetos, clientes, lo que consumen los bots, precios y receta) también se
+## retocan con el diseñador de sustancias (editor_sustancias.cmd): sus cambios se guardan en
+## data/equilibrio.json y mandan sobre lo de aquí (ver Equilibrio).
 
 ## Minutos de juego que pasan por cada segundo real.
 const GAME_MINUTES_PER_SECOND := 2.0
@@ -158,7 +161,7 @@ const WALLET_FAT := Vector2i(60, 140)
 ## Bots latentes (scripts/censo.gd): lo que se pone al día al volver a verlos.
 const LATENT_ROBBED_FORGET := 24.0 * 60.0  ## minutos tras los que al que robaron vuelve a llevar dinero
 const LATENT_MEMORY_FADE := 3.0 * 24.0 * 60.0  ## minutos latente por cada vez que olvida algo que le hiciste...
-const LATENT_GRUDGES := ["robado", "pegado", "timado", "pisado"]  ## ... y esto lo olvida a la mitad de ritmo
+const LATENT_GRUDGES := ["robado", "pegado", "timado", "pisado", "oido_mal"]  ## ... y esto lo olvida a la mitad de ritmo
 
 ## Escándalo al robar: quién oye el grito (casillas) y lo lejos que llega una llamada a la policía.
 const SCANDAL_HEAR := 20
@@ -273,23 +276,28 @@ const PROFILES := [
 ##   drift (eses al andar), lag (respondes tarde), double (visión doble), saturate (colores chillones),
 ##   slowmo (el tiempo se estira), glow (todo brilla), drowsy (párpados), tunnel (bordes oscuros),
 ##   clumsy (tropiezos), paranoia (aberración cromática).
-const SUBSTANCES := {
+static var SUBSTANCES := Equilibrio.aplicar("sustancias", {
 	"litrona": {"name": "Litrona", "price": 2, "high": 25, "addiction": 1.5, "health": -1, "dignity": -1, "sanity": 2, "od": 0.0,
 		"decay": 0.1, "fatigue_rate": 1.5, "visible": 0.3, "color": Color("d8b040"),
+		"resaca": {"dosis": 0.35, "horas": 6, "mente": -0.5, "fx": {"resaca": 1.0, "speed": -0.15, "tunnel": 0.2}, "text": "dolor de cabeza, sed y la luz te mata", "se_quita": true},
 		"fx": {"drift": 1.0, "lag": 0.8, "double": 0.7, "sway": 0.25}, "fx_text": "andas haciendo eses y reaccionas tarde"},
 	"porro": {"name": "Porro", "price": 4, "high": 25, "addiction": 1, "health": -1, "dignity": 0, "sanity": 2, "od": 0.0,
 		"decay": 0.12, "hunger_rate": 2.0, "fatigue_rate": 1.4, "visible": 0.2, "color": Color("6ab04a"),
+		"resaca": {"dosis": 0.2, "horas": 4, "mente": 0.0, "fx": {"slowmo": 0.15, "drowsy": 0.3}, "text": "niebla en la cabeza"},
 		"fx": {"zoom": 0.35, "slowmo": 1.0, "speed": -0.1}, "fx_text": "todo va más lento y lo ves de cerca"},
 	"pastillas": {"name": "Pastillas", "price": 3, "high": 25, "addiction": 3, "health": -3, "dignity": -1, "sanity": 3, "od": 0.2,
 		"decay": 0.1, "fatigue_rate": 1.3, "visible": 0.1, "color": Color("e06ab0"),
+		"resaca": {"dosis": 0.3, "horas": 6, "mente": -0.3, "fx": {"drowsy": 0.5, "clumsy": 0.4}, "text": "torpe y adormilado"},
 		"fx": {"saturate": 1.0, "speed": -0.15}, "fx_text": "colores chillones y piernas de goma"},
 	"farlopa": {"name": "Farlopa", "price": 30, "high": 35, "addiction": 4, "health": -4, "dignity": -2, "sanity": 4, "od": 0.3,
 		"decay": 0.2, "hunger_rate": 0.2, "fatigue_rate": 0.2, "visible": 0.3, "color": Color("e8e8f0"),
 		"crash": {"minutes": 30, "sanity": -4, "mono": 8, "fatigue": 10},
+		"resaca": {"dosis": 0.4, "horas": 8, "mente": -1.0, "fx": {"resaca": 0.6, "shake": 0.2}, "text": "ansiedad, la mandíbula dolorida y ganas de más", "se_quita": true},
 		"fx": {"speed": 0.4, "shake": 0.5}, "fx_text": "vas a toda leche y la vista te tiembla"},
 	"base": {"name": "Base", "price": 10, "high": 40, "addiction": 9, "health": -6, "dignity": -6, "sanity": 6, "od": 0.5,
 		"decay": 0.5, "hunger_rate": 0.2, "fatigue_rate": 0.3, "visible": 0.5, "color": Color("f0a040"),
 		"crash": {"minutes": 60, "sanity": -10, "mono": 20, "fatigue": 15},
+		"resaca": {"dosis": 0.5, "horas": 8, "mente": -1.5, "fx": {"resaca": 0.5, "tunnel": 0.4}, "text": "un vacío enorme y ganas de más", "se_quita": true},
 		"fx": {"speed": 0.3, "glow": 1.0, "zoom": -0.15}, "fx_text": "euforia: todo brilla (dura muy poco)"},
 	"caballo": {"name": "Caballo", "price": 15, "high": 55, "addiction": 8, "health": -8, "dignity": -5, "sanity": 3, "od": 1.0,
 		"decay": 0.1, "hunger_rate": 0.6, "fatigue_rate": 2.5, "visible": 0.3, "color": Color("c89a6a"),
@@ -298,7 +306,80 @@ const SUBSTANCES := {
 		"decay": 0.02, "visible": 0.0, "color": Color("60a0c0"),
 		"relieves": "caballo", "mono": -60, "relief_addiction": 2,
 		"fx": {"speed": -0.1}, "fx_text": "te calma el mono del caballo"},
-}
+	# anfetamina: más barata y larga que la farlopa, y el bajón dura (la «bajona» del día siguiente)
+	"speed": {"name": "Speed", "price": 8, "high": 30, "addiction": 4, "health": -3, "dignity": -2, "sanity": 2, "od": 0.15,
+		"decay": 0.06, "hunger_rate": 0.1, "fatigue_rate": 0.1, "visible": 0.3, "color": Color("e8e070"),
+		"crash": {"minutes": 120, "sanity": -6, "mono": 6, "fatigue": 25},
+		"resaca": {"dosis": 0.4, "horas": 10, "mente": -1.0, "fx": {"resaca": 0.7, "drowsy": 0.5}, "text": "la bajona: hecho polvo y de mala leche", "se_quita": true},
+		"fx": {"speed": 0.25, "shake": 0.2, "sharp": 1.0}, "fx_text": "horas acelerado, los ojos como platos y la mandíbula apretada"},
+	# éxtasis: no engancha tanto, te pone cariñoso y el bajón de días después es de la cabeza
+	"mdma": {"name": "MDMA", "price": 10, "high": 45, "addiction": 2, "health": -4, "dignity": 1, "sanity": 6, "od": 0.25,
+		"decay": 0.12, "hunger_rate": 0.3, "fatigue_rate": 0.4, "visible": 0.4, "color": Color("80c8f0"),
+		"crash": {"minutes": 240, "sanity": -14, "mono": 4, "fatigue": 10},
+		"resaca": {"dosis": 0.6, "horas": 24, "mente": -2.5, "fx": {"tunnel": 0.3, "drowsy": 0.3}, "text": "el martes negro: todo es triste y nadie te quiere"},
+		"fx": {"love": 1.0, "speed": 0.1, "sway": 0.2}, "fx_text": "todo es cálido y late, y quieres a todo el mundo"},
+	# psicodélicos: casi no enganchan, pero con la cabeza mal el viaje puede ser malo (`malviaje`)
+	"setas": {"name": "Setas", "price": 10, "high": 40, "addiction": 0.5, "health": -1, "dignity": -1, "sanity": 3, "od": 0.0,
+		"decay": 0.08, "hunger_rate": 0.7, "fatigue_rate": 1.0, "visible": 0.3, "color": Color("c8a070"),
+		"malviaje": {"cordura": 45.0, "chance": 0.4, "sanity": -12, "minutes": 90},
+		"resaca": {"dosis": 0.2, "horas": 6, "mente": 0.0, "fx": {"drowsy": 0.3}, "text": "agotado, como después de un viaje largo"},
+		"fx": {"psico": 0.7, "slowmo": 0.3, "drift": 0.3}, "fx_text": "las paredes respiran y los colores se mueven"},
+	"lsd": {"name": "LSD", "price": 10, "high": 50, "addiction": 0.3, "health": -1, "dignity": -1, "sanity": 2, "od": 0.0,
+		"decay": 0.045, "hunger_rate": 0.6, "fatigue_rate": 0.2, "visible": 0.3, "color": Color("f070d0"),
+		"malviaje": {"cordura": 45.0, "chance": 0.5, "sanity": -18, "minutes": 150},
+		"resaca": {"dosis": 0.2, "horas": 8, "mente": -0.3, "fx": {"drowsy": 0.4}, "text": "agotado y con la cabeza en otra parte"},
+		"fx": {"psico": 1.0, "saturate": 0.5, "speed": 0.05}, "fx_text": "todo late, se funde y tiene un sentido que no sabrías explicar"},
+	# disociativo: el «agujero K», corto e intenso
+	"ketamina": {"name": "Ketamina", "price": 15, "high": 35, "addiction": 3, "health": -3, "dignity": -3, "sanity": 1, "od": 0.3,
+		"decay": 0.25, "hunger_rate": 1.0, "fatigue_rate": 1.2, "visible": 0.5, "color": Color("a0b8d0"),
+		"mezcla": ["litrona", "caballo", "ansioliticos", "tramadol"],
+		"resaca": {"dosis": 0.4, "horas": 6, "mente": -0.8, "fx": {"drift": 0.3, "clumsy": 0.4}, "text": "te cuesta enhebrar las ideas"},
+		"fx": {"disocia": 1.0, "speed": -0.4, "drift": 0.6, "slowmo": 0.4}, "fx_text": "el cuerpo va por un lado y tú por otro"},
+	# de farmacia: con receta del CAP (Interactions, "farmacia") o de estraperlo
+	"ansioliticos": {"name": "Ansiolíticos", "price": 2, "high": 20, "addiction": 4, "health": -1, "dignity": 0, "sanity": 4, "od": 0.25,
+		"decay": 0.06, "fatigue_rate": 1.8, "visible": 0.05, "color": Color("b0a0e0"),
+		"mezcla": ["litrona", "caballo", "tramadol", "ketamina"],
+		"resaca": {"dosis": 0.3, "horas": 8, "mente": -0.3, "fx": {"drowsy": 0.6, "lag": 0.3}, "text": "lento y en una nube"},
+		"fx": {"paranoia": -1.0, "drowsy": 0.4, "speed": -0.15, "lag": 0.3}, "fx_text": "nada te da miedo ni prisa"},
+	# antidepresivos: casi no se notan, pero tomados cada día suben la cabeza (`sanity_rate`, por
+	# minuto a tope); dejarlos de golpe da su síndrome (el mono)
+	"antidepresivos": {"name": "Antidepresivos", "price": 1, "high": 12, "addiction": 1.5, "health": 0, "dignity": 0, "sanity": 1, "od": 0.0,
+		"decay": 0.008, "visible": 0.0, "color": Color("90d0b0"), "sanity_rate": 0.012,
+		"fx": {}, "fx_text": "no se nota nada, pero la cabeza aguanta un poco más"},
+	"tramadol": {"name": "Tramadol", "price": 3, "high": 25, "addiction": 5, "health": -2, "dignity": -1, "sanity": 2, "od": 0.4,
+		"decay": 0.07, "hunger_rate": 0.8, "fatigue_rate": 1.6, "visible": 0.1, "color": Color("d0a0a0"),
+		"relieves": "caballo", "mono": -25, "relief_addiction": 0,
+		"mezcla": ["litrona", "caballo", "ansioliticos", "ketamina"],
+		"resaca": {"dosis": 0.3, "horas": 6, "mente": -0.3, "fx": {"drowsy": 0.4}, "text": "pesado y con náuseas"},
+		"fx": {"speed": -0.2, "sway": 0.4, "drowsy": 0.2}, "fx_text": "un algodón por dentro: se apagan el dolor y el mono"},
+	# un cigarro: casi nada, pero engancha y calma las manos (el temblor en negativo)
+	"tabaco": {"name": "Tabaco", "price": 1, "high": 8, "addiction": 2, "health": -1, "dignity": 0, "sanity": 1, "od": 0.0,
+		"decay": 0.15, "hunger_rate": 0.8, "visible": 0.0, "color": Color("b0b0a0"),
+		"fx": {"shake": -0.25}, "fx_text": "las manos dejan de temblar un rato"},
+})
+## Mal viaje (las que tienen `malviaje`: con la salud mental por debajo de `cordura`, o a veces
+## sin más, el viaje se tuerce): sus efectos durante sus `minutes`.
+const MALVIAJE_FX := {"paranoia": 1.0, "tunnel": 0.5, "shake": 0.3, "psico": 0.5}
+const MALVIAJE_FX_TEXT := "todo se vuelve contra ti: caras que miran, paredes que se cierran"
+const MALVIAJE_SIEMPRE := 0.08  ## probabilidad de mal viaje aunque tengas la cabeza bien
+## Mezclar depresores (`mezcla`: si alguna de esas va fuerte, por encima de 0,3) multiplica el
+## riesgo de sobredosis: se suma esta probabilidad (por la `od` de la sustancia).
+const MEZCLA_OD := 0.25
+## Resaca (las que tienen `resaca`): cada dosis suma `dosis` de resaca pendiente; al dormir
+## (al menos RESACA_SUENO minutos) se convierte en resaca de verdad, de nivel hasta RESACA_MAX
+## y que dura `horas` (por el nivel), con sus efectos (`fx`) y lo que te baja la mente por
+## hora (`mente`). Con `se_quita`, meterte otra vez lo mismo te la quita a medias (la del perro).
+const RESACA_SUENO := 90.0
+const RESACA_MAX := 1.5
+const RESACA_VITALIDAD := 20.0  ## vitalidad máxima que quita una resaca a tope
+## Lo que te dan en la farmacia con la receta del médico del CAP: [unidades, euros]. El médico
+## te hace una cada RECETA_DIAS días (de estraperlo, a los yonkis: Defs.YONKI_STASH).
+static var RECETA := Equilibrio.aplicar("receta", {
+	"antidepresivos": {"cantidad": 14, "precio": 3},
+	"ansioliticos": {"cantidad": 10, "precio": 3},
+	"tramadol": {"cantidad": 10, "precio": 4},
+})
+const RECETA_DIAS := 7
 ## Salud mental de Mari Loli al tomarse sus pastillas: para ella son medicación.
 const MEDS_SANITY := 10
 
@@ -322,9 +403,33 @@ const BODY_FX := {
 }
 
 ## Lo que vende cada camello (el resto se consigue por otras vías).
-const DEALER_STOCK := ["porro", "pastillas", "farlopa", "base", "caballo"]
+const DEALER_STOCK := ["porro", "pastillas", "setas", "lsd", "speed", "mdma", "ketamina", "farlopa", "base", "caballo"]
 
-const ITEMS := {
+## Precios de lo que se compra o se cobra en las acciones (scripts/interactions.gd), en euros:
+## `precio` y, si va por unidades, `cantidad`; `que` lo explica en el diseñador de sustancias.
+## Lo que vende el camello va por `price` de cada sustancia, y el compraventa por `sell` de cada objeto.
+static var PRECIOS := Equilibrio.aplicar("precios", {
+	"super_bocadillo": {"precio": 3, "que": "Súper: un bocadillo"},
+	"super_litrona": {"precio": 2, "que": "Súper: una litrona"},
+	"farmacia_ibuprofeno": {"precio": 3, "que": "Farmacia: ibuprofeno (+5 salud)"},
+	"bar_carajillo": {"precio": 2, "que": "Bar: un carajillo (como una litrona)"},
+	"bar_tabaco": {"precio": 6, "cantidad": 20, "que": "Bar: paquete de tabaco de la máquina (cigarros)"},
+	"kebab_durum": {"precio": 4, "que": "Kebab: un dürüm"},
+	"yonki_movil": {"precio": 8, "que": "Yonki: comprarle un móvil robado"},
+	"mantero_gafas": {"precio": 5, "que": "Mantero: comprarle unas gafas"},
+	"vender_gafas": {"precio": 10, "que": "Despedida: venderles unas gafas de mantero (te pagan)"},
+	"latero_lata": {"precio": 1, "que": "Latero: comprarle una lata"},
+	"latero_alijo": {"precio": 5, "que": "Latero: ayudarle a esconder el alijo (te paga)"},
+	"trilero_apuesta": {"precio": 10, "que": "Trilero: lo que apuestas a la bolita"},
+	"carterista_clase": {"precio": 20, "que": "Carterista: que te enseñe"},
+	"carterista_cartera": {"precio": 12, "que": "Carterista: venderle la cartera con papeles (te paga)"},
+	"estatua_moneda": {"precio": 1, "que": "Estatua humana: la moneda del platillo"},
+	"club_cannabico": {"precio": 10, "cantidad": 2, "que": "Captador: que te lleve al club cannábico (porros)"},
+	"rosa": {"precio": 2, "que": "Vendedor de rosas: una rosa"},
+	"caricatura": {"precio": 5, "que": "Caricaturista: que te haga una caricatura"},
+})
+
+static var ITEMS := Equilibrio.aplicar("objetos", {
 	"movil": {"name": "Móvil", "sell": 18},  # robado y bloqueado: el compraventa paga poco
 	"movil_roto": {"name": "Móvil con la pantalla rota", "sell": 6},
 	"cartera": {"name": "Cartera ajena", "sell": 0},
@@ -339,11 +444,16 @@ const ITEMS := {
 	"paquete": {"name": "Paquete del camello", "sell": 0},
 	"cartera_caliente": {"name": "Cartera caliente", "sell": 0},
 	"papeles_albergue": {"name": "Papeles del albergue", "sell": 0},  # de la cita en el CAS
+	"receta": {"name": "Receta del médico de cabecera", "sell": 0},  # del CAP: ansiolíticos, antidepresivos o tramadol en la farmacia
+	# de las misiones de los personajes (scripts/misiones.gd)
+	"pasaporte": {"name": "Pasaporte de Grzegorz", "sell": 0},
+	"acordeon": {"name": "Acordeón", "sell": 25},  # el compraventa también lo quiere
+	"pruebas_piso": {"name": "Pruebas del piso de Sant Ramon", "sell": 0},
 	# de la calle (scripts/street_items.gd)
 	"chatarra": {"name": "Chatarra", "sell": 3},
 	"bici": {"name": "Bici ajena", "sell": 15},
 	"patinete": {"name": "Patinete eléctrico", "sell": 28},
-}
+})
 
 ## Objetos tirados por la calle (scripts/street_items.gd). `weight` = lo a menudo que aparece;
 ## `night` multiplica ese peso de noche; `near` = tipo de lugar junto al que suele estar (se
@@ -385,12 +495,12 @@ const FAKE_REVEAL_BELOW := 0.12
 ## Trapicheo (scripts/trade.gd): revender a otros lo que compras al camello. Por tipo de
 ## cliente: `wants` = lo que te compra; `markup` = cuánto paga sobre el precio del camello.
 ## Solo compra si lleva bastante dinero encima (los yonkis, para poco más que unas pastillas).
-const CLIENTS := {
-	"fiestero": {"wants": ["farlopa", "porro", "pastillas"], "markup": 1.7},
-	"turista": {"wants": ["porro"], "markup": 2.5},
-	"yonki": {"wants": ["pastillas", "porro", "litrona"], "markup": 1.5},
-	"pudiente": {"wants": ["farlopa", "porro"], "markup": 2.0},
-}
+static var CLIENTS := Equilibrio.aplicar("clientes", {
+	"fiestero": {"wants": ["farlopa", "mdma", "ketamina", "speed", "porro", "pastillas", "tabaco"], "markup": 1.7},
+	"turista": {"wants": ["porro", "setas"], "markup": 2.5},
+	"yonki": {"wants": ["pastillas", "ansioliticos", "tramadol", "porro", "litrona", "speed", "tabaco"], "markup": 1.5},
+	"pudiente": {"wants": ["farlopa", "mdma", "ketamina", "lsd", "porro"], "markup": 2.0},
+})
 const REGULAR_BONUS := 0.1  ## lo que paga de más un cliente por cada vez que ya te compró...
 const REGULAR_MAX := 3  ## ... hasta este número de veces
 ## Cortarla: vendes al mismo precio, pero solo gastas tu dosis con esta probabilidad (de media
@@ -402,7 +512,69 @@ const UNDERCOVER_CHANCE := 0.07
 const TURF_CELLS := 25
 ## Trueque con otros yonkis: lo que llevan encima (una sustancia, fija por nombre, 1-2 dosis al
 ## día) y cuánto valoran tus objetos respecto a lo que te da el compraventa (los revenden ellos).
-const YONKI_STASH := ["caballo", "base", "pastillas", "porro", "litrona"]
+const YONKI_STASH := ["caballo", "base", "pastillas", "porro", "litrona", "speed", "ansioliticos", "tramadol"]
+
+## Lo que consumen los bots (scripts/consumo.gd). Por tipo: `usa` = probabilidad de cada
+## sustancia (tirada fija por nombre; lo que falta hasta 1, nada) y `enganche` = [mín, máx] del
+## que tiene. Los niños, los chavales, la policía, los perros y quien trabaja en lo social no
+## están: no se les simula consumo (con los chavales solo se puede ayudar).
+static var NPC_HABITS := Equilibrio.aplicar("habitos", {
+	"yonki": {"usa": {"caballo": 0.3, "base": 0.25, "pastillas": 0.1, "litrona": 0.1, "speed": 0.1, "tramadol": 0.1, "ansioliticos": 0.05}, "enganche": [40.0, 90.0]},
+	"mendigo": {"usa": {"litrona": 0.4, "caballo": 0.1, "tramadol": 0.05, "tabaco": 0.15}, "enganche": [25.0, 70.0]},
+	"punki": {"usa": {"litrona": 0.35, "speed": 0.2, "porro": 0.15, "setas": 0.1, "lsd": 0.1, "tabaco": 0.1}, "enganche": [20.0, 60.0]},
+	"camello": {"usa": {"farlopa": 0.3, "porro": 0.2, "tabaco": 0.2}, "enganche": [10.0, 40.0]},
+	"fiestero": {"usa": {"litrona": 0.4, "farlopa": 0.15, "mdma": 0.2, "ketamina": 0.1, "speed": 0.05, "lsd": 0.05, "tabaco": 0.05}, "enganche": [5.0, 30.0]},
+	"pudiente": {"usa": {"farlopa": 0.25, "mdma": 0.1, "ketamina": 0.1, "ansioliticos": 0.1}, "enganche": [5.0, 40.0]},
+	"turista": {"usa": {"litrona": 0.3, "porro": 0.15, "setas": 0.05}, "enganche": [0.0, 15.0]},
+	"vecino": {"usa": {"tabaco": 0.25, "litrona": 0.12, "ansioliticos": 0.08, "antidepresivos": 0.08, "pastillas": 0.05, "porro": 0.05}, "enganche": [5.0, 35.0]},
+	"anciano": {"usa": {"ansioliticos": 0.15, "antidepresivos": 0.1, "pastillas": 0.1, "tabaco": 0.1, "litrona": 0.1}, "enganche": [10.0, 40.0]},
+	"latero": {"usa": {"litrona": 0.2, "tabaco": 0.2}, "enganche": [5.0, 30.0]},
+	"trilero": {"usa": {"porro": 0.2, "farlopa": 0.1, "tabaco": 0.2}, "enganche": [5.0, 30.0]},
+	"carterista": {"usa": {"speed": 0.15, "porro": 0.15, "tabaco": 0.1}, "enganche": [10.0, 40.0]},
+	"chatarrero": {"usa": {"litrona": 0.2, "tabaco": 0.3}, "enganche": [10.0, 40.0]},
+	"mensajero": {"usa": {"speed": 0.1, "porro": 0.1, "tabaco": 0.2}, "enganche": [5.0, 30.0]},
+	"skater": {"usa": {"porro": 0.4, "tabaco": 0.1, "lsd": 0.05}, "enganche": [5.0, 30.0]},
+	"captador": {"usa": {"porro": 0.25, "speed": 0.1, "tabaco": 0.1}, "enganche": [5.0, 30.0]},
+	"musico": {"usa": {"porro": 0.2, "litrona": 0.15, "tabaco": 0.15}, "enganche": [5.0, 30.0]},
+	"caricaturista": {"usa": {"porro": 0.1, "litrona": 0.1, "tabaco": 0.2}, "enganche": [5.0, 25.0]},
+})
+const NPC_PERSONAJE_ENGANCHE := [30.0, 70.0]  ## el de los personajes del editor que quieren algo
+const NPC_STEP := 15.0  ## minutos de cada tramo al simular (también al despertar a un latente)
+const NPC_MONO_RATE := 0.004  ## mono por minuto y punto de enganche sin colocón (como el jugador)
+const NPC_ADDICTION_GAIN := 0.3  ## parte del enganche de la sustancia que le suma cada dosis
+const NPC_USE_AT := 30.0  ## mono a partir del cual se mete lo que lleva (o sale a pillar)
+const NPC_SCORE_PER_HOUR := 0.35  ## probabilidad por hora de conseguir algo si no lleva nada
+const NPC_ASK_AT := 55.0  ## mono (sin nada encima) a partir del cual viene a pedirte o a comprarte...
+const NPC_ROB_AT := 85.0  ## ... y a partir del cual, si no tiene con qué pagar, te da el tirón
+const NPC_MONO_PAYS := 0.6  ## lo que paga de más por lo suyo con el mono a tope
+const NPC_NOD := 0.7  ## colocón (0..1) de caballo, pastillas o alcohol desde el que cabecea
+const NPC_NOD_SECONDS := Vector2(8.0, 25.0)  ## lo que se queda dormido en un portal
+const NPC_BRONCA := 0.6  ## colocón (0..1) de farlopa, base o speed desde el que busca bronca...
+const NPC_BRONCA_TRAIT := 0.4  ## ... solo una parte de ellos (fija por nombre), y con agresividad
+const NPC_TIRON_MAX := 12  ## euros que te quita como mucho de un tirón si no llevas nada suyo
+const NPC_FIGHT_UPPER := 0.15  ## lo que baja ganarle una pelea si va a tope de farlopa, base o speed...
+const NPC_FIGHT_DOWNER := 0.2  ## ... lo que sube si va a tope de caballo, pastillas o alcohol...
+const NPC_FIGHT_MONO := 0.1  ## ... y si tiene el mono a tope
+## Lo que dicen al pasar colocados (por sustancia) o con mono.
+const NPC_DRUG_LINES := {
+	"litrona": ["¡Otra ronda!", "Tú eres mi amigo, ¿eh?", "¿Dónde está el bar?"],
+	"porro": ["Qué bien se está aquí...", "Tengo un hambre...", "Jajaja, ¿has visto eso?"],
+	"pastillas": ["Estoy... bien, estoy bien.", "Mmm...", "¿Qué día es hoy?"],
+	"farlopa": ["¿Qué miras?", "Yo controlo, yo controlo.", "¡Vamos, vamos, vamos!"],
+	"base": ["¿Tienes más? ¿Tienes más?", "Ahora vuelvo.", "Esto es lo mejor del mundo."],
+	"caballo": ["...", "Déjame aquí un rato.", "Estoy bien, tío..."],
+	"speed": ["Tengo mil cosas que hacer.", "¡No paro, no paro!", "¿Hablamos? Hablamos."],
+	"mdma": ["¡Te quiero, tío!", "Todo está bien...", "Qué bonito es todo."],
+	"metadona": ["Voy tirando.", "Mañana, al CAS.", "Ni fu ni fa."],
+	"setas": ["¿Tú también ves eso?", "Jajaja... los árboles...", "Todo está conectado, tío."],
+	"lsd": ["Los colores... ¿los oyes?", "Llevo diez horas despierto.", "La ciudad respira."],
+	"ketamina": ["¿Dónde... estoy?", "Mis piernas no son mías.", "Mmmmm..."],
+	"ansioliticos": ["Todo bien, todo tranquilo.", "Me da igual, la verdad.", "Mmm..."],
+	"antidepresivos": ["Ahí vamos.", "Hoy no es un mal día.", "Tirando."],
+	"tramadol": ["Ya no me duele nada.", "Voy despacito.", "Qué bien se está..."],
+	"tabaco": ["¿Tienes fuego?", "Uno y lo dejo.", "*fuma*"],
+	"mono": ["Estoy fatal...", "¿Tienes algo? Lo que sea.", "Me duelen hasta los huesos."],
+}
 const YONKI_ITEM_VALUE := 1.5
 
 ## Encargos de los personajes (scripts/errands.gd). `giver` = tipo de bot que lo ofrece;
@@ -525,6 +697,17 @@ const MILESTONES := {
 	"probar_base": ["Probar la base", 10],
 	"probar_caballo": ["Probar el caballo", 10],
 	"probar_metadona": ["Entrar en el programa de metadona", 5],
+	"probar_speed": ["Probar el speed", 6],
+	"probar_mdma": ["Probar el MDMA", 5],
+	"probar_setas": ["Probar las setas", 3],
+	"probar_lsd": ["Tu primer tripi", 4],
+	"probar_ketamina": ["Probar la ketamina", 6],
+	"probar_ansioliticos": ["Ansiolíticos para tirar", 4],
+	"probar_antidepresivos": ["Empezar con los antidepresivos", 2],
+	"probar_tramadol": ["Probar el tramadol", 6],
+	"probar_tabaco": ["Volver a fumar", 1],
+	"malviaje": ["Un mal viaje", 8],
+	"mezcla": ["Mezclar depresores", 8],
 }
 
 
@@ -533,6 +716,11 @@ static func profile(id: String) -> Dictionary:
 		if p["id"] == id:
 			return p
 	return PROFILES[0]
+
+
+## Lo que cuesta (o te pagan por) una acción de PRECIOS.
+static func precio(id: String) -> int:
+	return PRECIOS[id]["precio"]
 
 
 static func item_name(id: String) -> String:
