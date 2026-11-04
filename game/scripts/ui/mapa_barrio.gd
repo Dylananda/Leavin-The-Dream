@@ -18,6 +18,7 @@ const KINDS := {
 	"cap": [Color("ff6a6a"), "+", "Centro de salud"],
 	"farmacia": [Color("70e070"), "F", "Farmacia"],
 	"compraventa": [Color("e0b040"), "€", "Compraventa"],
+	"club": [Color("60c060"), "*", "Club cannábico"],
 	"cajero": [Color("f0f0f0"), "$", "Cajero"],
 	"super": [Color("70d0ff"), "S", "Súper"],
 	"kebab": [Color("e09040"), "K", "Kebab"],
@@ -81,7 +82,7 @@ func _draw() -> void:
 	var r := clampf(_scale * 1.6, 5.0, 11.0)
 	for p in city.pois:
 		var k: Array = KINDS.get(p["kind"], [])
-		if k.is_empty():
+		if k.is_empty() or (p["kind"] == "club" and not p["name"] in GameState.clubs_conocidos):
 			continue
 		var at := _to_screen(Vector2(p["x"], p["y"]) + Vector2(0.5, 0.5))
 		if k[1] == "":

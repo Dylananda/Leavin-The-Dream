@@ -1,6 +1,7 @@
 """Convierte los datos crudos de OSM del Raval en el mapa del juego.
 
 Entrada:  data/raw/raval_osm.json   (tools/fetch_osm.py)
+          tools/clubs_cannabicos.json  asociaciones cannábicas (no están en OSM)
 Salida:   game/data/raval_map.json  cuadrícula de navegación + geometría 3D
           game/assets/ground.png    suelo pintado (calles, aceras, plazas)
           data/preview_map.png      vista de control, no la usa el juego
@@ -24,6 +25,7 @@ SRC = ROOT / "data" / "raw" / "raval_osm.json"
 OUT = ROOT / "game" / "data" / "raval_map.json"
 GROUND = ROOT / "game" / "assets" / "ground.png"
 PREVIEW = ROOT / "data" / "preview_map.png"
+CLUBS = ROOT / "tools" / "clubs_cannabicos.json"  # sitios que OSM no tiene: las asociaciones cannábicas
 
 CELL_M = 2.0  # metros por casilla de navegación
 MARGIN_M = 30.0  # franja alrededor del contorno que también es jugable
@@ -492,6 +494,15 @@ def main() -> None:
         spot = nearest_walkable(cx, cy)
         if spot:
             pois.append({"kind": kind, "name": t.get("name", ""), "x": spot[0], "y": spot[1]})
+    # asociaciones cannábicas: son privadas y no salen en OSM; van en su propio archivo
+    for c in json.loads(CLUBS.read_text(encoding="utf-8"))["clubs"]:
+        x, y = meters(c["lon"], c["lat"])
+        cx, cy = int(x / CELL_M), int(y / CELL_M)
+        if not (0 <= cx < w_cells and 0 <= cy < h_cells) or not in_raval[cy * w_cells + cx]:
+            continue
+        spot = nearest_walkable(cx, cy)
+        if spot:
+            pois.append({"kind": "club", "name": c["nombre"], "x": spot[0], "y": spot[1]})
 
     # ------------------------------------------------------------ calles con nombre
     streets = []  # muestras para saber en qué calle estás
