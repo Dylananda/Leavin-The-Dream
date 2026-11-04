@@ -80,9 +80,16 @@ hito de la caída. Debajo se listan los efectos que tienes ahora y su causa: el 
 hace lento y balancea la cámara, la farlopa te acelera y la hace temblar, el porro estira
 el tiempo y acerca la cámara, el alcohol te hace andar en eses y responder tarde, las
 pastillas saturan los colores, la base da una euforia corta y un bajón brusco, y el mono
-trae temblores, viñeta roja y tropiezos.
+trae temblores, viñeta roja y tropiezos. El speed acelera durante horas y lo ve todo con
+los bordes duros; el MDMA lo pone todo cálido, con un halo que late, y el bajón llega después.
 
 ### Quién anda por la calle
+
+Todo el mundo está enganchado a algo: muchos bots tienen su sustancia (el yonki, el caballo
+o la base; la despedida, la litrona o el MDMA; el vecino, sus pastillas), con su colocón y su
+mono. Se nota: el colocado de caballo cabecea en un portal, el que va de farlopa o speed anda
+deprisa y a veces busca bronca, y el que tiene mono viene a pedirte, a comprarte (pagando lo
+que sea) o, si no tiene nada, a darte el tirón. Se le puede dar una dosis, y se acuerda.
 
 Cada tipo de bot sale a sus horas y en su zona: de día, trileros y carteristas (vestidos
 de guiri) en la Rambla; por la tarde y la noche, chavales que esnifan cola por la Rambla
@@ -233,6 +240,9 @@ python tools/make_textures.py
   con `scripts/city/street_item.gd` según lo que *te parece* que es (equilibrio en `Defs.STREET_ITEMS`)
 - `game/scripts/trade.gd` — trapicheo: revender a despedidas, guiris y yonkis (clientes que se
   acuerdan, mercancía cortada, secretas, la esquina del camello) y trueque con otros yonkis
+- `game/scripts/consumo.gd` — lo que consumen los bots: su sustancia, colocón, mono y enganche
+  simplificados, cómo se nota (andar, cabecear, bronca, pedir, comprar, el tirón) y cómo les ha
+  ido mientras estaban latentes (equilibrio en `Defs.NPC_HABITS` y `Defs.NPC_*`)
 - `game/scripts/errands.gd` — encargos con plazo (ofrecer, cumplir, fallar) y la libreta que
   se apunta y se lee peor cuanto más ido vas (equilibrio en `Defs.ERRANDS`)
 - `game/scripts/misiones.gd` — misiones de los personajes del editor: formato (`Misiones.nueva()`,

@@ -28,7 +28,7 @@ const VAGA_DESDE := 40  ## a partir de este radio de paseo, mientras duerme se l
 const VAGA_CADA := 30.0  ## ... cada tantos minutos de juego
 ## Campos del Npc que se guardan al dormirlo y se le devuelven al despertar.
 const ESTADO := ["display_name", "gender", "look", "accessory", "body_size", "speed", "wander_radius",
-	"money", "debt", "debt_due", "robbed", "known", "memory", "last_interaction_day"]
+	"money", "debt", "debt_due", "robbed", "known", "memory", "last_interaction_day", "consumo"]
 
 var world: World
 var registros: Array[Dictionary] = []
@@ -300,6 +300,8 @@ func _al_dia(npc: Npc, r: Dictionary) -> void:
 	for m in e.get("metas", {}):
 		npc.set_meta(m, e["metas"][m])
 	var minutes: float = GameState.now() - r["visto"]
+	# lo que ha consumido mientras tanto: el colocón pasado, el mono acumulado, si ha pillado
+	npc.pasa_consumo()
 	if npc.robbed and minutes >= Defs.LATENT_ROBBED_FORGET:
 		npc.robbed = false
 		var fresh := Npc.new()

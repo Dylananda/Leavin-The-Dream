@@ -577,17 +577,39 @@ personajes como tipo base. Zonas nuevas en `World.ZONE_STREETS` y `World.ZONE_LA
 La idea de fondo: no hay «yonkis» y «gente normal», todo el mundo está enganchado a algo.
 El barrio entero tiende a engancharse, también el jugador, y salir de ahí es lo más difícil.
 
-- [ ] **Los bots también consumen**: cada uno con sus sustancias, su colocón, su mono y su
+- [x] **Los bots también consumen**: cada uno con sus sustancias, su colocón, su mono y su
   enganche, y se nota en cómo se comportan (el de farlopa va acelerado y busca bronca, el de
   caballo se duerme en un portal, el de pastillas está ido...). Encaja con el censo: al
   despertar a un latente se calcula cómo le ha ido desde la última vez.
+  Hecho, primer paso (`scripts/consumo.gd`, equilibrio en `Defs.NPC_HABITS` y `Defs.NPC_*`):
+  - Cada tipo tiene sus sustancias más probables y un enganche; cada bot, una sustancia de
+    cabecera fija por su nombre (los personajes del editor, la primera que quieren). Los
+    niños, los chavales, la policía y quien trabaja en lo social no consumen.
+  - Colocón, mono y enganche simplificados (`Npc.consumo`): el colocón baja como el del
+    jugador, sin él sube el mono y, con mono, se mete lo que lleva o sale a pillar (y lo paga).
+  - Se nota: anda más rápido o más lento y hace eses según la sustancia (y el mono le frena);
+    colocado de caballo, pastillas o alcohol cabecea, dormido en un portal; acelerado de
+    farlopa, base o speed, algunos buscan bronca (pelea de verdad, minijuego) y pegan más
+    fuerte; con mono y nada encima viene a pedirte o a comprarte (paga más cuanto peor está)
+    y, sin dinero y a tope, te da el tirón (se lleva una dosis o unos euros). Se le puede dar
+    una dosis (se acuerda). Dicen frases según cómo van.
+  - El censo lo guarda al dormirlos y, al despertarlos, simula el tiempo latente a tramos de
+    15 minutos (`Consumo.avanzar`): el colocón pasado, el mono acumulado y si ha pillado.
+  - [ ] Pendiente: que se vean colocados (posturas, tumbados en el suelo), que se pasen
+    cosas entre ellos, sobredosis de bots, y el contagio (ver abajo); jugarlo y ajustar.
 - [ ] **Adicciones sin sustancia**: yonkis de pantalla (a los que es más fácil venderles un
   móvil, que no lo sueltan y no ven que les robas), del juego (tragaperras de los bares),
   del trabajo, de las compras...
 - [ ] **Más sustancias**, cada una con sus efectos visuales, de manejo y de enganche:
-  speed, MDMA, LSD, setas, DMT, ketamina; de farmacia: benzodiacepinas y otros ansiolíticos,
+  ~~speed, MDMA~~ (hechas), LSD, setas, DMT, ketamina; de farmacia: benzodiacepinas y otros ansiolíticos,
   antidepresivos, opioides de receta (tramadol, fentanilo en parches), y el alcohol y el tabaco
   de todos los días. Las de farmacia, con receta (médico del CAP) o de estraperlo.
+  - [x] **Speed** (8 €): dura horas, acelera, la cámara tiembla un poco y la pantalla se ve
+    con bordes duros y contraste (`sharp` en el shader de viñeta); bajón largo y con sueño.
+    **MDMA** (10 €): engancha poco, sube la mente y la dignidad, todo cálido con un halo que
+    late a 128 golpes por minuto (`love`), y el bajón de días después es de la cabeza. Los
+    venden los camellos (y La Rubia, el MDMA); los compran las despedidas, los pijos (MDMA)
+    y los yonkis (speed). Cada una con su hito de la caída.
 - [ ] **Contagio y conversiones** entre yonki y «no yonki», en los dos sentidos, con una
   tendencia general a engancharse (ver «Contagio» en «Personajes que viven»).
 - [ ] **Equilibrio**: consumo, enganche, precios y premios de las misiones. Ahora mismo es

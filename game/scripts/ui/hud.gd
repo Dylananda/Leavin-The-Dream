@@ -407,6 +407,8 @@ func show_effects(effects: Dictionary) -> void:
 	mat.set_shader_parameter("paranoia", clampf(fx.get("paranoia", 0.0), 0.0, 1.0))
 	mat.set_shader_parameter("double_vision", clampf(fx.get("double", 0.0), 0.0, 1.0))
 	mat.set_shader_parameter("glow", clampf(fx.get("glow", 0.0), 0.0, 1.0))
+	mat.set_shader_parameter("sharp", clampf(fx.get("sharp", 0.0), 0.0, 1.0))
+	mat.set_shader_parameter("love", clampf(fx.get("love", 0.0), 0.0, 1.0))
 	var lines := []
 	for c in effects["causes"]:
 		lines.append("[color=#%s]• %s[/color]" % [c[1].to_html(false), c[0]])

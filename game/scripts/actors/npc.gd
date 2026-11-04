@@ -452,6 +452,11 @@ var _cone: MeshInstance3D
 var _cone_mesh: ImmediateMesh
 var _cone_timer := 0.0
 var _denounce_to: Npc  ## el agente al que va a contarle lo que le hiciste
+## Lo que consume (ver Consumo): {} si nada; si no, su sustancia, enganche, colocón, mono y lo
+## que lleva encima. El censo lo guarda al dormirlo y lo pone al día al despertarlo.
+var consumo := {}
+var _nod_until := 0.0  ## (segundos de reloj) hasta entonces cabecea, dormido en un portal
+var _acerca_why := ""  ## (mode "acerca") a qué viene: "" saludar o comprarte, "pide" con mono
 
 static var _cone_material: StandardMaterial3D
 
@@ -584,6 +589,7 @@ func init_kind(p_kind: String, p_name := "") -> void:
 			look["fur"] = DOG_FURS[rng.randi_range(0, DOG_FURS.size() - 1)]
 	look.merge(k.get("looks", {}).get(display_name, {}), true)
 	_idle = randf_range(0.0, 3.0)
+	consumo = Consumo.nuevo(self)
 
 
 ## Un nombre al azar del tipo, sin los que ya son personajes del editor (`reservados`).
@@ -693,6 +699,7 @@ func init_personaje(d: Dictionary) -> void:
 	body_size = d["aspecto"]["tamano"]
 	money = int(d["stats"]["dinero"])
 	speed = d["stats"]["velocidad"]
+	consumo = Consumo.nuevo(self)  # lo que quiere, si es una sustancia
 
 
 ## Casillas de su zona dibujada (las transitables dentro del polígono).
@@ -745,7 +752,9 @@ func add_debt(amount: int, hours: float) -> void:
 ## "persigue" (la policía, si estás fichado por algo de su competencia o muy buscado), "cobrar" (un camello al que
 ## debes), "venganza" (le robaste y va a por lo suyo), "denuncia" (le robaste y busca a un
 ## agente), "territorio" (un camello en cuya esquina vendiste), "aparta" (le has pedido
-## demasiado, le pegaste o le timaste) o "acerca" (le ayudaste o te compra).
+## demasiado, le pegaste o le timaste), "bronca" (va acelerado y busca pelea), "tiron" (tiene
+## mono, nada con qué pagar y te va a quitar algo), "pide" (tiene mono: viene a pedirte o a
+## comprarte) o "acerca" (le ayudaste o te compra).
 func grudge() -> String:
 	var gs := GameState
 	if is_police():
@@ -766,6 +775,13 @@ func grudge() -> String:
 		return "aparta" if kind in Defs.NEVER_INTERVENE else "denuncia"
 	if remembers("pegado") > 0 or remembers("pedido") >= Defs.BEG_ANNOY:
 		return "venganza" if stat("agresividad") >= Defs.STAT_HOTHEAD else "aparta"
+	if Consumo.acelerado(consumo) and _trait("bronca") < Defs.NPC_BRONCA_TRAIT + (stat("agresividad") - 5) * 0.05:
+		return "bronca"
+	if Consumo.necesita(consumo):
+		var price: int = Defs.SUBSTANCES[consumo["id"]]["price"]
+		if consumo["mono"] >= Defs.NPC_ROB_AT and money < price and kind in Defs.NEVER_INTERVENE and _trait("tiron") < 0.5:
+			return "tiron"
+		return "pide"
 	if remembers("ayudado") > 0 or remembers("cliente") > 0:
 		return "acerca"
 	return ""
@@ -839,6 +855,7 @@ func calm_down() -> void:
 	chase_reason = ""
 	alert = 0.0
 	_denounce_to = null
+	_acerca_why = ""
 	speed = KINDS[kind]["speed"]
 
 
@@ -914,6 +931,18 @@ func react(why: String) -> void:
 			alert = 0.0
 			mode = "acerca"
 			walk_to(player.cell)
+		"pide":
+			alert = 0.0
+			mode = "acerca"
+			_acerca_why = "pide"
+			_calm_until = _clock() + 90.0  # no viene a pedirte cada dos por tres
+			walk_to(player.cell)
+		"bronca":
+			say(["¿Qué miras? ¿Eh? ¿QUÉ MIRAS?", "¿Tienes algún problema conmigo?", "¡Ven aquí, listo!"].pick_random(), 3.0)
+			start_chase("bronca")
+		"tiron":
+			say(["Dame algo... ¡dame algo!", "¡Eh, tú! ¡Para!"].pick_random(), 3.0)
+			start_chase("tiron")
 
 
 func _process(delta: float) -> void:
@@ -934,9 +963,11 @@ func _process(delta: float) -> void:
 	if _chatter <= 0.0:
 		_chatter = randf_range(15.0, 45.0)
 		if player and distance_to_cell(player.cell) < 20:
-			say(lines().pick_random())
+			var f := Consumo.frase(consumo)
+			say(f if f != "" and randf() < 0.6 else lines().pick_random())
 	if player and _think <= 0.0:
 		_think = THINK_TIME
+		pasa_consumo()
 		perceive(THINK_TIME)
 		_follow_mode(THINK_TIME)
 	_cone_timer -= delta
@@ -952,7 +983,13 @@ func _process(delta: float) -> void:
 		return
 	if KINDS[kind].get("still", false) and _clock() >= _still_until:
 		return  # estatua: ni se mueve ni mira, hasta que le echan una moneda
+	if _clock() < _nod_until:
+		return  # cabeceando en un portal: ni anda ni mira
 	if not is_moving():
+		if Consumo.cabecea(consumo) and randf() < delta * 0.1:
+			_nod_until = _clock() + randf_range(Defs.NPC_NOD_SECONDS.x, Defs.NPC_NOD_SECONDS.y)
+			say(["...", "zzz...", "Mmm..."].pick_random(), 3.0)
+			return
 		_look_around(delta, 1.0)
 		_idle -= delta
 		if _idle <= 0.0:
@@ -1057,7 +1094,13 @@ func _follow_mode(dt: float) -> void:
 		"acerca":
 			if distance_to_cell(player.cell) <= 3:
 				stop()
-				if remembers("cliente") > 0:
+				if _acerca_why == "pide":
+					var what: String = Defs.item_name(consumo.get("id", "litrona")).to_lower()
+					if money >= Defs.SUBSTANCES[consumo.get("id", "litrona")]["price"]:
+						say("Tío, estoy fatal... ¿Tienes %s? Te lo pago bien." % what, 4.0)
+					else:
+						say(["¿Me das algo? Lo que sea, estoy fatal...", "Un poco de %s, por favor... Mañana te lo devuelvo." % what].pick_random(), 4.0)
+				elif remembers("cliente") > 0:
 					say(["¿Tienes algo?", "Hey, my friend! Same as yesterday?", "¿Me pasas lo de siempre?"].pick_random(), 3.0)
 				else:
 					say(["¡Eh, colega!", "¡Hombre! ¿Qué tal?", "Gracias por lo del otro día"].pick_random(), 3.0)
@@ -1077,6 +1120,25 @@ func _follow_owner(delta: float) -> void:
 			walk_to(city.random_walkable_near(amo.cell, 1))
 	if not is_moving():
 		_look_around(delta, 2.0)
+
+
+## Pone al día lo que consume (Consumo.avanzar) con el tiempo de juego que ha pasado: paga lo
+## que pilla y anda según lo que lleva encima (la velocidad y las eses de la sustancia, el mono).
+func pasa_consumo() -> void:
+	if consumo.is_empty():
+		return
+	var minutes: float = GameState.now() - consumo["t"]
+	if minutes >= 5.0 or minutes < 0.0:
+		var veces := Consumo.avanzar(consumo, maxf(minutes, 0.0), money)
+		var pillado: int = consumo.get("pillado", 0)
+		if pillado > 0:
+			money = maxi(0, money - pillado * int(Defs.SUBSTANCES[consumo["id"]]["price"]))
+			consumo["pillado"] = 0
+		if veces > 0 and on_screen and player and distance_to_cell(player.cell) < 20:
+			say(["*se mete algo*", "Ahhh...", "Ahora sí."].pick_random(), 2.5)
+	var m := Consumo.manejo(consumo)
+	slow_factor = m.x
+	wobble = m.y
 
 
 ## Parado, gira la cabeza a un lado y a otro (para que el cono barra la calle).

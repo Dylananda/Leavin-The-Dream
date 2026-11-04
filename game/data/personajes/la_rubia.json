@@ -6,7 +6,7 @@
 	"edad": 41,
 	"genero": "f",
 	"tipo": "camello",
-	"historia": "Vende pastillas y un poco de farlopa a los de fiesta. Fía a las amigas y apunta todo en una libreta con dibujos. Tiene una hija que no sabe a qué se dedica.",
+	"historia": "Vende pastillas, MDMA y un poco de farlopa a los de fiesta. Fía a las amigas y apunta todo en una libreta con dibujos. Tiene una hija que no sabe a qué se dedica.",
 	"fuentes": "Narcopisos y venta de calle en el Raval (prensa local, 2017-2019). Fuente concreta pendiente.",
 	"aspecto": {
 		"skin": "f0cfb0",
@@ -38,11 +38,13 @@
 		"quiere": [],
 		"lleva": {
 			"pastillas": 10,
-			"farlopa": 3
+			"farlopa": 3,
+			"mdma": 6
 		},
 		"vende": {
 			"pastillas": 4,
-			"farlopa": 35
+			"farlopa": 35,
+			"mdma": 12
 		}
 	},
 	"ficha": {

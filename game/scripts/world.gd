@@ -1145,6 +1145,58 @@ func _on_caught(npc: Npc) -> void:
 			npc.say("¡Te tengo, ladrón!", 2.0)
 			gs.heat = minf(100.0, gs.heat + 10.0)
 			gs.log_msg("%s te agarra del brazo. Te sueltas como puedes." % npc.display_name, GameState.C_BAD)
+		"bronca":
+			_bronca(npc)
+		"tiron":
+			_tiron(npc)
+
+
+## Alguien que va acelerado (Consumo) te ha alcanzado buscando bronca: pelea (minijuego Fight)
+## con la probabilidad de una pelea normal. Si ganas, se le pasa; si no, te deja tocado.
+func _bronca(npc: Npc) -> void:
+	var gs := GameState
+	gs.change_vitality(-Defs.VITALITY_FIGHT)
+	play_minigame(Fight.new(npc), interactions._fight_chance(npc), func(result: String, _stats: Dictionary):
+		if result == "ok":
+			npc.say("Vale, vale... Ya está, tío.", 3.0)
+			gs.change_health(-randf_range(2, 6), "Una bronca de más")
+			gs.log_msg("Te quitas de encima a %s, que iba hasta arriba." % npc.display_name, GameState.C_GOOD)
+		else:
+			gs.change_health(-12, "Te mató a golpes alguien que iba hasta arriba")
+			gs.change_dignity(-3)
+			gs.log_msg("%s iba hasta arriba y te ha tocado a ti. Te deja en el suelo." % npc.display_name, GameState.C_BAD)
+			gs.milestone("pelea_perdida"))
+
+
+## Alguien con mono y sin nada con qué pagar (Consumo) te ha alcanzado: te arranca una dosis de
+## lo suyo (o de lo que lleves) o unos euros, y se lo mete en cuanto puede.
+func _tiron(npc: Npc) -> void:
+	var gs := GameState
+	var c: Dictionary = npc.consumo
+	var take := ""
+	if not c.is_empty() and gs.has_item(c["id"]):
+		take = c["id"]
+	else:
+		for id in gs.inventory.keys():
+			if Defs.SUBSTANCES.has(id):
+				take = id
+				break
+	if take != "":
+		gs.remove_item(take)
+		if not c.is_empty() and take == c["id"]:
+			c["dosis"] += 1
+		npc.say("Lo siento, tío... lo necesito.", 3.0)
+		gs.log_msg("%s te da el tirón y se lleva tu %s." % [npc.display_name, Defs.item_name(take).to_lower()], GameState.C_BAD)
+	elif gs.money > 0:
+		var n := mini(gs.money, Defs.NPC_TIRON_MAX)
+		gs.add_money(-n)
+		npc.money += n
+		npc.say("Lo siento... lo necesito.", 3.0)
+		gs.log_msg("%s te mete la mano en el bolsillo y sale corriendo con %d €." % [npc.display_name, n], GameState.C_BAD)
+	else:
+		npc.say("¿No llevas nada? Mierda...", 3.0)
+		gs.log_msg("%s te registra a empujones. No llevas nada." % npc.display_name, GameState.C_BAD)
+	gs.change_dignity(-2)
 
 
 ## Te van a dar una paliza (`npc` te ha alcanzado y no llevas nada): se pelea (minijuego

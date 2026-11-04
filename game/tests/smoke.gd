@@ -63,6 +63,8 @@ func _initialize() -> void:
 		_test_street_items(gs, world)
 		_test_trade(gs, world)
 		if profile == Defs.PROFILES[0]:
+			_test_consumo(gs, world)
+		if profile == Defs.PROFILES[0]:
 			_test_police_and_fauna(gs, world)
 		world._rummage()
 		world._sleep_here()
@@ -931,6 +933,108 @@ func _test_vision(gs, world) -> void:
 	gs.wanted_until = -1.0
 	gs.heat = 0.0
 	print("  visión, memoria y escándalo: OK")
+
+
+## Los bots también consumen (scripts/consumo.gd): su sustancia es siempre la misma para el
+## mismo nombre; sin nada encima les sube el mono y vienen a pedirte, comprarte o darte el
+## tirón; colocados cabecean o buscan bronca; el censo los pone al día al despertarlos.
+## Speed y MDMA: se venden, se compran y tienen sus efectos de pantalla.
+func _test_consumo(gs, world) -> void:
+	var C = load("res://scripts/consumo.gd")  # (ver la nota de _initialize sobre el autoload)
+	_steady(gs)
+	gs.heat = 0.0
+	gs.wanted_until = -1.0
+	_check(C.habito("yonki", "Paco", {}) == C.habito("yonki", "Paco", {}), "consumo: el mismo yonki cambia de sustancia")
+	var ids := {}
+	for i in 200:
+		var id: String = C.habito("fiestero", "Fiestero %d" % i, {})
+		ids[id] = ids.get(id, 0) + 1
+	_check(ids.has("mdma") and ids.has("litrona"), "consumo: las despedidas no consumen lo suyo %s" % ids)
+	_check(C.habito("chaval", "Nadie", {}) == "" and C.habito("urbano", "Nadie", {}) == "", "consumo: los chavales o la policía consumen")
+	_check(C.habito("vecino", "X", {"stats": {"quiere": ["caballo"]}}) == "caballo", "consumo: un personaje no consume lo que quiere")
+	# sin nada encima y sin dinero, le sube el mono hasta pedirte
+	var npc = _fresh(world, "yonki")
+	npc.money = 100
+	npc.consumo = {"id": "caballo", "enganche": 80.0, "colocon": 0.0, "mono": 0.0, "dosis": 0, "t": gs.now()}
+	var price0: int = world.trade.price_for(npc, "caballo")
+	C.avanzar(npc.consumo, 600.0, 0)
+	_check(C.necesita(npc.consumo) and C.estado(npc.consumo) == "mono", "consumo: sin nada encima no le sube el mono (%s)" % npc.consumo)
+	_check(npc.grudge() == "pide", "consumo: con mono no viene a pedirte (%s)" % npc.grudge())
+	_check(world.trade.price_for(npc, "caballo") > price0, "consumo: con mono no paga más")
+	gs.add_item("caballo", 2)
+	var sale = world.interactions.for_npc(npc).filter(func(a): return a["label"].begins_with("Venderle caballo ("))
+	_check(sale.size() == 1, "consumo: con mono no te compra lo suyo")
+	if not sale.is_empty():
+		sale[0]["do"].call()
+	_check(C.estado(npc.consumo) == "colocado", "consumo: no se mete lo que le vendes")
+	_check(C.cabecea(npc.consumo) or C.intensidad(npc.consumo) < 0.7, "consumo: colocado de caballo no cabecea")
+	npc.pasa_consumo()
+	_check(npc.slow_factor < 1.0, "consumo: con caballo no va más lento")
+	# darle una dosis a quien tiene mono
+	npc.consumo["colocon"] = 0.0
+	npc.consumo["mono"] = 80.0
+	var gift = world.interactions.for_npc(npc).filter(func(a): return a["label"].begins_with("Darle caballo"))
+	_check(gift.size() == 1, "consumo: no se le puede dar una dosis a quien tiene mono")
+	if not gift.is_empty():
+		gift[0]["do"].call()
+	_check(npc.remembers("ayudado") > 0 and npc.consumo["mono"] < 80.0, "consumo: darle una dosis no le alivia ni se acuerda")
+	# el tirón: con mono a tope y sin dinero
+	npc.consumo["colocon"] = 0.0
+	npc.consumo["mono"] = 95.0
+	npc.money = 0
+	var tiron := false
+	for i in 30:
+		var y = _fresh(world, "yonki")
+		y.money = 0
+		y.consumo = {"id": "caballo", "enganche": 80.0, "colocon": 0.0, "mono": 95.0, "dosis": 0, "t": gs.now()}
+		if y.grudge() == "tiron":
+			tiron = true
+			gs.add_item("caballo")
+			var had: int = gs.inventory.get("caballo", 0)
+			world._tiron(y)
+			_check(gs.inventory.get("caballo", 0) == had - 1 and y.consumo["dosis"] == 1, "consumo: el tirón no se lleva lo suyo")
+			break
+	_check(tiron, "consumo: nadie con mono y sin dinero da el tirón")
+	# acelerado busca bronca (alguno) y pega más fuerte
+	var bronca := false
+	for i in 30:
+		var y = _fresh(world, "yonki")
+		y.consumo = {"id": "base", "enganche": 50.0, "colocon": 50.0, "mono": 0.0, "dosis": 1, "t": gs.now()}
+		if y.grudge() == "bronca":
+			bronca = true
+			_check(world.interactions._fight_chance(y) < world.interactions._fight_chance(_fresh(world, "vecino")) + 0.01, "consumo: acelerado no pega más fuerte")
+			_steady(gs)
+			world._bronca(y)
+			break
+	_check(bronca, "consumo: nadie acelerado busca bronca")
+	# el censo: al despertar a un latente, lo que le ha pasado mientras tanto
+	_steady(gs)
+	var r: Dictionary = world.censo.nuevo("yonki")
+	var z = world.censo.despertar(r, world.player.cell)
+	z.consumo = {"id": "caballo", "enganche": 70.0, "colocon": 50.0, "mono": 0.0, "dosis": 0, "t": gs.now()}
+	world.censo.dormir(r)
+	r["estado"]["consumo"]["t"] -= 600.0
+	r["visto"] -= 600.0
+	z = world.censo.despertar(r, world.player.cell)
+	_check(z.consumo["colocon"] < 50.0 and (z.consumo["mono"] > 0.0 or z.consumo["colocon"] > 0.0), "censo: al despertar no ha pasado el tiempo para lo que consume (%s)" % z.consumo)
+	# speed y MDMA: los vende el camello, los compran las despedidas, y tienen sus efectos
+	gs.money = 200
+	var dealer = _npc_of(world, "camello")
+	dealer.debt = 0
+	var labels: Array = world.interactions.for_npc(dealer).map(func(a): return a["label"])
+	_check(labels.any(func(l): return l.begins_with("Comprar Speed")) and labels.any(func(l): return l.begins_with("Comprar MDMA")), "consumo: el camello no vende speed ni MDMA (%s)" % [labels])
+	_check("mdma" in Defs.CLIENTS["fiestero"]["wants"] and "speed" in Defs.CLIENTS["fiestero"]["wants"], "consumo: nadie quiere speed ni MDMA")
+	for id in ["speed", "mdma"]:
+		_steady(gs)
+		gs.add_item(id)
+		world.use_item(id)
+		_check(("probar_" + id) in gs.milestones, "%s: no es un hito probarlo" % id)
+		_check(gs.effects()["fx"].has("sharp" if id == "speed" else "love"), "%s: no tiene su efecto de pantalla" % id)
+		gs.subs[id]["high"] = 12.0
+		gs.advance(60)
+		_check(gs.subs[id]["crash"] > 0.0, "%s: no da bajón" % id)
+	_steady(gs)
+	print("  consumo de los bots, speed y MDMA: OK")
 
 
 ## Un bot nuevo del tipo `kind`, sin pasado contigo.

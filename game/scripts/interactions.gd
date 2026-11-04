@@ -409,7 +409,22 @@ func _fight_chance(npc: Npc) -> float:
 	var gs := GameState
 	var p := 0.5 + (gs.health + gs.high * 0.3 - gs.mono * 0.3 - 50.0) / 80.0
 	p -= (1.0 - gs.vitality / 100.0) * Defs.VITALITY_FIGHT_CHANCE  # sin aliento se pelea peor
+	p += _fight_drugs(npc.consumo)
 	return clampf(p - (npc.stat("fuerza") - 5) * Defs.STAT_FIGHT, 0.05, 0.95)
+
+
+## Lo que cambia ganarle una pelea según lo que lleva encima (Consumo): acelerado pega más
+## fuerte, colocado de algo que tumba o con mono, menos.
+static func _fight_drugs(c: Dictionary) -> float:
+	if c.is_empty():
+		return 0.0
+	var i := Consumo.intensidad(c)
+	var p := clampf((c["mono"] - 50.0) / 50.0, 0.0, 1.0) * Defs.NPC_FIGHT_MONO
+	if c["id"] in Consumo.UPPERS:
+		p -= i * Defs.NPC_FIGHT_UPPER
+	elif c["id"] in Consumo.DOWNERS:
+		p += i * Defs.NPC_FIGHT_DOWNER
+	return p
 
 
 func _fight_done(npc: Npc, won: bool) -> void:

@@ -247,7 +247,7 @@ func _update_clock_lie(m: float) -> void:
 	var dir := 1.0 if randf() < 0.5 else -1.0
 	if intensity("porro") > 0.3:
 		dir = -1.0
-	elif intensity("farlopa") + intensity("base") > 0.3:
+	elif intensity("farlopa") + intensity("base") + intensity("speed") > 0.3:
 		dir = 1.0
 	clock_skew = dir * snappedf(randf_range(20.0, 60.0) * (0.5 + b), 5.0)
 

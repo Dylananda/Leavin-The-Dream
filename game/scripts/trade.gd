@@ -8,7 +8,8 @@ extends RefCounted
 ## mercancía da más de media, pero el cliente lo nota (Npc.remember("timado")): las despedidas
 ## van a por ti, los demás no te vuelven a comprar. Vender a la vista de un agente o de un
 ## camello (le pisas el terreno) se paga. Los yonkis llevan algo encima y te lo cambian por
-## objetos de la calle, que valoran más que el compraventa.
+## objetos de la calle, que valoran más que el compraventa. Quien tiene mono de lo suyo
+## (Consumo) te lo compra aunque no sea cliente, y paga más cuanto peor está; o se lo puedes dar.
 ## El equilibrio está en Defs.CLIENTS y las constantes que lo siguen.
 
 const G := preload("res://scripts/game_state.gd")
@@ -30,6 +31,7 @@ func offers_for(npc: Npc) -> Array:
 			npc.say("A ti no te compro nada más. Aquello era yeso")
 		return acts
 	acts.append_array(_sales(npc))
+	acts.append_array(_gift(npc))
 	acts.append_array(_purchases(npc))
 	if npc.kind == "yonki" or not _own_stash(npc).is_empty():
 		acts.append_array(_swaps(npc))
@@ -47,9 +49,12 @@ func client_kind(npc: Npc) -> String:
 ## su tipo en Defs.CLIENTS.
 func wants(npc: Npc) -> Array:
 	var q: Array = npc.personaje.get("stats", {}).get("quiere", [])
-	if not q.is_empty():
-		return q
-	return Defs.CLIENTS.get(client_kind(npc), {}).get("wants", [])
+	if q.is_empty():
+		q = Defs.CLIENTS.get(client_kind(npc), {}).get("wants", [])
+	var c := npc.consumo
+	if not c.is_empty() and c["dosis"] <= 0 and c["mono"] >= Defs.NPC_USE_AT and not c["id"] in q:
+		q = q + [c["id"]]  # con mono, lo suyo se lo compra a quien sea
+	return q
 
 
 ## Lo que paga `npc` ahora por una dosis de `id` (más si ya te compró antes). Los personajes
@@ -57,7 +62,7 @@ func wants(npc: Npc) -> Array:
 func price_for(npc: Npc, id: String) -> int:
 	var c: Dictionary = Defs.CLIENTS.get(client_kind(npc), Defs.CLIENTS["yonki"])
 	var regular := mini(npc.remembers("cliente"), Defs.REGULAR_MAX)
-	var base: float = Defs.SUBSTANCES[id]["price"] * c["markup"]
+	var base: float = Defs.SUBSTANCES[id]["price"] * c["markup"] * Consumo.ansia(npc.consumo, id)
 	return maxi(1, roundi(base * (1.0 + Defs.REGULAR_BONUS * regular)))
 
 
@@ -106,6 +111,8 @@ func sell(npc: Npc, id: String, cut: bool) -> void:
 	else:
 		gs.remove_item(id)
 		gs.log_msg("Le pasas %s por %d €." % [Defs.item_name(id).to_lower(), price], G.C_GOOD)
+	if not npc.consumo.is_empty() and npc.consumo["id"] == id:
+		Consumo.meterse(npc.consumo, true)  # se la mete en cuanto puede
 	if cut:
 		npc.remember("timado")
 		gs.milestone("cortar")
@@ -133,6 +140,27 @@ func _after_deal(client: Npc) -> void:
 			npc.react("territorio")
 			gs.log_msg("%s te ha visto vender en su esquina." % npc.display_name, G.C_BAD)
 			break
+
+
+## Darle una dosis de lo suyo a quien tiene mono y nada encima (Consumo.necesita).
+func _gift(npc: Npc) -> Array:
+	var c := npc.consumo
+	if not Consumo.necesita(c) or not GameState.has_item(c["id"]):
+		return []
+	var what: String = Defs.item_name(c["id"]).to_lower()
+	return [Interactions._act("Darle %s (tiene mono)" % what, func(): give(npc))]
+
+
+func give(npc: Npc) -> void:
+	var gs := GameState
+	var c := npc.consumo
+	gs.advance(5)
+	gs.remove_item(c["id"])
+	Consumo.meterse(c, true)
+	npc.remember("ayudado")
+	npc.say(["Gracias, tío. Te debo una.", "Me has salvado el día.", "No se me olvida, ¿eh?"].pick_random(), 3.0)
+	gs.log_msg("Le das %s a %s, que estaba fatal." % [Defs.item_name(c["id"]).to_lower(), npc.display_name])
+	gs.change_dignity(1, "Compartir con quien tiene mono")
 
 
 # ------------------------------------------------------------------- trueque

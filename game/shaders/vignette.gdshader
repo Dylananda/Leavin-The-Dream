@@ -1,8 +1,9 @@
 // Filtro de pantalla completa con lo que le pasa al personaje (ver GameState.effects()):
 // viñeta roja que late con el mono, bordes de colores con mucho colocón, colores chillones
 // con pastillas, visión doble con alcohol, brillo con la euforia de la base, túnel oscuro
-// con hambre o bajón, párpados que se cierran con sueño y aberración cromática con la
-// salud mental por los suelos.
+// con hambre o bajón, párpados que se cierran con sueño, aberración cromática con la
+// salud mental por los suelos, bordes duros y contraste con speed y, con MDMA, todo cálido,
+// con un halo suave que late al ritmo de la música.
 shader_type canvas_item;
 
 uniform sampler2D screen : hint_screen_texture, filter_linear;
@@ -14,6 +15,8 @@ uniform float glow = 0.0;
 uniform float tunnel = 0.0;
 uniform float drowsy = 0.0;
 uniform float paranoia = 0.0;
+uniform float sharp = 0.0;
+uniform float love = 0.0;
 
 void fragment() {
 	vec2 uv = SCREEN_UV;
@@ -32,6 +35,25 @@ void fragment() {
 	c = mix(c, c.gbr, saturate * 0.15 * (0.5 + 0.5 * sin(t * 0.7)));
 	// euforia: todo brilla
 	c += glow * 0.12 * (0.7 + 0.3 * sin(t * 5.0));
+	// speed: bordes marcados, contraste y un punto frío
+	if (sharp > 0.0) {
+		vec2 px = vec2(0.0015, 0.0025);
+		vec3 around = (texture(screen, uv + vec2(px.x, 0.0)).rgb + texture(screen, uv - vec2(px.x, 0.0)).rgb
+			+ texture(screen, uv + vec2(0.0, px.y)).rgb + texture(screen, uv - vec2(0.0, px.y)).rgb) * 0.25;
+		c += (c - around) * 1.6 * sharp;
+		c = mix(c, (c - 0.5) * 1.3 + 0.5, 0.6 * sharp);
+		c = mix(c, c * vec3(0.94, 1.0, 1.06), 0.5 * sharp);
+	}
+	// MDMA: halo suave, tono cálido y un latido a unos 128 golpes por minuto
+	if (love > 0.0) {
+		float beat = pow(0.5 + 0.5 * sin(t * 13.4), 4.0);
+		vec2 r = vec2(0.006, 0.01) * (1.0 + beat);
+		vec3 halo = (texture(screen, uv + r).rgb + texture(screen, uv - r).rgb
+			+ texture(screen, uv + vec2(r.x, -r.y)).rgb + texture(screen, uv + vec2(-r.x, r.y)).rgb) * 0.25;
+		c = mix(c, max(c, halo), 0.6 * love);
+		c = mix(c, c * vec3(1.15, 0.96, 1.02) + vec3(0.05, 0.0, 0.04), love * 0.7);
+		c += vec3(0.08, 0.02, 0.06) * beat * love;
+	}
 
 	float d = distance(UV, vec2(0.5));
 	c *= 1.0 - smoothstep(0.25, 0.7, d) * tunnel * 0.85;

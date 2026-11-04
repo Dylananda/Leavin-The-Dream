@@ -298,6 +298,16 @@ const SUBSTANCES := {
 		"decay": 0.02, "visible": 0.0, "color": Color("60a0c0"),
 		"relieves": "caballo", "mono": -60, "relief_addiction": 2,
 		"fx": {"speed": -0.1}, "fx_text": "te calma el mono del caballo"},
+	# anfetamina: más barata y larga que la farlopa, y el bajón dura (la «bajona» del día siguiente)
+	"speed": {"name": "Speed", "price": 8, "high": 30, "addiction": 4, "health": -3, "dignity": -2, "sanity": 2, "od": 0.15,
+		"decay": 0.06, "hunger_rate": 0.1, "fatigue_rate": 0.1, "visible": 0.3, "color": Color("e8e070"),
+		"crash": {"minutes": 120, "sanity": -6, "mono": 6, "fatigue": 25},
+		"fx": {"speed": 0.25, "shake": 0.2, "sharp": 1.0}, "fx_text": "horas acelerado, los ojos como platos y la mandíbula apretada"},
+	# éxtasis: no engancha tanto, te pone cariñoso y el bajón de días después es de la cabeza
+	"mdma": {"name": "MDMA", "price": 10, "high": 45, "addiction": 2, "health": -4, "dignity": 1, "sanity": 6, "od": 0.25,
+		"decay": 0.12, "hunger_rate": 0.3, "fatigue_rate": 0.4, "visible": 0.4, "color": Color("80c8f0"),
+		"crash": {"minutes": 240, "sanity": -14, "mono": 4, "fatigue": 10},
+		"fx": {"love": 1.0, "speed": 0.1, "sway": 0.2}, "fx_text": "todo es cálido y late, y quieres a todo el mundo"},
 }
 ## Salud mental de Mari Loli al tomarse sus pastillas: para ella son medicación.
 const MEDS_SANITY := 10
@@ -322,7 +332,7 @@ const BODY_FX := {
 }
 
 ## Lo que vende cada camello (el resto se consigue por otras vías).
-const DEALER_STOCK := ["porro", "pastillas", "farlopa", "base", "caballo"]
+const DEALER_STOCK := ["porro", "pastillas", "speed", "mdma", "farlopa", "base", "caballo"]
 
 const ITEMS := {
 	"movil": {"name": "Móvil", "sell": 18},  # robado y bloqueado: el compraventa paga poco
@@ -386,10 +396,10 @@ const FAKE_REVEAL_BELOW := 0.12
 ## cliente: `wants` = lo que te compra; `markup` = cuánto paga sobre el precio del camello.
 ## Solo compra si lleva bastante dinero encima (los yonkis, para poco más que unas pastillas).
 const CLIENTS := {
-	"fiestero": {"wants": ["farlopa", "porro", "pastillas"], "markup": 1.7},
+	"fiestero": {"wants": ["farlopa", "mdma", "speed", "porro", "pastillas"], "markup": 1.7},
 	"turista": {"wants": ["porro"], "markup": 2.5},
-	"yonki": {"wants": ["pastillas", "porro", "litrona"], "markup": 1.5},
-	"pudiente": {"wants": ["farlopa", "porro"], "markup": 2.0},
+	"yonki": {"wants": ["pastillas", "porro", "litrona", "speed"], "markup": 1.5},
+	"pudiente": {"wants": ["farlopa", "mdma", "porro"], "markup": 2.0},
 }
 const REGULAR_BONUS := 0.1  ## lo que paga de más un cliente por cada vez que ya te compró...
 const REGULAR_MAX := 3  ## ... hasta este número de veces
@@ -402,7 +412,62 @@ const UNDERCOVER_CHANCE := 0.07
 const TURF_CELLS := 25
 ## Trueque con otros yonkis: lo que llevan encima (una sustancia, fija por nombre, 1-2 dosis al
 ## día) y cuánto valoran tus objetos respecto a lo que te da el compraventa (los revenden ellos).
-const YONKI_STASH := ["caballo", "base", "pastillas", "porro", "litrona"]
+const YONKI_STASH := ["caballo", "base", "pastillas", "porro", "litrona", "speed"]
+
+## Lo que consumen los bots (scripts/consumo.gd). Por tipo: `usa` = probabilidad de cada
+## sustancia (tirada fija por nombre; lo que falta hasta 1, nada) y `enganche` = [mín, máx] del
+## que tiene. Los niños, los chavales, la policía, los perros y quien trabaja en lo social no
+## están: no se les simula consumo (con los chavales solo se puede ayudar).
+const NPC_HABITS := {
+	"yonki": {"usa": {"caballo": 0.35, "base": 0.3, "pastillas": 0.15, "litrona": 0.1, "speed": 0.1}, "enganche": [40.0, 90.0]},
+	"mendigo": {"usa": {"litrona": 0.45, "caballo": 0.1, "pastillas": 0.1}, "enganche": [25.0, 70.0]},
+	"punki": {"usa": {"litrona": 0.4, "speed": 0.25, "porro": 0.2}, "enganche": [20.0, 60.0]},
+	"camello": {"usa": {"farlopa": 0.3, "porro": 0.25}, "enganche": [10.0, 40.0]},
+	"fiestero": {"usa": {"litrona": 0.45, "farlopa": 0.2, "mdma": 0.25, "speed": 0.05}, "enganche": [5.0, 30.0]},
+	"pudiente": {"usa": {"farlopa": 0.25, "mdma": 0.1, "pastillas": 0.1}, "enganche": [5.0, 40.0]},
+	"turista": {"usa": {"litrona": 0.3, "porro": 0.15}, "enganche": [0.0, 15.0]},
+	"vecino": {"usa": {"litrona": 0.15, "pastillas": 0.1, "porro": 0.05}, "enganche": [5.0, 35.0]},
+	"anciano": {"usa": {"pastillas": 0.2, "litrona": 0.1}, "enganche": [10.0, 40.0]},
+	"latero": {"usa": {"litrona": 0.2}, "enganche": [5.0, 30.0]},
+	"trilero": {"usa": {"porro": 0.25, "farlopa": 0.1}, "enganche": [5.0, 30.0]},
+	"carterista": {"usa": {"speed": 0.15, "porro": 0.15}, "enganche": [10.0, 40.0]},
+	"chatarrero": {"usa": {"litrona": 0.25}, "enganche": [10.0, 40.0]},
+	"mensajero": {"usa": {"speed": 0.1, "porro": 0.1}, "enganche": [5.0, 30.0]},
+	"skater": {"usa": {"porro": 0.45}, "enganche": [5.0, 30.0]},
+	"captador": {"usa": {"porro": 0.25, "speed": 0.1}, "enganche": [5.0, 30.0]},
+	"musico": {"usa": {"porro": 0.2, "litrona": 0.15}, "enganche": [5.0, 30.0]},
+	"caricaturista": {"usa": {"porro": 0.1, "litrona": 0.1}, "enganche": [5.0, 25.0]},
+}
+const NPC_PERSONAJE_ENGANCHE := [30.0, 70.0]  ## el de los personajes del editor que quieren algo
+const NPC_STEP := 15.0  ## minutos de cada tramo al simular (también al despertar a un latente)
+const NPC_MONO_RATE := 0.004  ## mono por minuto y punto de enganche sin colocón (como el jugador)
+const NPC_ADDICTION_GAIN := 0.3  ## parte del enganche de la sustancia que le suma cada dosis
+const NPC_USE_AT := 30.0  ## mono a partir del cual se mete lo que lleva (o sale a pillar)
+const NPC_SCORE_PER_HOUR := 0.35  ## probabilidad por hora de conseguir algo si no lleva nada
+const NPC_ASK_AT := 55.0  ## mono (sin nada encima) a partir del cual viene a pedirte o a comprarte...
+const NPC_ROB_AT := 85.0  ## ... y a partir del cual, si no tiene con qué pagar, te da el tirón
+const NPC_MONO_PAYS := 0.6  ## lo que paga de más por lo suyo con el mono a tope
+const NPC_NOD := 0.7  ## colocón (0..1) de caballo, pastillas o alcohol desde el que cabecea
+const NPC_NOD_SECONDS := Vector2(8.0, 25.0)  ## lo que se queda dormido en un portal
+const NPC_BRONCA := 0.6  ## colocón (0..1) de farlopa, base o speed desde el que busca bronca...
+const NPC_BRONCA_TRAIT := 0.4  ## ... solo una parte de ellos (fija por nombre), y con agresividad
+const NPC_TIRON_MAX := 12  ## euros que te quita como mucho de un tirón si no llevas nada suyo
+const NPC_FIGHT_UPPER := 0.15  ## lo que baja ganarle una pelea si va a tope de farlopa, base o speed...
+const NPC_FIGHT_DOWNER := 0.2  ## ... lo que sube si va a tope de caballo, pastillas o alcohol...
+const NPC_FIGHT_MONO := 0.1  ## ... y si tiene el mono a tope
+## Lo que dicen al pasar colocados (por sustancia) o con mono.
+const NPC_DRUG_LINES := {
+	"litrona": ["¡Otra ronda!", "Tú eres mi amigo, ¿eh?", "¿Dónde está el bar?"],
+	"porro": ["Qué bien se está aquí...", "Tengo un hambre...", "Jajaja, ¿has visto eso?"],
+	"pastillas": ["Estoy... bien, estoy bien.", "Mmm...", "¿Qué día es hoy?"],
+	"farlopa": ["¿Qué miras?", "Yo controlo, yo controlo.", "¡Vamos, vamos, vamos!"],
+	"base": ["¿Tienes más? ¿Tienes más?", "Ahora vuelvo.", "Esto es lo mejor del mundo."],
+	"caballo": ["...", "Déjame aquí un rato.", "Estoy bien, tío..."],
+	"speed": ["Tengo mil cosas que hacer.", "¡No paro, no paro!", "¿Hablamos? Hablamos."],
+	"mdma": ["¡Te quiero, tío!", "Todo está bien...", "Qué bonito es todo."],
+	"metadona": ["Voy tirando.", "Mañana, al CAS.", "Ni fu ni fa."],
+	"mono": ["Estoy fatal...", "¿Tienes algo? Lo que sea.", "Me duelen hasta los huesos."],
+}
 const YONKI_ITEM_VALUE := 1.5
 
 ## Encargos de los personajes (scripts/errands.gd). `giver` = tipo de bot que lo ofrece;
@@ -525,6 +590,8 @@ const MILESTONES := {
 	"probar_base": ["Probar la base", 10],
 	"probar_caballo": ["Probar el caballo", 10],
 	"probar_metadona": ["Entrar en el programa de metadona", 5],
+	"probar_speed": ["Probar el speed", 6],
+	"probar_mdma": ["Probar el MDMA", 5],
 }
 
 
