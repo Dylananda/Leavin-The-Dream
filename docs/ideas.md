@@ -688,6 +688,12 @@ El barrio entero tiende a engancharse, también el jugador, y salir de ahí es l
     una de cada diez 60–140 €), reventa más barata (móvil 18 €, patinete 28 €, bici 15 €),
     menos margen al trapichear (despedidas ×1,7, guiris ×2,5, pijos ×2) y pagas de los
     perfiles más realistas (paro 120 € y pensión 140 € por semana; papá, 150 € cada 4 días).
+  - [x] **Diseñador de sustancias** (`editor_sustancias.cmd`, 4 de noviembre): tablas con
+    precios y efectos de sustancias, objetos, clientes, consumo de los bots, precios de las
+    acciones (`Defs.PRECIOS`, antes escritos a mano en `interactions.gd`) y receta. Los
+    retoques van a `data/equilibrio.json` y mandan sobre `defs.gd` (`Equilibrio`).
+    - [ ] Pendiente: los premios de los encargos y misiones, las multas, las carteras y las
+      demás constantes sueltas de `defs.gd`; ordenar por columna y fijar la columna de nombres.
   - [ ] Jugarlo y seguir: comida, precio de la droga según la hora y el barrio, premios.
 
 ### Lo que sale de jugar las misiones (3 de noviembre de 2026)

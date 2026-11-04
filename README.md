@@ -230,6 +230,19 @@ Cada personaje se guarda en `game/data/personajes/<id>.json` y el juego lo saca 
 su zona y a sus horas. Los campos marcados con ◌ se guardan pero el juego aún no los usa.
 «Probar en el juego» guarda y abre una partida con el personaje al lado.
 
+## Retocar precios y efectos
+
+`editor_sustancias.cmd` (o `godot --path game res://editor/editor_sustancias.tscn`) abre el
+diseñador de sustancias: tablas con los precios y efectos de todas las sustancias (lo básico,
+efectos de pantalla y manejo, bajón, resaca y mal viaje), lo que paga el compraventa por cada
+objeto, el recargo de cada cliente, lo que consume cada tipo de bot, los precios de las acciones
+y la caja de la receta. El fondo de cada casilla compara la columna (azul, más; rojo,
+negativo) y pasando el ratón por una columna se ve qué es.
+
+Los retoques se guardan en `game/data/equilibrio.json`, solo lo que difiere de `defs.gd`, y
+el juego los pone encima al arrancar (`scripts/equilibrio.gd`); con borde amarillo, lo
+retocado. Vaciar una casilla la devuelve a lo de `defs.gd`, y borrar el archivo, todo.
+
 ## Datos reales
 
 | Qué | De dónde | Script |
@@ -304,6 +317,8 @@ python tools/make_textures.py
   contigo (te persiguen, les debes, te dieron un encargo). Gracias a esto el barrio tiene unos
   1.400 en el censo (`Defs.CROWD` multiplica la gente corriente) y 50–150 con cuerpo alrededor,
   a 60 FPS. `game/tests/paseo.gd [multiplica]` lo mide.
+- `game/editor/editor_sustancias.gd` — diseñador de sustancias: precios y efectos en tablas
+- `game/scripts/equilibrio.gd` — pone los retoques del diseñador de sustancias (`data/equilibrio.json`) encima de las tablas de `Defs`
 - `game/editor/` — diseñador de personajes (`editor_personajes.gd`): formulario, muñeco
   (`muneco.gd`), mapa para zona y rutina (`mapa_zona.gd`) y catálogo de tipos base (`tipos.gd`)
 - `game/scripts/personajes.gd` — formato de los personajes del diseñador, compartido por el

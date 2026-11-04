@@ -1,6 +1,9 @@
 class_name Defs
 ## Datos fijos del juego: perfiles de yonki, sustancias, objetos y títulos.
-## Para equilibrar el juego, casi todo se toca aquí.
+## Para equilibrar el juego, casi todo se toca aquí. Las tablas `static var ... Equilibrio.aplicar`
+## (sustancias, objetos, clientes, lo que consumen los bots, precios y receta) también se
+## retocan con el diseñador de sustancias (editor_sustancias.cmd): sus cambios se guardan en
+## data/equilibrio.json y mandan sobre lo de aquí (ver Equilibrio).
 
 ## Minutos de juego que pasan por cada segundo real.
 const GAME_MINUTES_PER_SECOND := 2.0
@@ -273,7 +276,7 @@ const PROFILES := [
 ##   drift (eses al andar), lag (respondes tarde), double (visión doble), saturate (colores chillones),
 ##   slowmo (el tiempo se estira), glow (todo brilla), drowsy (párpados), tunnel (bordes oscuros),
 ##   clumsy (tropiezos), paranoia (aberración cromática).
-const SUBSTANCES := {
+static var SUBSTANCES := Equilibrio.aplicar("sustancias", {
 	"litrona": {"name": "Litrona", "price": 2, "high": 25, "addiction": 1.5, "health": -1, "dignity": -1, "sanity": 2, "od": 0.0,
 		"decay": 0.1, "fatigue_rate": 1.5, "visible": 0.3, "color": Color("d8b040"),
 		"resaca": {"dosis": 0.35, "horas": 6, "mente": -0.5, "fx": {"resaca": 1.0, "speed": -0.15, "tunnel": 0.2}, "text": "dolor de cabeza, sed y la luz te mata", "se_quita": true},
@@ -353,7 +356,7 @@ const SUBSTANCES := {
 	"tabaco": {"name": "Tabaco", "price": 1, "high": 8, "addiction": 2, "health": -1, "dignity": 0, "sanity": 1, "od": 0.0,
 		"decay": 0.15, "hunger_rate": 0.8, "visible": 0.0, "color": Color("b0b0a0"),
 		"fx": {"shake": -0.25}, "fx_text": "las manos dejan de temblar un rato"},
-}
+})
 ## Mal viaje (las que tienen `malviaje`: con la salud mental por debajo de `cordura`, o a veces
 ## sin más, el viaje se tuerce): sus efectos durante sus `minutes`.
 const MALVIAJE_FX := {"paranoia": 1.0, "tunnel": 0.5, "shake": 0.3, "psico": 0.5}
@@ -371,9 +374,12 @@ const RESACA_MAX := 1.5
 const RESACA_VITALIDAD := 20.0  ## vitalidad máxima que quita una resaca a tope
 ## Lo que te dan en la farmacia con la receta del médico del CAP: [unidades, euros]. El médico
 ## te hace una cada RECETA_DIAS días (de estraperlo, a los yonkis: Defs.YONKI_STASH).
-const RECETA := {"antidepresivos": [14, 3], "ansioliticos": [10, 3], "tramadol": [10, 4]}
+static var RECETA := Equilibrio.aplicar("receta", {
+	"antidepresivos": {"cantidad": 14, "precio": 3},
+	"ansioliticos": {"cantidad": 10, "precio": 3},
+	"tramadol": {"cantidad": 10, "precio": 4},
+})
 const RECETA_DIAS := 7
-const TABACO_PAQUETE := [20, 6]  ## la máquina del bar: [cigarros, euros]
 ## Salud mental de Mari Loli al tomarse sus pastillas: para ella son medicación.
 const MEDS_SANITY := 10
 
@@ -399,7 +405,31 @@ const BODY_FX := {
 ## Lo que vende cada camello (el resto se consigue por otras vías).
 const DEALER_STOCK := ["porro", "pastillas", "setas", "lsd", "speed", "mdma", "ketamina", "farlopa", "base", "caballo"]
 
-const ITEMS := {
+## Precios de lo que se compra o se cobra en las acciones (scripts/interactions.gd), en euros:
+## `precio` y, si va por unidades, `cantidad`; `que` lo explica en el diseñador de sustancias.
+## Lo que vende el camello va por `price` de cada sustancia, y el compraventa por `sell` de cada objeto.
+static var PRECIOS := Equilibrio.aplicar("precios", {
+	"super_bocadillo": {"precio": 3, "que": "Súper: un bocadillo"},
+	"super_litrona": {"precio": 2, "que": "Súper: una litrona"},
+	"farmacia_ibuprofeno": {"precio": 3, "que": "Farmacia: ibuprofeno (+5 salud)"},
+	"bar_carajillo": {"precio": 2, "que": "Bar: un carajillo (como una litrona)"},
+	"bar_tabaco": {"precio": 6, "cantidad": 20, "que": "Bar: paquete de tabaco de la máquina (cigarros)"},
+	"kebab_durum": {"precio": 4, "que": "Kebab: un dürüm"},
+	"yonki_movil": {"precio": 8, "que": "Yonki: comprarle un móvil robado"},
+	"mantero_gafas": {"precio": 5, "que": "Mantero: comprarle unas gafas"},
+	"vender_gafas": {"precio": 10, "que": "Despedida: venderles unas gafas de mantero (te pagan)"},
+	"latero_lata": {"precio": 1, "que": "Latero: comprarle una lata"},
+	"latero_alijo": {"precio": 5, "que": "Latero: ayudarle a esconder el alijo (te paga)"},
+	"trilero_apuesta": {"precio": 10, "que": "Trilero: lo que apuestas a la bolita"},
+	"carterista_clase": {"precio": 20, "que": "Carterista: que te enseñe"},
+	"carterista_cartera": {"precio": 12, "que": "Carterista: venderle la cartera con papeles (te paga)"},
+	"estatua_moneda": {"precio": 1, "que": "Estatua humana: la moneda del platillo"},
+	"club_cannabico": {"precio": 10, "cantidad": 2, "que": "Captador: que te lleve al club cannábico (porros)"},
+	"rosa": {"precio": 2, "que": "Vendedor de rosas: una rosa"},
+	"caricatura": {"precio": 5, "que": "Caricaturista: que te haga una caricatura"},
+})
+
+static var ITEMS := Equilibrio.aplicar("objetos", {
 	"movil": {"name": "Móvil", "sell": 18},  # robado y bloqueado: el compraventa paga poco
 	"movil_roto": {"name": "Móvil con la pantalla rota", "sell": 6},
 	"cartera": {"name": "Cartera ajena", "sell": 0},
@@ -423,7 +453,7 @@ const ITEMS := {
 	"chatarra": {"name": "Chatarra", "sell": 3},
 	"bici": {"name": "Bici ajena", "sell": 15},
 	"patinete": {"name": "Patinete eléctrico", "sell": 28},
-}
+})
 
 ## Objetos tirados por la calle (scripts/street_items.gd). `weight` = lo a menudo que aparece;
 ## `night` multiplica ese peso de noche; `near` = tipo de lugar junto al que suele estar (se
@@ -465,12 +495,12 @@ const FAKE_REVEAL_BELOW := 0.12
 ## Trapicheo (scripts/trade.gd): revender a otros lo que compras al camello. Por tipo de
 ## cliente: `wants` = lo que te compra; `markup` = cuánto paga sobre el precio del camello.
 ## Solo compra si lleva bastante dinero encima (los yonkis, para poco más que unas pastillas).
-const CLIENTS := {
+static var CLIENTS := Equilibrio.aplicar("clientes", {
 	"fiestero": {"wants": ["farlopa", "mdma", "ketamina", "speed", "porro", "pastillas", "tabaco"], "markup": 1.7},
 	"turista": {"wants": ["porro", "setas"], "markup": 2.5},
 	"yonki": {"wants": ["pastillas", "ansioliticos", "tramadol", "porro", "litrona", "speed", "tabaco"], "markup": 1.5},
 	"pudiente": {"wants": ["farlopa", "mdma", "ketamina", "lsd", "porro"], "markup": 2.0},
-}
+})
 const REGULAR_BONUS := 0.1  ## lo que paga de más un cliente por cada vez que ya te compró...
 const REGULAR_MAX := 3  ## ... hasta este número de veces
 ## Cortarla: vendes al mismo precio, pero solo gastas tu dosis con esta probabilidad (de media
@@ -488,7 +518,7 @@ const YONKI_STASH := ["caballo", "base", "pastillas", "porro", "litrona", "speed
 ## sustancia (tirada fija por nombre; lo que falta hasta 1, nada) y `enganche` = [mín, máx] del
 ## que tiene. Los niños, los chavales, la policía, los perros y quien trabaja en lo social no
 ## están: no se les simula consumo (con los chavales solo se puede ayudar).
-const NPC_HABITS := {
+static var NPC_HABITS := Equilibrio.aplicar("habitos", {
 	"yonki": {"usa": {"caballo": 0.3, "base": 0.25, "pastillas": 0.1, "litrona": 0.1, "speed": 0.1, "tramadol": 0.1, "ansioliticos": 0.05}, "enganche": [40.0, 90.0]},
 	"mendigo": {"usa": {"litrona": 0.4, "caballo": 0.1, "tramadol": 0.05, "tabaco": 0.15}, "enganche": [25.0, 70.0]},
 	"punki": {"usa": {"litrona": 0.35, "speed": 0.2, "porro": 0.15, "setas": 0.1, "lsd": 0.1, "tabaco": 0.1}, "enganche": [20.0, 60.0]},
@@ -507,7 +537,7 @@ const NPC_HABITS := {
 	"captador": {"usa": {"porro": 0.25, "speed": 0.1, "tabaco": 0.1}, "enganche": [5.0, 30.0]},
 	"musico": {"usa": {"porro": 0.2, "litrona": 0.15, "tabaco": 0.15}, "enganche": [5.0, 30.0]},
 	"caricaturista": {"usa": {"porro": 0.1, "litrona": 0.1, "tabaco": 0.2}, "enganche": [5.0, 25.0]},
-}
+})
 const NPC_PERSONAJE_ENGANCHE := [30.0, 70.0]  ## el de los personajes del editor que quieren algo
 const NPC_STEP := 15.0  ## minutos de cada tramo al simular (también al despertar a un latente)
 const NPC_MONO_RATE := 0.004  ## mono por minuto y punto de enganche sin colocón (como el jugador)
@@ -686,6 +716,11 @@ static func profile(id: String) -> Dictionary:
 		if p["id"] == id:
 			return p
 	return PROFILES[0]
+
+
+## Lo que cuesta (o te pagan por) una acción de PRECIOS.
+static func precio(id: String) -> int:
+	return PRECIOS[id]["precio"]
 
 
 static func item_name(id: String) -> String:

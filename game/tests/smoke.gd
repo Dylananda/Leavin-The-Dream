@@ -113,6 +113,7 @@ func _initialize() -> void:
 	await _test_finales()
 	await _test_partida()
 	await _test_editor()
+	await _test_sustancias()
 	print("FALLOS: %d" % _failures if _failures > 0 else "OK")
 	quit(1 if _failures > 0 else 0)
 
@@ -984,6 +985,37 @@ func _test_editor() -> void:
 	print("  editor de misiones, relaciones y esquema: OK")
 
 
+## El diseñador de sustancias: monta todas las tablas, un retoque cambia el valor (con su
+## tipo) y quitarlo lo devuelve al de Defs; y Equilibrio pone los retoques encima de una tabla.
+## No toca data/equilibrio.json.
+func _test_sustancias() -> void:
+	change_scene_to_file("res://editor/editor_sustancias.tscn")
+	await process_frame
+	await process_frame
+	var ed = current_scene
+	_check(ed._tabs.get_tab_count() == ed.PESTANAS.size(), "sustancias: faltan pestañas")
+	_check(ed._celdas.all(func(r): return not r.is_empty()), "sustancias: hay una pestaña sin columnas")
+	ed._ajustes = {}
+	ed._retocar("sustancias", "speed", "price", 9.0)
+	_check(ed._valor("sustancias", "speed", "price") is int and ed._valor("sustancias", "speed", "price") == 9, "sustancias: el retoque del precio no vale")
+	ed._retocar("sustancias", "speed", "fx.psico", 0.5)
+	ed._retocar("habitos", "yonki", "enganche.1", 95.0)
+	_check(ed._ajustes["habitos"]["yonki"]["enganche"]["1"] == 95.0, "sustancias: no se retoca dentro de una lista")
+	ed._retocar("sustancias", "speed", "price", float(Defs.SUBSTANCES["speed"]["price"]))
+	_check(not ed._ajustes["sustancias"]["speed"].has("price"), "sustancias: volver al valor de Defs no quita el retoque")
+	ed._retocar("sustancias", "speed", "fx.psico", null)
+	_check(not ed._ajustes.has("sustancias"), "sustancias: no se limpian los retoques vacíos")
+	var tabla := {"a": {"n": 1, "fx": {"x": 0.5}, "l": [10.0, 20.0]}}
+	Equilibrio.mezclar(tabla, {"a": {"n": 3.0, "fx": {"y": 0.2}, "l": {"1": 25.0}}, "b": {"n": 1}})
+	_check(tabla["a"]["n"] is int and tabla["a"]["n"] == 3 and tabla["a"]["fx"]["y"] == 0.2 and tabla["a"]["l"][1] == 25.0,
+		"sustancias: Equilibrio no mezcla bien %s" % [tabla])
+	_check(not tabla.has("b") or tabla["b"] is Dictionary, "sustancias: Equilibrio rompe con ids nuevos")
+	ed._sucio = false
+	ed._quitar_pestana()
+	await process_frame
+	print("  diseñador de sustancias: OK")
+
+
 ## Visión en cono tapada por los edificios, memoria de cada personaje, policía que solo
 ## persigue si te ve, escándalo al robar, camellos que cobran y robados que te reconocen.
 func _test_vision(gs, world) -> void:
@@ -1373,13 +1405,13 @@ func _test_resacas(gs, world) -> void:
 	_check(caja.size() == 1, "farmacia: no se compra con receta")
 	if not caja.is_empty():
 		caja[0]["do"].call()
-	_check(gs.inventory.get("antidepresivos", 0) == Defs.RECETA["antidepresivos"][0] and not gs.has_item("receta"), "farmacia: la receta no da la caja")
+	_check(gs.inventory.get("antidepresivos", 0) == Defs.RECETA["antidepresivos"]["cantidad"] and not gs.has_item("receta"), "farmacia: la receta no da la caja")
 	var tabaco: int = gs.inventory.get("tabaco", 0)
 	var maquina = world.interactions.for_poi(bar).filter(func(a): return a["label"].begins_with("Sacar tabaco"))
 	_check(maquina.size() == 1, "bar: no hay máquina de tabaco")
 	if not maquina.is_empty():
 		maquina[0]["do"].call()
-	_check(gs.inventory.get("tabaco", 0) == tabaco + Defs.TABACO_PAQUETE[0], "bar: la máquina no da tabaco")
+	_check(gs.inventory.get("tabaco", 0) == tabaco + Defs.PRECIOS["bar_tabaco"]["cantidad"], "bar: la máquina no da tabaco")
 	# los bots también: alguno fuma, alguno toma ansiolíticos
 	var habitos := {}
 	for i in 300:

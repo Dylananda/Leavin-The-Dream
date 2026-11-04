@@ -381,9 +381,9 @@ func _yonki(npc: Npc) -> Array:
 			if _chance(0.4):
 				gs.add_money(randi_range(2, 8))
 				gs.log_msg("Te devuelve el favor con unas monedas.", G.C_GOOD)))
-	if gs.money >= 8:
-		acts.append(_act("Comprarle un móvil robado (8 €)", func():
-			gs.add_money(-8)
+	if gs.money >= Defs.precio("yonki_movil"):
+		acts.append(_act("Comprarle un móvil robado (%d €)" % Defs.precio("yonki_movil"), func():
+			gs.add_money(-Defs.precio("yonki_movil"))
 			gs.add_item("movil" if _chance(0.5) else "movil_roto")
 			npc.say("Está como nuevo")))
 	return acts
@@ -520,9 +520,9 @@ func _mantero(npc: Npc) -> Array:
 				npc.say("¡Corre, corre!", 3.0)
 				gs.log_msg("La Urbana se lleva la manta de %s. Hoy no cobra nadie." % npc.display_name, G.C_BAD))),
 	]
-	if gs.money >= 5:
-		acts.append(_act("Comprarle unas gafas (5 €)", func():
-			gs.add_money(-5)
+	if gs.money >= Defs.precio("mantero_gafas"):
+		acts.append(_act("Comprarle unas gafas (%d €)" % Defs.precio("mantero_gafas"), func():
+			gs.add_money(-Defs.precio("mantero_gafas"))
 			gs.add_item("gafas")
 			npc.say("Ray-Ban, original")))
 	return acts
@@ -554,9 +554,9 @@ func _fiestero(npc: Npc) -> Array:
 			gs.milestone("despedida")),
 	]
 	if gs.has_item("gafas"):
-		acts.append(_act("Venderles unas gafas de mantero (10 €)", func():
+		acts.append(_act("Venderles unas gafas de mantero (%d €)" % Defs.precio("vender_gafas"), func():
 			gs.remove_item("gafas")
-			gs.add_money(10)
+			gs.add_money(Defs.precio("vender_gafas"))
 			npc.say("Ray-Ban! Originals!")
 			gs.log_msg("Les vendes las gafas por el doble de lo que te costaron.", G.C_GOOD)))
 	if not npc.robbed and not npc.has_meta("receloso"):
@@ -582,15 +582,15 @@ func _latero(npc: Npc) -> Array:
 	if npc.has_meta("enemigo"):
 		npc.say("Tú no. Fuera.")
 		return acts
-	if gs.money >= 1:
-		acts.append(_act("Comprarle una lata (1 €)", func():
-			gs.add_money(-1)
+	if gs.money >= Defs.precio("latero_lata"):
+		acts.append(_act("Comprarle una lata (%d €)" % Defs.precio("latero_lata"), func():
+			gs.add_money(-Defs.precio("latero_lata"))
 			gs.add_item("litrona")
 			npc.say("Fría, amigo")))
 	acts.append(_act("Ayudarle a esconder el alijo (1 h)", func():
 		gs.advance(60)
 		_heat(10)
-		gs.add_money(5)
+		gs.add_money(Defs.precio("latero_alijo"))
 		npc.set_meta("alijo", true)
 		npc.remember("ayudado")
 		npc.say("Gracias. Aquí no lo encuentra la Urbana")
@@ -627,19 +627,20 @@ func _latero(npc: Npc) -> Array:
 func _trilero(npc: Npc) -> Array:
 	var gs := GameState
 	var acts := []
-	if gs.money >= 10:
-		acts.append(_act("Apostar 10 € a la bolita", func():
+	var apuesta := Defs.precio("trilero_apuesta")
+	if gs.money >= apuesta:
+		acts.append(_act("Apostar %d € a la bolita" % apuesta, func():
 			gs.advance(5)
 			gs.milestone("trile")
 			# la bolita casi nunca está donde crees: solo «gana» el gancho
 			if _chance(0.08):
-				gs.add_money(10)
+				gs.add_money(apuesta)
 				npc.say("¡Suerte de principiante!")
-				gs.log_msg("Ganas 10 €. Te dejan ganar para que vuelvas.", G.C_GOOD)
+				gs.log_msg("Ganas %d €. Te dejan ganar para que vuelvas." % apuesta, G.C_GOOD)
 			else:
-				gs.add_money(-10)
+				gs.add_money(-apuesta)
 				npc.say("Uy, casi. ¿Otra?")
-				gs.log_msg("Estabas seguro de que era la de la izquierda. Adiós, 10 €.", G.C_BAD)
+				gs.log_msg("Estabas seguro de que era la de la izquierda. Adiós, %d €." % apuesta, G.C_BAD)
 			gs.change_dignity(-1)))
 	acts.append(_act("Hacerle de gancho (1 h)", func():
 		gs.advance(60)
@@ -684,20 +685,20 @@ func _carterista(npc: Npc) -> Array:
 				world.scandal(null, "«¡Al ladrón!»")
 			gs.change_dignity(-3)),
 	]
-	if not "aprendiz" in gs.milestones and gs.money >= 20:
-		acts.append(_act("Pagarle para que te enseñe (20 €)", func():
-			gs.add_money(-20)
+	if not "aprendiz" in gs.milestones and gs.money >= Defs.precio("carterista_clase"):
+		acts.append(_act("Pagarle para que te enseñe (%d €)" % Defs.precio("carterista_clase"), func():
+			gs.add_money(-Defs.precio("carterista_clase"))
 			gs.advance(120)
 			gs.milestone("aprendiz")
 			npc.say("Dos dedos, nunca tres. Y mira a los ojos")
 			gs.log_msg("Dos horas de clase en un banco de la Rambla. Ahora robas mejor a los turistas.", G.C_GOOD)))
 	if gs.has_item("cartera"):
-		acts.append(_act("Venderle la cartera con los papeles (12 €)", func():
+		acts.append(_act("Venderle la cartera con los papeles (%d €)" % Defs.precio("carterista_cartera"), func():
 			if world.street_items.take_fake("cartera", "«¿Esto qué es?» Te la tira a la cara: es %s."):
 				npc.say("No me hagas perder el tiempo")
 				return
 			gs.remove_item("cartera")
-			gs.add_money(12)
+			gs.add_money(Defs.precio("carterista_cartera"))
 			npc.say("Los pasaportes se pagan bien")
 			gs.change_dignity(-2)))
 	return acts
@@ -959,10 +960,10 @@ func _estatua(npc: Npc) -> Array:
 				npc.say("*ni pestañea*")
 				gs.change_dignity(-1, "Hacer el payaso delante de una estatua")),
 	]
-	if gs.money >= 1:
-		acts.insert(0, _act("Echarle una moneda en el platillo (1 €)", func():
-			gs.add_money(-1)
-			npc.money += 1
+	if gs.money >= Defs.precio("estatua_moneda"):
+		acts.insert(0, _act("Echarle una moneda en el platillo (%d €)" % Defs.precio("estatua_moneda"), func():
+			gs.add_money(-Defs.precio("estatua_moneda"))
+			npc.money += Defs.precio("estatua_moneda")
 			npc.remember("ayudado")
 			npc.wake_statue(5.0)
 			npc.say(["*se mueve como un robot y te da la mano*", "*hace una reverencia*", "*te guiña un ojo*"].pick_random(), 3.0)
@@ -1061,14 +1062,14 @@ func _captador(npc: Npc) -> Array:
 			gs.milestone("flyers")
 			gs.log_msg("Una hora gritando «party tonight!» por la Rambla. Te da %d €." % n, G.C_GOOD)),
 	]
-	if gs.money >= 10:
-		acts.append(_act("Que te lleve al club cannábico (10 €)", func():
+	if gs.money >= Defs.precio("club_cannabico"):
+		acts.append(_act("Que te lleve al club cannábico (%d €)" % Defs.precio("club_cannabico"), func():
 			gs.advance(30)
 			if gs.dignity < 30:
 				npc.say("Members only, colega. Y tú no tienes pinta de socio")
 				return
-			gs.add_money(-10)
-			gs.add_item("porro", 2)
+			gs.add_money(-Defs.precio("club_cannabico"))
+			gs.add_item("porro", Defs.PRECIOS["club_cannabico"]["cantidad"])
 			npc.say("Te hago socio. Tú no me has visto, ¿eh?")
 			gs.log_msg("Un local sin rótulo, una ficha de socio con un nombre inventado y dos porros. La Urbana va detrás de estos captadores.", G.C_GOOD)
 			if world.police_watching("urbana") > 0:
@@ -1079,10 +1080,10 @@ func _captador(npc: Npc) -> Array:
 func _rosero(npc: Npc) -> Array:
 	var gs := GameState
 	var acts := []
-	if gs.money >= 2:
-		acts.append(_act("Comprarle una rosa (2 €)", func():
-			gs.add_money(-2)
-			npc.money += 2
+	if gs.money >= Defs.precio("rosa"):
+		acts.append(_act("Comprarle una rosa (%d €)" % Defs.precio("rosa"), func():
+			gs.add_money(-Defs.precio("rosa"))
+			npc.money += Defs.precio("rosa")
 			npc.remember("ayudado")
 			npc.say("Para ti, amigo. Bonita noche")
 			gs.change_sanity(3)
@@ -1199,9 +1200,9 @@ func _caricaturista(npc: Npc) -> Array:
 			gs.log_msg("Media hora quieto para que los guiris vean cómo dibuja. %d €." % n, G.C_GOOD)
 			gs.change_dignity(1, "Que alguien te mire de verdad")),
 	]
-	if gs.money >= 5:
-		acts.insert(0, _act("Que te haga una caricatura (5 €)", func():
-			gs.add_money(-5)
+	if gs.money >= Defs.precio("caricatura"):
+		acts.insert(0, _act("Que te haga una caricatura (%d €)" % Defs.precio("caricatura"), func():
+			gs.add_money(-Defs.precio("caricatura"))
 			gs.advance(15)
 			npc.say("Mira, mira cómo te he sacado")
 			gs.change_sanity(4)
@@ -1255,8 +1256,8 @@ func for_poi(poi: Dictionary) -> Array:
 	var acts := world.errands.actions_for_poi(poi)
 	match poi["kind"]:
 		"super":
-			acts.append(_buy("Comprar una litrona", 2, "litrona"))
-			acts.append(_buy("Comprar un bocadillo", 3, "bocadillo"))
+			acts.append(_buy("Comprar una litrona", Defs.precio("super_litrona"), "litrona"))
+			acts.append(_buy("Comprar un bocadillo", Defs.precio("super_bocadillo"), "bocadillo"))
 			acts.append(_act("Robar una litrona", func():
 				# minijuego: distraer al dependiente y coger la litrona del estante
 				var clerk := _clerk("El dependiente", Color("2a6ab0"))
@@ -1282,25 +1283,26 @@ func for_poi(poi: Dictionary) -> Array:
 				gs.advance(10)
 				gs.change_health(3)
 				gs.log_msg("Agua, gasas y un folleto. Algo es algo.")))
-			acts.append(_buy_effect("Comprar ibuprofeno", 3, func(): gs.change_health(5)))
+			acts.append(_buy_effect("Comprar ibuprofeno", Defs.precio("farmacia_ibuprofeno"), func(): gs.change_health(5)))
 			# con la receta del médico del CAP: una caja de lo que te ha recetado
 			if gs.has_item("receta"):
 				for id in Defs.RECETA:
-					var caja: Array = Defs.RECETA[id]
-					if gs.money >= caja[1]:
-						acts.append(_act("Con la receta: %s (caja de %d, %d €)" % [Defs.item_name(id).to_lower(), caja[0], caja[1]], func():
+					var caja: Dictionary = Defs.RECETA[id]
+					if gs.money >= caja["precio"]:
+						acts.append(_act("Con la receta: %s (caja de %d, %d €)" % [Defs.item_name(id).to_lower(), caja["cantidad"], caja["precio"]], func():
 							gs.advance(10)
 							gs.remove_item("receta")
-							gs.add_money(-caja[1])
-							gs.add_item(id, caja[0])
+							gs.add_money(-caja["precio"])
+							gs.add_item(id, caja["cantidad"])
 							gs.log_msg("La farmacéutica te da la caja y te explica cómo tomarlo. Tú sabrás.")))
 		"bar":
-			if gs.money >= Defs.TABACO_PAQUETE[1]:
-				acts.append(_act("Sacar tabaco de la máquina (%d €)" % Defs.TABACO_PAQUETE[1], func():
-					gs.add_money(-Defs.TABACO_PAQUETE[1])
-					gs.add_item("tabaco", Defs.TABACO_PAQUETE[0])
-					gs.log_msg("Un paquete de %d cigarros." % Defs.TABACO_PAQUETE[0])))
-			acts.append(_buy_effect("Tomarte un carajillo", 2, func():
+			var paquete: Dictionary = Defs.PRECIOS["bar_tabaco"]
+			if gs.money >= paquete["precio"]:
+				acts.append(_act("Sacar tabaco de la máquina (%d €)" % paquete["precio"], func():
+					gs.add_money(-paquete["precio"])
+					gs.add_item("tabaco", paquete["cantidad"])
+					gs.log_msg("Un paquete de %d cigarros." % paquete["cantidad"])))
+			acts.append(_buy_effect("Tomarte un carajillo", Defs.precio("bar_carajillo"), func():
 				gs.add_item("litrona")
 				gs.consume("litrona")))
 			acts.append(_act("Pedir por las mesas de la terraza", func():
@@ -1328,7 +1330,7 @@ func for_poi(poi: Dictionary) -> Array:
 						world.scandal(null, "«¡Eh, tú! ¡Esa propina!» Sales por patas.")
 						gs.change_dignity(-2))))
 		"kebab":
-			acts.append(_buy_effect("Comerte un dürüm", 4, func():
+			acts.append(_buy_effect("Comerte un dürüm", Defs.precio("kebab_durum"), func():
 				gs.add_item("durum")
 				gs.consume("durum")))
 			acts.append(_act("Pedir las sobras", func():
