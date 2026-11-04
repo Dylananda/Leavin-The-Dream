@@ -91,6 +91,7 @@ var hud: Hud
 var interactions: Interactions
 var errands: Errands  ## Encargos con plazo y libreta
 var misiones: Misiones  ## Misiones de los personajes del editor
+var relaciones: Relaciones  ## Lo que le haces a un personaje lo saben los suyos
 var street_items: StreetItems  ## Objetos tirados por la calle
 var trade: Trade  ## Trapicheo: revender y cambiar cosas con otros yonkis
 var conversation: Conversation  ## Conversación libre con IA (scripts/ai/)
@@ -163,6 +164,7 @@ func _ready() -> void:
 	interactions = Interactions.new(self)
 	errands = Errands.new(self)
 	misiones = Misiones.new(self)
+	relaciones = Relaciones.new(self)
 	street_items = StreetItems.new(self)
 	trade = Trade.new(self)
 	street_items.populate()
@@ -436,6 +438,7 @@ func _process(delta: float) -> void:
 	if GameState.alive:
 		GameState.advance(delta * Defs.GAME_MINUTES_PER_SECOND)
 		errands.update()
+		misiones.update()
 		street_items.update()
 	_fx = GameState.effects()
 	hud.show_effects(_fx)
@@ -1091,6 +1094,8 @@ func _on_caught(npc: Npc) -> void:
 		"venganza":
 			npc.memory.erase("robado")
 			npc.memory.erase("timado")
+			npc.memory.erase("oido_mal")
+			npc.remove_meta("venganza")
 			var loot := ""
 			if npc.has_meta("dueno_bici") and gs.has_item("bici"):
 				npc.remove_meta("dueno_bici")

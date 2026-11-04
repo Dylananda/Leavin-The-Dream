@@ -55,6 +55,12 @@
 		"*se encoge de hombros*"
 	],
 	"misiones": [],
-	"relaciones": [],
-	"notas": "Tiene el acordeón de Vasile y la bolsa de Mari Carmen. Nadia (urbana de paisano) lo busca."
+	"relaciones": [
+		{
+			"con": "nadia",
+			"tipo": "enemigo",
+			"nota": "Nadia lo busca por el acordeón de Vasile"
+		}
+	],
+	"notas": "Tiene el acordeón de Vasile (ver su misión) y la bolsa de Mari Carmen. Amigo de Vera: si le haces algo a ella, lo sabe. Nadia (urbana de paisano) lo busca."
 }

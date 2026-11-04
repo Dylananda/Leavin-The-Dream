@@ -55,7 +55,7 @@ sí y una memoria poco fiable**, que puede ir creciendo hacia misiones de rol en
 10. **Ciudad más grande y metro**
 11. **Diseñador de personajes**: herramienta aparte para crear personajes únicos con su
     historia, aspecto, zona, rutina, estadísticas, ficha de IA y misiones, que el juego carga
-    solo. — hechas las fases 1 (rama `feat/editor-personajes`) y 2 (misiones)
+    solo. — hechas las fases 1 (rama `feat/editor-personajes`), 2 (misiones) y 3 (relaciones y cadenas)
     - [x] Fase 1: identidad, aspecto con el muñeco, zona (barrio, zona hecha o polígono),
       casa y lugares con horas, estadísticas, ficha de conversación y frases; el juego los
       saca a la calle y se puede hablar con ellos; botón «Probar en el juego»
@@ -84,7 +84,31 @@ sí y una memoria poco fiable**, que puede ir creciendo hacia misiones de rol en
         cuela te ficha. Si sale bien, hace la vista gorda tres días y Antonio te cuenta lo que ve).
       - [ ] Pendiente: pasar a misiones las demás notas de los personajes de ejemplo; probarlas
         jugando y ajustar plazos y premios; capturas de la pestaña en el PC (en la nube no hay pantalla).
-    - [ ] Fase 3: relaciones entre personajes y esquema de las cadenas de misiones
+    - [x] Fase 3: relaciones entre personajes y esquema de las cadenas de misiones
+      - **Relaciones** (pestaña «Relaciones», `scripts/relaciones.gd`): se lleva bien o mal con,
+        familia, pareja, trabaja para, le debe dinero a. Valen en los dos sentidos. Lo que le haces
+        a uno (ayudarle, robarle, pegarle, timarle, chivarte) lo saben los suyos y, al revés, sus
+        enemigos (`oido_bien` y `oido_mal` en su memoria, también latentes): se acercan a
+        saludarte, se apartan o, los de mala sangre, van a por ti, y no te dan misiones.
+      - **Esquema de misiones** (pestaña nueva, `editor/esquema.gd`): una caja por misión de todos
+        los personajes, en columnas por «después de», con flechas para las cadenas, líneas rojas
+        entre las excluyentes y amarillas entre las que comparten personajes, y lo que pasa al
+        cumplirla o fallarla. Clic en una caja: abre su personaje.
+      - Lo nuevo en las misiones: condición «si no has hecho» (elegir entre dos), objetivos
+        **espiar** (consigues algo; si te pillan, falla) y **acompañar** (va contigo hasta el
+        sitio; alguien os puede acechar), y en «conseguirle algo», **quién lo tiene** (te lo vende o
+        se lo robas, minijuego) y **a qué policía chivarte** (se lo quita, te lo da y al otro lo
+        detienen dos días). Resultados nuevos: lo detienen (sale del barrio unos días o para
+        siempre; los suyos se enteran), va a por ti, y el riesgo de ir a comisaría con antecedentes.
+      - Hechas, cruzadas entre ellas: **el pasaporte de Grzegorz** (lo tiene Vera: comprarlo,
+        robarlo o chivarte a Xavi), **el acordeón de Vasile** (El Mudo, amigo de Vera: si te chivaste
+        de ella, ya no te lo vende), **«Que Joy no trabaje sola»** (Rosi, vigilar) → **«La denuncia
+        de Joy»** → **«Testigo en comisaría»** (Agent Ortega), **el Sr. Feliu o Pol** (una u otra;
+        traicionar a Feliu te cierra a la Sra. Encarna), **las pruebas del piso** (espiar a Quique
+        para la Sra. Encarna) → **«El piso de Quique»** (Serra lo detiene, tu deuda se va y La
+        Rubia va a por ti) y **«El bar de 1979»** (acompañar a Margit; Vera os acecha si no está detenida).
+      - [ ] Pendiente: que el acordeón pueda acabar en la compraventa; la multa que te borra Xavi;
+        la bolsa de Mari Carmen; capturas de las pestañas nuevas en el PC; jugarlas y ajustar.
 12. **Bots latentes (censo)**: todos los del barrio en un registro de datos y cuerpo solo para
     los que tienes cerca; al volver a verlos se ponen al día. — hecho lo básico (rama `feat/editor-personajes`)
     - [x] Dormir y despertar según la distancia, con lo que les pasó; no se duermen los que

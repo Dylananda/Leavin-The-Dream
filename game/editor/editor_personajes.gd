@@ -35,6 +35,8 @@ var _mapa_info: Label
 var _lugares_box: VBoxContainer
 var _horas_box: HBoxContainer
 var _misiones_box: VBoxContainer
+var _relaciones_box: VBoxContainer
+var _esquema: EsquemaMisiones
 var _descartar: ConfirmationDialog
 var _pendiente: Callable  ## lo que se hará si se aceptan descartar los cambios
 
@@ -69,7 +71,14 @@ func _ready() -> void:
 	tabs.add_child(_pestana(_tab_stats()))
 	tabs.add_child(_pestana(_tab_conversacion()))
 	tabs.add_child(_pestana(_tab_notas()))
-	tabs.tab_changed.connect(func(i): if tabs.get_tab_control(i).name == "Zona y rutina": _mapa.enfocar.call_deferred())
+	tabs.add_child(_pestana(_tab_relaciones()))
+	tabs.add_child(_pestana(_tab_esquema()))
+	tabs.tab_changed.connect(func(i):
+		var tab_name := String(tabs.get_tab_control(i).name)
+		if tab_name == "Zona y rutina":
+			_mapa.enfocar.call_deferred()
+		elif tab_name == "Esquema de misiones":
+			_rehacer_esquema())
 	split.add_child(_panel_derecho())
 
 	_estado = Label.new()
@@ -558,6 +567,92 @@ func _tab_notas() -> Control:
 	return tab
 
 
+func _tab_relaciones() -> Control:
+	var tab := _pagina("Relaciones")
+	var intro := _lbl("Con quién se lleva bien o mal, de quién es familia o pareja, para quién trabaja, a quién le debe dinero. Valen en los dos sentidos (basta con apuntarlas en uno). En la partida, lo que le haces a este personaje lo saben los suyos: si le ayudas, sus amigos, familia, pareja y gente te miran mejor y sus enemigos peor; si le robas, le pegas, le timas o te chivas, al revés (se apartan, no te dan misiones y los de mala sangre van a por ti).")
+	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	intro.add_theme_color_override("font_color", C_SUAVE)
+	tab.add_child(intro)
+	_relaciones_box = VBoxContainer.new()
+	_relaciones_box.add_theme_constant_override("separation", 8)
+	tab.add_child(_relaciones_box)
+	var add := Button.new()
+	add.text = "Añadir relación"
+	add.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	add.pressed.connect(func():
+		_def["relaciones"].append(Personajes.nueva_relacion())
+		_rehacer_relaciones()
+		_cambio())
+	tab.add_child(add)
+	_refrescos.append(_rehacer_relaciones)
+	return tab
+
+
+## Una fila por relación (tipo, con quién, nota) y, debajo, las que otros tienen apuntadas con él.
+func _rehacer_relaciones() -> void:
+	for c in _relaciones_box.get_children():
+		c.queue_free()
+	for r in _def["relaciones"]:
+		var row := HBoxContainer.new()
+		row.add_child(_m_option(r, "tipo", Personajes.RELACIONES))
+		row.add_child(_m_option(r, "con", _personajes_opciones("— elige —")))
+		var nota := _m_line(r, "nota", "Por qué: «se conocen del albergue», «le debe 200 €»...")
+		row.add_child(nota)
+		var quitar := Button.new()
+		quitar.text = "✕"
+		quitar.pressed.connect(func():
+			_def["relaciones"].erase(r)
+			_rehacer_relaciones()
+			_cambio())
+		row.add_child(quitar)
+		_relaciones_box.add_child(row)
+	var id := Personajes.slug(_def["nombre"])
+	var otros := []
+	for d in _guardados:
+		if d["id"] == id:
+			continue
+		for r in d.get("relaciones", []):
+			if r["con"] == id and r["con"] != "":
+				otros.append("%s: %s %s%s" % [d["nombre"], Personajes.RELACIONES.get(r["tipo"], r["tipo"]).to_lower(),
+					_def["nombre"], " («%s»)" % r["nota"] if r.get("nota", "") != "" else ""])
+	if _def["relaciones"].is_empty() and otros.is_empty():
+		_relaciones_box.add_child(_suave("Sin relaciones."))
+	if not otros.is_empty():
+		_relaciones_box.add_child(_suave("Apuntadas en otros personajes (también cuentan):\n" + "\n".join(otros)))
+
+
+func _tab_esquema() -> Control:
+	var tab := _pagina("Esquema de misiones")
+	var intro := _lbl("Todas las misiones de los personajes guardados (más las de este, tal como está). Flecha azul: «después de». Línea roja discontinua: una u otra («si no has hecho»). Línea amarilla: comparten personajes, así que una cambia la otra. Debajo de cada una, lo que pasa al cumplirla (✔) o fallarla (✖). Clic en una misión para abrir su personaje.")
+	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	intro.add_theme_color_override("font_color", C_SUAVE)
+	tab.add_child(intro)
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size.y = 640
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_esquema = EsquemaMisiones.new()
+	_esquema.elegido.connect(func(pid: String):
+		if pid != _id_cargado:
+			_on_lista(_lista_indice(pid)))
+	scroll.add_child(_esquema)
+	tab.add_child(scroll)
+	_refrescos.append(_rehacer_esquema)
+	return tab
+
+
+## Rehace el esquema con lo guardado y lo que se está editando.
+func _rehacer_esquema() -> void:
+	var todos := []
+	var id := Personajes.slug(_def["nombre"])
+	for d in _guardados:
+		if d["id"] != _id_cargado and d["id"] != id:
+			todos.append(d)
+	var este := _def.duplicate()
+	este["id"] = id
+	todos.append(este)
+	_esquema.mostrar(todos)
+
+
 ## Un panel por misión (ver Misiones.nueva()). Se rehace entero al cambiar el tipo de objetivo
 ## o de un resultado, porque cambian los campos que se ven.
 func _rehacer_misiones() -> void:
@@ -629,6 +724,13 @@ func _panel_mision(m: Dictionary) -> Control:
 			if not is_same(otra, m) and otra["id"] != "":
 				tras[Misiones.clave(pid, otra)] = "%s · %s" % [d["nombre"], otra["titulo"]]
 	g.add_child(_m_option(c, "tras", tras))
+	_etiqueta(g, "Si no has hecho")
+	var excepto := tras.duplicate()
+	excepto[""] = "da igual"
+	var row_ex := HBoxContainer.new()
+	row_ex.add_child(_m_option(c, "excepto", excepto))
+	row_ex.add_child(_suave("Para elegir entre dos misiones: cumplida esa, esta ya no se ofrece (pon cada una en la otra)."))
+	g.add_child(row_ex)
 
 	# objetivo
 	var o: Dictionary = m["objetivo"]
@@ -657,6 +759,26 @@ func _panel_mision(m: Dictionary) -> Control:
 	if "personaje" in campos:
 		_etiqueta(g, "Personaje")
 		g.add_child(_m_option(o, "personaje", _personajes_opciones("— elige —")))
+	if "lo_tiene" in campos:
+		_etiqueta(g, "Lo tiene")
+		var row := HBoxContainer.new()
+		row.add_child(_m_option(o, "lo_tiene", _personajes_opciones("nadie: lo tienes que encontrar")))
+		row.add_child(_lbl("lo vende por"))
+		row.add_child(_m_spin(o, "precio", 0, 1000, 1, " €"))
+		row.add_child(_suave("0 = no lo vende. Siempre se le puede robar (minijuego)."))
+		g.add_child(row)
+	if "chivato" in campos:
+		_etiqueta(g, "Chivarte a")
+		var row := HBoxContainer.new()
+		row.add_child(_m_option(o, "chivato", _personajes_opciones("nadie")))
+		row.add_child(_suave("Un policía: se lo quita al que lo tiene, te lo da y a aquel lo detienen dos días (y los suyos se enteran)."))
+		g.add_child(row)
+	if "acecha" in campos:
+		_etiqueta(g, "Os acecha")
+		var row := HBoxContainer.new()
+		row.add_child(_m_option(o, "acecha", _personajes_opciones("nadie")))
+		row.add_child(_suave("Os sigue y le puede robar por el camino (si no está detenido): la misión se falla."))
+		g.add_child(row)
 	if "prueba" in campos:
 		_etiqueta(g, "Con pruebas")
 		var row := HBoxContainer.new()
@@ -1266,6 +1388,7 @@ func _comprobar() -> Array:
 	var con_id := _def.duplicate()
 	con_id["id"] = id
 	out.append_array(Misiones.comprobar(con_id, _guardados.map(func(d): return d["id"])))
+	out.append_array(Relaciones.comprobar(con_id, _guardados.map(func(d): return d["id"])))
 	if _def["historia"].strip_edges() == "":
 		out.append([false, "Sin historia: es lo que cuenta si le preguntas."])
 	if _def["fuentes"].strip_edges() == "" and _def["tipo"] != "perro":

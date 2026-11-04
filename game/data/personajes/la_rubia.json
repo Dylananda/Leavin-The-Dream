@@ -60,6 +60,12 @@
 		"No me hables aquí."
 	],
 	"misiones": [],
-	"relaciones": [],
+	"relaciones": [
+		{
+			"con": "quique_el_nano",
+			"tipo": "amigo",
+			"nota": "Compiten, pero se cubren las espaldas"
+		}
+	],
 	"notas": "Misión: repartir pastillas a las despedidas (Liam, Sophie). Peligro: Marta (mossa secreta) vigila su portal."
 }

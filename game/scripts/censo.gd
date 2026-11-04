@@ -93,7 +93,8 @@ func con_amo(d: Dictionary) -> bool:
 ## Si anda por la calle a la hora `h`.
 func activo(r: Dictionary, h: int) -> bool:
 	if not r["personaje"].is_empty():
-		return Personajes.activo(r["personaje"], h)
+		# los detenidos por una misión (Misiones.apartar) no andan por el barrio
+		return Personajes.activo(r["personaje"], h) and not Misiones.apartado(r["personaje"].get("id", ""))
 	return Npc.active_at(r["kind"], h)
 
 
@@ -192,7 +193,7 @@ func despertadores() -> void:
 			npc = null
 		var debt: int = npc.debt if npc != null else r["estado"].get("debt", 0)
 		var due: float = npc.debt_due if npc != null else r["estado"].get("debt_due", 0.0)
-		if debt <= 0 or now < due or now < r.get("visita", -INF):
+		if debt <= 0 or now < due or now < r.get("visita", -INF) or Misiones.apartado(r["personaje"].get("id", "")):
 			continue
 		if npc != null and (npc.mode != "" or npc.distance_to_cell(me) <= RADIO_VISTA):
 			continue  # ya está en ello, o a la vista: te cobrará cuando te vea

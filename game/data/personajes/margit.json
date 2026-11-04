@@ -51,7 +51,63 @@
 		"In 1979 it was different.",
 		"So many memories."
 	],
-	"misiones": [],
+	"misiones": [
+		{
+			"id": "el_bar_de_1979",
+			"titulo": "El bar de 1979",
+			"dice": "We met in a little bar here, in 1979. Wooden counter, a cat on the shelf... Will you walk with me? I can pay you.",
+			"condiciones": {
+				"desde": 10,
+				"hasta": 20
+			},
+			"objetivo": {
+				"tipo": "acompanar",
+				"lugar": "bar",
+				"acecha": "vera"
+			},
+			"plazo": 3.0,
+			"exito": {
+				"texto": "No es el mismo bar, pero tiene la barra de madera. Margit pide dos cafés, se sienta donde se sentó hace 45 años y te da un sobre: «For your time».",
+				"efectos": [
+					{
+						"tipo": "dinero",
+						"valor": 60,
+						"quien": "",
+						"que": ""
+					},
+					{
+						"tipo": "amigo",
+						"valor": 0,
+						"quien": "",
+						"que": ""
+					},
+					{
+						"tipo": "dignidad",
+						"valor": 4,
+						"quien": "",
+						"que": ""
+					},
+					{
+						"tipo": "mente",
+						"valor": 6,
+						"quien": "",
+						"que": ""
+					}
+				]
+			},
+			"fallo": {
+				"texto": "Margit se vuelve al hotel sin encontrar su bar.",
+				"efectos": [
+					{
+						"tipo": "mente",
+						"valor": -3,
+						"quien": "",
+						"que": ""
+					}
+				]
+			}
+		}
+	],
 	"relaciones": [],
-	"notas": "Misión: acompañarla a buscar el bar (ruta por el barrio). Recompensa generosa. Ojo con Vera, que la sigue."
+	"notas": "Misión «El bar de 1979»: acompañarla a un bar (va contigo). Vera os sigue y le puede robar por el camino (si Vera está detenida, no)."
 }

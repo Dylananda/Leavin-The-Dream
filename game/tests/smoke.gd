@@ -59,6 +59,8 @@ func _initialize() -> void:
 		_test_peticiones(world)
 		_test_misiones(gs, world)
 		if profile == Defs.PROFILES[0]:
+			_test_cadenas(gs, world)
+		if profile == Defs.PROFILES[0]:
 			_test_vision(gs, world)
 		_test_street_items(gs, world)
 		_test_trade(gs, world)
@@ -235,8 +237,12 @@ func _test_personajes(world) -> void:
 		return
 	var gs = root.get_node("GameState")
 	var plain = world._spawn_npc("yonki")
+	plain.consumo = {}  # (lo que lleva encima también cuenta en las peleas: aquí solo la fuerza)
+	var quique_consumo: Dictionary = quique.consumo
+	quique.consumo = {}
 	_check(world.interactions._fight_chance(quique) <= world.interactions._fight_chance(plain),
 		"personajes: la fuerza no cuenta en las peleas")
+	quique.consumo = quique_consumo
 	gs.money = 100
 	var buy: Array = world.trade.offers_for(quique).filter(func(a): return a["label"].begins_with("Comprarle base"))
 	_check(not buy.is_empty(), "personajes: Quique no vende lo que pone su ficha")
@@ -710,6 +716,151 @@ func _test_misiones(gs, world) -> void:
 	print("  misiones: OK")
 
 
+## Fase 3: relaciones entre personajes y misiones encadenadas y cruzadas. Te chivas de Vera
+## por el pasaporte de Grzegorz (El Mudo se entera y ya no te vende el acordeón; sin Vera,
+## nadie le roba a Margit por el camino), el Sr. Feliu o Pol (una u otra), las pruebas del
+## piso de Quique para Serra (Quique detenido, La Rubia a por ti) y Joy (Rosi, Ortega).
+func _test_cadenas(gs, world) -> void:
+	var misiones = world.misiones
+	var R = load("res://scripts/relaciones.gd")
+	var ids: Array = world._personajes.map(func(d): return d["id"])
+	for d in world._personajes:
+		for a in R.comprobar(d, ids):
+			_check(not a[0], "relaciones de %s: %s" % [d["nombre"], a[1]])
+	var need := ["grzegorz", "vera", "xavi", "el_mudo", "vasile", "margit", "sr_feliu", "pol", "sra_encarna",
+		"quique_el_nano", "agent_serra", "la_rubia", "rosi", "joy", "agent_ortega"]
+	var n := {}
+	for pid in need:
+		n[pid] = misiones.npc_de(pid)
+		if n[pid] == null:
+			print("  cadenas: sin %s, no se prueban" % pid)
+			return
+		n[pid].known = true
+		n[pid].memory = {}
+		n[pid].debt = 0
+		for meta in ["enemigo", "venganza", "receloso"]:
+			n[pid].remove_meta(meta)
+	_steady(gs)
+	gs.errands = []
+	gs.notes = []
+	gs.misiones = {}
+	gs.favores = {}
+	gs.apartados = {}
+	gs.heat = 0.0
+	gs.wanted_until = -1.0
+	gs.arrests = 0
+	gs.money = 300
+	gs.debt = 0
+	gs.dignity = 80.0
+	gs.minute_of_day = 12.0 * 60.0
+	for id in ["pasaporte", "acordeon", "pruebas_piso", "bici"]:
+		gs.inventory.erase(id)
+	# el pasaporte: se le puede comprar a Vera; te chivas a Xavi
+	_take(world, n["grzegorz"], "Misión «El pasaporte de Grzegorz»")
+	_check(_labels(world, n["vera"]).any(func(l): return l.begins_with("Comprarle: pasaporte")), "cadenas: Vera no te vende el pasaporte")
+	_check(_labels(world, n["vera"]).any(func(l): return l.begins_with("Robarle: pasaporte")), "cadenas: no se le puede robar el pasaporte a Vera")
+	_take(world, n["xavi"], "Chivarte: Vera")
+	_check(gs.has_item("pasaporte") and misiones.apartado("vera"), "cadenas: chivarte no te da el pasaporte ni detiene a Vera")
+	_check(world.censo.registros.filter(func(r): return r["personaje"].get("id", "") == "vera" and r["npc"] != null).is_empty(), "cadenas: Vera detenida sigue en la calle")
+	_check(n["el_mudo"].remembers("oido_mal") > 0 and n["xavi"].remembers("oido_bien") > 0, "cadenas: los amigos y enemigos de Vera no se enteran")
+	_take(world, n["grzegorz"], "Darle: pasaporte")
+	_check(_estado(gs, "grzegorz/el_pasaporte_de_grzegorz") == "hecho" and gs.has_item("bici"), "cadenas: darle el pasaporte no cumple ni te da la bici")
+	# el acordeón: El Mudo ya no se fía (no te lo vende), pero se le puede robar
+	_take(world, n["vasile"], "Misión «El acordeón de Vasile»")
+	var mudo: Array = _labels(world, n["el_mudo"])
+	_check(not mudo.any(func(l): return l.begins_with("Comprarle")) and mudo.any(func(l): return l.begins_with("Robarle: acordeón")),
+		"cadenas: El Mudo te vende el acordeón aunque te chivaste de Vera %s" % [mudo])
+	_check(n["el_mudo"].grudge() in ["aparta", "venganza"], "cadenas: El Mudo no se aparta de ti")
+	# Margit: sin Vera, nadie os acecha; va contigo y se cumple al llegar al bar con ella
+	_take(world, n["margit"], "Misión «El bar de 1979»")
+	var e: Dictionary = misiones.activas().filter(func(x): return x["key"] == "margit/el_bar_de_1979")[0]
+	n["margit"].setup(world.city, world.player.cell)
+	misiones.update()
+	_check(n["margit"].mode == "acompana", "cadenas: Margit no va contigo")
+	var money: int = gs.money
+	var llegar = misiones.actions_for_poi(e).filter(func(a): return a["label"].begins_with("Llegar aquí"))
+	_check(llegar.size() == 1, "cadenas: no se puede llegar al bar con Margit")
+	if not llegar.is_empty():
+		llegar[0]["do"].call()
+	_check(_estado(gs, "margit/el_bar_de_1979") == "hecho" and gs.money == money + 60 and n["margit"].mode == "", "cadenas: llegar con Margit no paga o no la suelta")
+	# el Sr. Feliu o Pol: una u otra
+	_check(_labels(world, n["pol"]).any(func(l): return l.begins_with("Misión «El edificio del Sr. Feliu»")), "cadenas: Pol no ofrece su misión")
+	_take(world, n["sr_feliu"], "Misión «Que no me echen»")
+	e = misiones.activas().filter(func(x): return x["key"] == "sr_feliu/que_no_me_echen")[0]
+	misiones.actions_for_poi(e)[0]["do"].call()  # esperar a la cita y cumplirla
+	_check(_estado(gs, "sr_feliu/que_no_me_echen") == "hecho", "cadenas: la cita con el Sr. Feliu no se cumple")
+	_check(not _labels(world, n["pol"]).any(func(l): return l.begins_with("Misión")), "cadenas: Pol sigue ofreciendo su misión después de ayudar a Feliu")
+	_check(n["sra_encarna"].remembers("oido_bien") > 0, "cadenas: la Sra. Encarna no se entera de que ayudaste a Feliu")
+	# las pruebas del piso: si Quique te pilla, va a por ti; si no, a Serra
+	var hecho := false
+	for i in 12:
+		gs.misiones.erase("sra_encarna/las_pruebas_del_piso")
+		n["quique_el_nano"].remove_meta("venganza")
+		n["quique_el_nano"].remove_meta("enemigo")
+		_steady(gs)
+		_take(world, n["sra_encarna"], "Misión «Las pruebas del piso»")
+		_take(world, n["quique_el_nano"], "Espiarle")
+		if _estado(gs, "sra_encarna/las_pruebas_del_piso") == "hecho":
+			hecho = true
+			break
+		_check(n["quique_el_nano"].grudge() == "venganza", "cadenas: Quique te pilla espiando y no va a por ti")
+	_check(hecho and gs.has_item("pruebas_piso"), "cadenas: espiar a Quique nunca sale bien")
+	if hecho:
+		n["quique_el_nano"].add_debt(30, 12.0)
+		gs.debt = 30
+		_take(world, n["agent_serra"], "Misión «El piso de Quique»")
+		_take(world, n["agent_serra"], "Darle: pruebas")
+		_check(misiones.apartado("quique_el_nano") and gs.debt == 0, "cadenas: Serra no detiene a Quique o no se va tu deuda")
+		_check(n["la_rubia"].grudge() == "venganza", "cadenas: La Rubia no va a por ti")
+	# Joy: vigilar con Rosi, convencer a Joy (Ortega) y testigo en comisaría
+	for i in 12:
+		if _estado(gs, "rosi/que_joy_no_trabaje_sola") == "hecho":
+			break
+		gs.misiones.erase("rosi/que_joy_no_trabaje_sola")
+		gs.minute_of_day = 20.0 * 60.0
+		_steady(gs)
+		_take(world, n["rosi"], "Misión «Que Joy no trabaje sola»")
+		_take(world, n["rosi"], "Hacerle de vigía")
+	_check(_estado(gs, "rosi/que_joy_no_trabaje_sola") == "hecho", "cadenas: vigilar para Rosi nunca sale bien")
+	for i in 12:
+		if _estado(gs, "agent_ortega/la_denuncia_de_joy") == "hecho":
+			break
+		gs.misiones.erase("agent_ortega/la_denuncia_de_joy")
+		n["joy"].remove_meta("enemigo")
+		gs.dignity = 90.0
+		gs.sanity = 90.0
+		_take(world, n["agent_ortega"], "Misión «La denuncia de Joy»")
+		_take(world, n["joy"], "Convencerle")
+	_check(_estado(gs, "agent_ortega/la_denuncia_de_joy") == "hecho", "cadenas: nunca se convence a Joy")
+	gs.wanted_until = -1.0
+	gs.arrests = 0
+	_take(world, n["agent_ortega"], "Misión «Testigo en comisaría»")
+	e = misiones.activas().filter(func(x): return x["key"] == "agent_ortega/testigo_en_comisaria")[0]
+	misiones.actions_for_poi(e)[0]["do"].call()
+	_check(_estado(gs, "agent_ortega/testigo_en_comisaria") == "hecho" and gs.arrests == 0, "cadenas: ir de testigo no se cumple (o te detienen sin estar fichado)")
+	_check(misiones.favor("rosi", "soplo"), "cadenas: Rosi no te hace el favor después del juicio")
+	_steady(gs)
+	gs.apartados = {}
+	print("  relaciones y misiones encadenadas: OK")
+
+
+func _labels(world, npc) -> Array:
+	return world.interactions.for_npc(npc).map(func(a): return a["label"])
+
+
+## Hace la acción del menú de `npc` que empieza por `prefix` (y falla si no la hay).
+func _take(world, npc, prefix: String) -> void:
+	for a in world.interactions.for_npc(npc):
+		if a["label"].begins_with(prefix):
+			a["do"].call()
+			return
+	_check(false, "%s no tiene la acción «%s...» %s" % [npc.display_name, prefix, _labels(world, npc)])
+
+
+func _estado(gs, key: String) -> String:
+	return gs.misiones.get(key, {}).get("estado", "")
+
+
 ## La pestaña de misiones del diseñador de personajes: monta los paneles de las misiones de
 ## ejemplo y de cada tipo de objetivo y de resultado sin errores (no guarda nada).
 func _test_editor() -> void:
@@ -734,7 +885,21 @@ func _test_editor() -> void:
 		await process_frame
 	_check(ed._misiones_box.get_child_count() == 2, "editor: no salen los paneles de las misiones")
 	_check(ed._comprobar().any(func(a): return a[1].contains("le falta qué")), "editor: no avisa de los resultados a medias")
-	print("  editor de misiones: OK")
+	# relaciones y esquema de las cadenas
+	ed._editar(P.cargar(P.DIR + "vera.json"), "vera")
+	_check(ed._comprobar().all(func(a): return not a[0]), "editor: Vera tiene errores %s" % [ed._comprobar()])
+	ed._def["relaciones"].append(P.nueva_relacion())
+	ed._rehacer_relaciones()
+	await process_frame
+	_check(ed._comprobar().any(func(a): return a[1].contains("relación sin personaje")), "editor: no avisa de una relación sin personaje")
+	ed._rehacer_esquema()
+	var cajas: Array = ed._esquema.cajas()
+	_check(cajas.size() >= 12, "editor: el esquema no tiene todas las misiones (%d)" % cajas.size())
+	_check(cajas.any(func(c): return c["key"] == "agent_serra/el_piso_de_quique" and c["tras"] == "sra_encarna/las_pruebas_del_piso"),
+		"editor: el esquema no encadena «El piso de Quique» tras «Las pruebas del piso»")
+	ed._esquema.queue_redraw()
+	await process_frame
+	print("  editor de misiones, relaciones y esquema: OK")
 
 
 ## Visión en cono tapada por los edificios, memoria de cada personaje, policía que solo
@@ -1275,6 +1440,7 @@ func _test_trade(gs, world) -> void:
 	var client = _npc_of(world, "fiestero")
 	client.memory = {}
 	client.money = 1000
+	client.consumo = {}  # (sin mono que le haga pagar más: se prueba lo de repetir)
 	gs.add_item("farlopa", 3)
 	var p0: int = trade.price_for(client, "farlopa")
 	_check(p0 > Defs.SUBSTANCES["farlopa"]["price"], "la despedida no paga más que el camello")

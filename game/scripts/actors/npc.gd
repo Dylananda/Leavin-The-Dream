@@ -736,6 +736,9 @@ static func active_at(p_kind: String, h: int) -> bool:
 ## Apunta algo que ha pasado contigo ("pedido", "robado", "ayudado", "pegado").
 func remember(what: String) -> void:
 	memory[what] = memory.get(what, 0) + 1
+	# los suyos se enteran (personajes del editor con relaciones; ver Relaciones)
+	if world != null and world.relaciones != null and not personaje.is_empty():
+		world.relaciones.propagar(personaje.get("id", ""), what)
 
 
 func remembers(what: String) -> int:
@@ -775,6 +778,11 @@ func grudge() -> String:
 		return "aparta" if kind in Defs.NEVER_INTERVENE else "denuncia"
 	if remembers("pegado") > 0 or remembers("pedido") >= Defs.BEG_ANNOY:
 		return "venganza" if stat("agresividad") >= Defs.STAT_HOTHEAD else "aparta"
+	if has_meta("venganza"):
+		return "venganza"  # el resultado de una misión (te ha descubierto, te has chivado...)
+	# lo que le has hecho a los suyos (Relaciones)
+	if remembers("oido_mal") > remembers("oido_bien"):
+		return "venganza" if stat("agresividad") >= Defs.STAT_HOTHEAD else "aparta"
 	if Consumo.acelerado(consumo) and _trait("bronca") < Defs.NPC_BRONCA_TRAIT + (stat("agresividad") - 5) * 0.05:
 		return "bronca"
 	if Consumo.necesita(consumo):
@@ -782,7 +790,7 @@ func grudge() -> String:
 		if consumo["mono"] >= Defs.NPC_ROB_AT and money < price and kind in Defs.NEVER_INTERVENE and _trait("tiron") < 0.5:
 			return "tiron"
 		return "pide"
-	if remembers("ayudado") > 0 or remembers("cliente") > 0:
+	if remembers("ayudado") > 0 or remembers("cliente") > 0 or remembers("oido_bien") > 0:
 		return "acerca"
 	return ""
 
@@ -1100,6 +1108,8 @@ func _follow_mode(dt: float) -> void:
 						say("Tío, estoy fatal... ¿Tienes %s? Te lo pago bien." % what, 4.0)
 					else:
 						say(["¿Me das algo? Lo que sea, estoy fatal...", "Un poco de %s, por favor... Mañana te lo devuelvo." % what].pick_random(), 4.0)
+				elif remembers("oido_bien") > 0 and remembers("ayudado") == 0:
+					say(["Me han hablado bien de ti.", "Tú eres el que ayudó a los míos, ¿no?"].pick_random(), 3.0)
 				elif remembers("cliente") > 0:
 					say(["¿Tienes algo?", "Hey, my friend! Same as yesterday?", "¿Me pasas lo de siempre?"].pick_random(), 3.0)
 				else:

@@ -10,8 +10,13 @@ extends RefCounted
 ## quien te la dio en el censo y lleva la «★». Errands le pasa a esta clase lo que es propio
 ## de las misiones: cumplirla, fallarla y lo que se lee en la libreta.
 ##
-## Lo que queda de cada misión, los favores y lo que debes a cada personaje está en
-## GameState.misiones, GameState.favores y GameState.debe_a (por id de personaje).
+## Lo que queda de cada misión, los favores, lo que debes a cada personaje y quién está
+## apartado del barrio (detenido) está en GameState.misiones, GameState.favores,
+## GameState.debe_a y GameState.apartados (por id de personaje).
+##
+## Las misiones se cruzan: «después de» y «excepto» encadenan o enfrentan dos misiones, lo que
+## le haces a un personaje lo saben los suyos (Relaciones), y un mismo personaje puede tener lo
+## que otro te pide (comprárselo, robárselo o chivarte) o seguiros por el camino.
 
 const G := preload("res://scripts/game_state.gd")
 
@@ -23,7 +28,7 @@ const OBJETIVOS := {
 		"campos": ["objeto", "lo_da", "lugar"]},
 	"llevar_personaje": {"label": "Llevarle algo a otro personaje", "con": "objetivo",
 		"campos": ["objeto", "lo_da", "personaje"]},
-	"traer": {"label": "Conseguirle algo", "con": "quien", "campos": ["objeto"]},
+	"traer": {"label": "Conseguirle algo", "con": "quien", "campos": ["objeto", "lo_tiene", "precio", "chivato"]},
 	"cita": {"label": "Estar en un sitio mañana a una hora", "con": "lugar",
 		"campos": ["lugar", "desde", "hasta"]},
 	"convencer": {"label": "Convencer a otro personaje", "con": "objetivo",
@@ -34,6 +39,10 @@ const OBJETIVOS := {
 		"campos": ["minutos", "dificultad"]},
 	"pelear": {"label": "Darle una lección a otro personaje (minijuego)", "con": "objetivo",
 		"campos": ["personaje"]},
+	"espiar": {"label": "Espiar a otro personaje (y conseguir algo)", "con": "objetivo",
+		"campos": ["personaje", "objeto", "minutos", "dificultad"]},
+	"acompanar": {"label": "Acompañarle a un sitio (va contigo)", "con": "lugar",
+		"campos": ["lugar", "acecha"]},
 }
 ## Lo que puede pasar al cumplir o al fallar. `valor` = lleva una cifra (con su texto);
 ## `quien` = a qué personaje le toca ("" en la misión = al que te la da); `que` = qué objeto,
@@ -52,6 +61,9 @@ const EFECTOS := {
 	"salud": {"label": "Salud", "valor": "puntos"},
 	"busqueda": {"label": "Búsqueda policial (− discreción)", "valor": "puntos"},
 	"fichado": {"label": "Te fichan un día", "que": "delito"},
+	"detenido": {"label": "Lo detienen (sale del barrio)", "valor": "días (0 = para siempre)", "quien": true},
+	"venganza": {"label": "Va a por ti en cuanto te vea", "quien": true},
+	"riesgo_comisaria": {"label": "Te detienen si estás fichado (o, con antecedentes, a veces)"},
 }
 ## Favores que te puede hacer un personaje (efecto "favor").
 const FAVORES := {
@@ -69,6 +81,12 @@ const CURAR_SALUD := 25.0  ## lo que te cura quien te hace ese favor
 const CURAR_HASTA := 90.0  ## por encima de esta salud no hace falta que te cure
 const CONVENCER_DIGNIDAD := 0.004  ## lo que suma a colar una mentira cada punto de dignidad sobre 50
 const CONVENCER_MENTE := 0.003  ## ... y cada punto de salud mental sobre 50
+const ESPIAR_NOCHE := 0.15  ## lo que suma de noche a que no te pillen espiando...
+const ESPIAR_TE_VE := 0.25  ## ... y lo que resta si te está viendo en ese momento
+const ACOMPANAR_CERCA := 6  ## casillas: a cuánto tiene que estar quien te acompaña al llegar
+const ACECHA_POR_HORA := 0.2  ## probabilidad por hora de que quien os acecha le robe por el camino
+const COMISARIA_ANTECEDENTES := 0.3  ## probabilidad de que te retengan en comisaría si ya te detuvieron alguna vez
+const CHIVATO_DIAS := 2.0  ## días que se pasa detenido aquel del que te chivas
 
 var world: World
 
@@ -105,7 +123,10 @@ static func resumen(m: Dictionary, nombres: Dictionary, donde := "", horas := tr
 	match o["tipo"]:
 		"llevar_lugar": return "llevar a %s: %s" % [sitio, obj]
 		"llevar_personaje": return "llevarle a %s: %s" % [quien, obj]
-		"traer": return "conseguirle: %s" % obj
+		"traer":
+			if o["lo_tiene"] != "":
+				return "conseguirle: %s (lo tiene %s)" % [obj, nombres.get(o["lo_tiene"], o["lo_tiene"])]
+			return "conseguirle: %s" % obj
 		"cita":
 			if not horas:
 				return "estar en %s" % sitio
@@ -117,6 +138,8 @@ static func resumen(m: Dictionary, nombres: Dictionary, donde := "", horas := tr
 		"robar": return "robarle la cartera a %s" % quien
 		"vigilar": return "hacerle de vigía (%d min)" % o["minutos"]
 		"pelear": return "darle una lección a %s" % quien
+		"espiar": return "espiar a %s (para conseguir: %s)" % [quien, obj]
+		"acompanar": return "acompañarle a %s" % sitio
 	return o["tipo"]
 
 
@@ -141,6 +164,9 @@ static func comprobar(d: Dictionary, ids: Array) -> Array:
 				out.append([true, "Misión «%s»: el objetivo es el mismo personaje que la da." % t])
 			elif not o["personaje"] in ids:
 				out.append([false, "Misión «%s»: el personaje «%s» no está guardado." % [t, o["personaje"]]])
+		for k in ["lo_tiene", "chivato", "acecha"]:
+			if k in campos and o[k] != "" and not o[k] in ids:
+				out.append([false, "Misión «%s»: el personaje «%s» no está guardado." % [t, o[k]]])
 		if "objeto" in campos and o["objeto"] == "":
 			out.append([true, "Misión «%s»: falta el objeto." % t])
 		if o["tipo"] == "cita" and o["desde"] >= o["hasta"]:
@@ -169,6 +195,11 @@ static func favor(pid: String, que: String) -> bool:
 	return f.has(que) and GameState.now() < f[que]
 
 
+## Si el personaje `pid` está fuera del barrio (detenido: efecto "detenido").
+static func apartado(pid: String) -> bool:
+	return pid != "" and GameState.now() < GameState.apartados.get(pid, -INF)
+
+
 ## Lo que le debes al personaje `pid` (no a los camellos: eso va en Npc.debt).
 static func debes(pid: String) -> int:
 	return GameState.debe_a.get(pid, 0)
@@ -191,7 +222,7 @@ func nombres() -> Dictionary:
 
 ## El cuerpo del personaje `pid`; si está latente y `despertar`, se lo da donde le toca estar.
 func npc_de(pid: String, despertar := true) -> Npc:
-	if pid == "" or world.censo == null:
+	if pid == "" or world.censo == null or apartado(pid):
 		return null
 	for r in world.censo.registros:
 		if r["personaje"].get("id", "") != pid:
@@ -231,7 +262,20 @@ func disponible(npc: Npc, m: Dictionary) -> bool:
 		return false
 	if c["tras"] != "" and gs.misiones.get(c["tras"], {}).get("estado", "") != "hecho":
 		return false
+	if c["excepto"] != "" and gs.misiones.get(c["excepto"], {}).get("estado", "") == "hecho":
+		return false
+	if not _fia(npc):
+		return false
+	var o: Dictionary = m["objetivo"]
+	for k in ["personaje", "lo_tiene"]:
+		if o.get(k, "") != "" and apartado(o[k]):
+			return false  # con quien hay que hacerla ya no está en el barrio
 	return gs.dignity >= c["dignidad"]
+
+
+## Si se fía de ti: no le has hecho nada a los suyos (Relaciones) ni es tu enemigo.
+func _fia(npc: Npc) -> bool:
+	return not npc.has_meta("enemigo") and npc.remembers("oido_mal") <= npc.remembers("oido_bien")
 
 
 # ------------------------------------------------------------------- en el menú
@@ -246,6 +290,7 @@ func for_npc(npc: Npc) -> Array:
 	var gs := GameState
 	for e in activas():
 		acts.append_array(_cumplir_con(npc, pid, e))
+		acts.append_array(_lo_tiene(npc, pid, e))
 	if not npc.has_meta("enemigo"):
 		for m in npc.personaje.get("misiones", []):
 			if disponible(npc, m):
@@ -280,7 +325,8 @@ func marker_for(npc: Npc) -> String:
 	if pid == "":
 		return ""
 	for e in activas():
-		if is_same(e["giver"], npc) or e["key"].begins_with(pid + "/") or e["mision"]["objetivo"]["personaje"] == pid:
+		var o: Dictionary = e["mision"]["objetivo"]
+		if is_same(e["giver"], npc) or e["key"].begins_with(pid + "/") or pid in [o["personaje"], o["lo_tiene"], o["chivato"]]:
 			return "★"
 	if npc.has_meta("enemigo"):
 		return ""
@@ -382,7 +428,123 @@ func _cumplir_con(npc: Npc, pid: String, e: Dictionary) -> Array:
 					fallar(e)))]
 		"pelear":
 			return [Interactions._act("Darle una lección" + de, func(): _pelear(npc, e))]
+		"espiar":
+			return [Interactions._act("Espiarle sin que te vea (%d min)%s" % [o["minutos"], de], func(): _espiar(npc, e))]
 	return []
+
+
+## Con quien tiene lo que te piden (objetivo "traer" con `lo_tiene`): comprárselo o robárselo.
+## Con el policía `chivato`: chivarte (se lo quita, te lo da a ti y al otro lo detienen).
+func _lo_tiene(npc: Npc, pid: String, e: Dictionary) -> Array:
+	var gs := GameState
+	var o: Dictionary = e["mision"]["objetivo"]
+	if o["tipo"] != "traer" or gs.has_item(o["objeto"]):
+		return []
+	var obj := Defs.item_name(o["objeto"]).to_lower()
+	var de := " (misión de %s)" % e["who"]
+	var acts := []
+	if o["lo_tiene"] == pid:
+		if o["precio"] > 0 and gs.money >= o["precio"] and _fia(npc):
+			acts.append(Interactions._act("Comprarle: %s (%d €)%s" % [obj, o["precio"], de], func():
+				gs.advance(5)
+				gs.add_money(-o["precio"])
+				npc.money += o["precio"]
+				gs.add_item(o["objeto"])
+				npc.say("Esto no lo has visto conmigo, ¿eh?", 3.0)
+				gs.log_msg("%s te vende %s por %d €." % [npc.display_name, obj, o["precio"]])))
+		if not npc.has_meta("receloso"):
+			var ints := world.interactions
+			acts.append(Interactions._act("Robarle: %s%s" % [obj, de], func():
+				world.play_minigame(Pickpocket.new(npc, "cartera"), ints._pickpocket_chance(0.5), func(result: String, _stats: Dictionary):
+					_robado(result, npc, o["objeto"]))))
+	if o["chivato"] == pid and o["lo_tiene"] != "" and not apartado(o["lo_tiene"]):
+		var quien: String = _nombre(o["lo_tiene"])
+		acts.append(Interactions._act("Chivarte: %s tiene %s%s" % [quien, obj, de], func():
+			gs.advance(20)
+			npc.known = true
+			npc.say("Gracias por el aviso. Esto lo arreglamos nosotros.", 4.0)
+			gs.log_msg("Le cuentas a %s dónde encontrar a %s. Al rato te devuelven %s." % [npc.display_name, quien, obj])
+			gs.add_item(o["objeto"])
+			gs.milestone("chivato")
+			gs.change_dignity(-4, "Chivarte a la policía")
+			world.relaciones.propagar(o["lo_tiene"], "chivato")
+			apartar(o["lo_tiene"], CHIVATO_DIAS)))
+	return acts
+
+
+## Lo que sale de robarle a `npc` lo que te piden (`objeto`), según el minijuego.
+func _robado(result: String, npc: Npc, objeto: String) -> void:
+	var gs := GameState
+	var ints := world.interactions
+	var obj := Defs.item_name(objeto).to_lower()
+	if result == "ok":
+		gs.add_item(objeto)
+		gs.log_msg("Se lo sacas sin que se dé cuenta: %s." % obj, G.C_GOOD)
+		gs.milestone("primer_robo")
+		ints._after_theft(npc)
+	elif result == "pillado":
+		ints._caught_stealing(npc, "¡Eh! ¡Eso es mío!")
+		gs.log_msg("%s te pilla con la mano en su bolsillo." % npc.display_name, G.C_BAD)
+	else:
+		npc.set_meta("receloso", true)
+		gs.log_msg("%s se aleja mirándote raro." % npc.display_name)
+
+
+## Espiar a `npc` sin que te vea: depende de la dificultad, de la noche y de si te está mirando.
+## Si sale bien, consigues el objeto (las pruebas) y la misión está cumplida; si no, te pilla.
+func _espiar(npc: Npc, e: Dictionary) -> void:
+	var gs := GameState
+	var o: Dictionary = e["mision"]["objetivo"]
+	var p := 1.0 - float(o["dificultad"])
+	if gs.is_night():
+		p += ESPIAR_NOCHE
+	if npc.can_see(world.player):
+		p -= ESPIAR_TE_VE
+	gs.advance(o["minutos"])
+	if randf() < clampf(p, 0.05, 0.95):
+		gs.add_item(o["objeto"])
+		gs.log_msg("Desde un portal lo ves todo y lo apuntas: %s." % Defs.item_name(o["objeto"]).to_lower(), G.C_GOOD)
+		cumplir(e)
+	else:
+		npc.say("¿Y tú qué miras? ¿Eh? ¿Quién te manda?", 4.0)
+		gs.log_msg("%s te pilla espiándole." % npc.display_name, G.C_BAD)
+		fallar(e)
+
+
+## Cada frame (desde World): quien te acompaña va contigo y, si alguien os acecha, puede
+## robarle por el camino (una vez por hora de juego, como mucho).
+func update() -> void:
+	var gs := GameState
+	for e in activas():
+		var o: Dictionary = e["mision"]["objetivo"]
+		if o["tipo"] != "acompanar":
+			continue
+		var npc = e["giver"]
+		if not is_instance_valid(npc):
+			continue
+		if npc.mode in ["", "acompana"]:
+			npc.mode = "acompana"
+			if npc.distance_to_cell(world.player.cell) > 2 and (not npc.is_moving() or randf() < 0.05):
+				npc.walk_to(world.city.random_walkable_near(world.player.cell, 1))
+		var h := int(gs.now() / 60.0)
+		if o["acecha"] != "" and h != e.get("acecha_h", h) and not apartado(o["acecha"]):
+			if randf() < ACECHA_POR_HORA:
+				gs.log_msg("%s os ha seguido y le ha sacado la cartera a %s sin que os deis cuenta." % [_nombre(o["acecha"]), e["who"]], G.C_BAD)
+				npc.say("My purse! ¡Mi bolso! Oh no...", 4.0)
+				fallar(e)
+				continue
+		e["acecha_h"] = h
+
+
+## Saca al personaje `pid` del barrio durante `dias` días (0 = para siempre): detenido.
+func apartar(pid: String, dias: float) -> void:
+	var gs := GameState
+	gs.apartados[pid] = gs.now() + dias * 1440.0 if dias > 0.0 else INF
+	for r in world.censo.registros:
+		if r["personaje"].get("id", "") == pid and r["npc"] != null:
+			var npc = r["npc"]
+			if is_instance_valid(npc):
+				world.censo.dormir(r)
 
 
 ## Convencer sin pruebas: cuela según la dificultad, tu dignidad y tu cabeza. Si no cuela, se
@@ -455,6 +617,7 @@ func cumplir(e: Dictionary) -> void:
 	var m: Dictionary = e["mision"]
 	var o: Dictionary = m["objetivo"]
 	e["state"] = "hecho"
+	_suelta(e)
 	if o["tipo"] in ["llevar_lugar", "llevar_personaje", "traer"]:
 		gs.remove_item(o["objeto"])
 	gs.advance(45 if o["tipo"] == "cita" else 5)
@@ -472,11 +635,19 @@ func fallar(e: Dictionary) -> void:
 	var gs := GameState
 	var m: Dictionary = e["mision"]
 	e["state"] = "fallado"
+	_suelta(e)
 	gs.misiones[e["key"]] = {"estado": "fallado", "dia": gs.day}
 	gs.log_msg("Misión fallada: «%s»." % m["titulo"], G.C_BAD)
 	if m["fallo"]["texto"] != "":
 		gs.log_msg(m["fallo"]["texto"], G.C_BAD)
 	aplicar(m["fallo"]["efectos"], e)
+
+
+## Quien te acompañaba vuelve a lo suyo.
+func _suelta(e: Dictionary) -> void:
+	var npc = e["giver"]
+	if is_instance_valid(npc) and npc.mode == "acompana":
+		npc.calm_down()
 
 
 ## Aplica los efectos de una misión. Los que son con un personaje ("quien" vacío = el que te la
@@ -522,6 +693,7 @@ func aplicar(efectos: Array, e: Dictionary) -> void:
 				var npc := _npc_efecto(pid, e)
 				if npc != null:
 					npc.set_meta("enemigo", true)
+				world.relaciones.propagar(pid, "timado")  # los suyos se enteran
 			"dignidad":
 				gs.change_dignity(valor, m["titulo"])
 			"mente":
@@ -532,6 +704,19 @@ func aplicar(efectos: Array, e: Dictionary) -> void:
 				gs.heat = clampf(gs.heat + valor, 0.0, 100.0)
 			"fichado":
 				gs.mark_wanted("«%s»" % m["titulo"], ef["que"] if Defs.CRIME_CORPS.has(ef["que"]) else "civismo")
+			"detenido":
+				gs.log_msg("Se llevan detenido a %s." % _nombre(pid), G.C_FALL)
+				world.relaciones.propagar(pid, "chivato")  # y los suyos saben por qué
+				apartar(pid, valor)
+			"venganza":
+				var npc := _npc_efecto(pid, e)
+				if npc != null:
+					npc.set_meta("venganza", true)
+					npc.come_for("venganza")
+			"riesgo_comisaria":
+				if gs.is_wanted() or (gs.arrests > 0 and randf() < COMISARIA_ANTECEDENTES):
+					gs.log_msg("En comisaría miran tu nombre en el ordenador... y te quedas dentro.", G.C_BAD)
+					world.arrest_player()
 
 
 ## El cuerpo del personaje `pid` para un efecto: el que te dio la misión, si es él.
@@ -578,6 +763,13 @@ func actions_for_poi(e: Dictionary) -> Array:
 	var gs := GameState
 	var m: Dictionary = e["mision"]
 	var o: Dictionary = m["objetivo"]
+	if o["tipo"] == "acompanar":
+		var npc = e["giver"]
+		if not is_instance_valid(npc) or npc.distance_to_cell(world.player.cell) > ACOMPANAR_CERCA:
+			return [Interactions._act("(%s se ha quedado atrás: espérale)" % e["who"], func(): pass)]
+		return [Interactions._act("Llegar aquí con %s (misión)" % e["who"], func():
+			gs.advance(30)
+			cumplir(e))]
 	if o["tipo"] == "llevar_lugar":
 		if not gs.has_item(o["objeto"]):
 			return []

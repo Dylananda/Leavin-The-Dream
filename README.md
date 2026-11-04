@@ -147,6 +147,13 @@ cita en el CAS, o mintiendo, que si no cuela te ficha). Van a la libreta como lo
 quien está en una misión en marcha lleva una «★». Algunas acaban en un favor: que te curen,
 que te cuenten por dónde anda la policía o que una agente haga la vista gorda unos días.
 
+Las misiones se cruzan y obligan a elegir. El pasaporte de Grzegorz lo tiene Vera: se lo
+compras, se lo robas o te chivas a la Urbana de paisano, y entonces su amigo El Mudo (que tiene
+el acordeón de Vasile) ya no se fía de ti. O ayudas al Sr. Feliu o al inversor que lo quiere
+echar; si espías el piso de Quique para la Sra. Encarna y le llevas las pruebas al agente
+Serra, Quique cae... y La Rubia sabe quién habló. Lo que le haces a alguien lo saben los suyos:
+sus amigos se te acercan o se apartan, y sus enemigos, al revés.
+
 Cada encargo se apunta en la **libreta** (L), con un botón para marcar el sitio en el mapa.
 Casi siempre es fiable, pero cuanto más ido vas (colocón, mono, sueño, mente baja) más fácil
 es que hayas apuntado mal la hora o el sitio, que se te borre un dato o que no entiendas tu
@@ -204,6 +211,10 @@ diseñador de personajes, una herramienta aparte del juego para crear personajes
   (dinero, objetos, deudas, favores, amigos y enemigos, las barras, la búsqueda, que te fichen).
   En el juego salen en su menú, se apuntan en la libreta como los encargos y quien te la da lleva la «!».
 - **Notas**: lo que el editor aún no sabe expresar, en texto libre, para programarlo a mano.
+- **Relaciones**: con quién se lleva bien o mal, familia, pareja, para quién trabaja, a quién le
+  debe dinero. En el juego, lo que le haces a uno lo saben los suyos (y sus enemigos).
+- **Esquema de misiones**: todas las misiones de todos los personajes y cómo se encadenan
+  («después de», una u otra, personajes compartidos, deudas, favores, enemigos).
 
 Cada personaje se guarda en `game/data/personajes/<id>.json` y el juego lo saca a la calle en
 su zona y a sus horas. Los campos marcados con ◌ se guardan pero el juego aún no los usa.
@@ -245,6 +256,8 @@ python tools/make_textures.py
   ido mientras estaban latentes (equilibrio en `Defs.NPC_HABITS` y `Defs.NPC_*`)
 - `game/scripts/errands.gd` — encargos con plazo (ofrecer, cumplir, fallar) y la libreta que
   se apunta y se lee peor cuanto más ido vas (equilibrio en `Defs.ERRANDS`)
+- `game/scripts/relaciones.gd` — relaciones entre personajes y cómo se corre la voz de lo que les haces
+- `game/editor/esquema.gd` — el esquema de las cadenas de misiones del diseñador
 - `game/scripts/misiones.gd` — misiones de los personajes del editor: formato (`Misiones.nueva()`,
   objetivos, resultados y favores), ofrecerlas, cumplirlas con quien toca y sus consecuencias.
   En la partida son encargos con la clave `mision`

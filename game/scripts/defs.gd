@@ -158,7 +158,7 @@ const WALLET_FAT := Vector2i(60, 140)
 ## Bots latentes (scripts/censo.gd): lo que se pone al día al volver a verlos.
 const LATENT_ROBBED_FORGET := 24.0 * 60.0  ## minutos tras los que al que robaron vuelve a llevar dinero
 const LATENT_MEMORY_FADE := 3.0 * 24.0 * 60.0  ## minutos latente por cada vez que olvida algo que le hiciste...
-const LATENT_GRUDGES := ["robado", "pegado", "timado", "pisado"]  ## ... y esto lo olvida a la mitad de ritmo
+const LATENT_GRUDGES := ["robado", "pegado", "timado", "pisado", "oido_mal"]  ## ... y esto lo olvida a la mitad de ritmo
 
 ## Escándalo al robar: quién oye el grito (casillas) y lo lejos que llega una llamada a la policía.
 const SCANDAL_HEAR := 20
@@ -349,6 +349,10 @@ const ITEMS := {
 	"paquete": {"name": "Paquete del camello", "sell": 0},
 	"cartera_caliente": {"name": "Cartera caliente", "sell": 0},
 	"papeles_albergue": {"name": "Papeles del albergue", "sell": 0},  # de la cita en el CAS
+	# de las misiones de los personajes (scripts/misiones.gd)
+	"pasaporte": {"name": "Pasaporte de Grzegorz", "sell": 0},
+	"acordeon": {"name": "Acordeón", "sell": 25},  # el compraventa también lo quiere
+	"pruebas_piso": {"name": "Pruebas del piso de Sant Ramon", "sell": 0},
 	# de la calle (scripts/street_items.gd)
 	"chatarra": {"name": "Chatarra", "sell": 3},
 	"bici": {"name": "Bici ajena", "sell": 15},

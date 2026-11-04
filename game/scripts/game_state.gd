@@ -61,6 +61,7 @@ var pistas: Array = []
 var misiones: Dictionary = {}
 var favores: Dictionary = {}
 var debe_a: Dictionary = {}
+var apartados: Dictionary = {}  ## {personaje: now() hasta el que está fuera del barrio (detenido)}
 ## Minutos que adelanta (o retrasa) el reloj del HUD mientras miente; ver _update_clock_lie().
 var clock_skew := 0.0
 var _clock_lie_left := 0.0  ## minutos que le quedan a la mentira del reloj
@@ -140,6 +141,7 @@ func new_game(profile_id: String) -> void:
 	misiones = {}
 	favores = {}
 	debe_a = {}
+	apartados = {}
 	clock_skew = 0.0
 	_clock_lie_left = 0.0
 	_clock_blank = false

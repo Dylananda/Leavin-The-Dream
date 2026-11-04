@@ -57,7 +57,79 @@
 		"Me ofrecen dinero, ¿sabes?",
 		"Esta letra la compuse yo."
 	],
-	"misiones": [],
-	"relaciones": [],
-	"notas": "Relacionado con Pol (inversor en pisos de temporada). Dilema: Pol te paga por convencer a Feliu de irse."
+	"misiones": [
+		{
+			"id": "que_no_me_echen",
+			"titulo": "Que no me echen",
+			"dice": "Me quieren echar de mi casa después de cincuenta años. Mañana hay reunión de inquilinos en el servicio social. ¿Me acompañas? Solo no me atrevo.",
+			"condiciones": {
+				"excepto": "pol/el_edificio_del_sr_feliu"
+			},
+			"objetivo": {
+				"tipo": "cita",
+				"lugar": "albergue",
+				"desde": 10,
+				"hasta": 12
+			},
+			"exito": {
+				"texto": "En la reunión hay otros diez vecinos como el Sr. Feliu. Le dicen que no firme nada. Pol se entera, y no le hace ninguna gracia.",
+				"efectos": [
+					{
+						"tipo": "amigo",
+						"valor": 0,
+						"quien": "",
+						"que": ""
+					},
+					{
+						"tipo": "enemigo",
+						"valor": 0,
+						"quien": "pol",
+						"que": ""
+					},
+					{
+						"tipo": "dinero",
+						"valor": 10,
+						"quien": "",
+						"que": ""
+					},
+					{
+						"tipo": "dignidad",
+						"valor": 6,
+						"quien": "",
+						"que": ""
+					},
+					{
+						"tipo": "mente",
+						"valor": 5,
+						"quien": "",
+						"que": ""
+					}
+				]
+			},
+			"fallo": {
+				"texto": "El Sr. Feliu fue solo y no se atrevió a entrar.",
+				"efectos": [
+					{
+						"tipo": "mente",
+						"valor": -3,
+						"quien": "",
+						"que": ""
+					}
+				]
+			}
+		}
+	],
+	"relaciones": [
+		{
+			"con": "sra_encarna",
+			"tipo": "amigo",
+			"nota": "Vecinos de toda la vida; ella es de la asociación"
+		},
+		{
+			"con": "pol",
+			"tipo": "enemigo",
+			"nota": "Pol quiere su edificio"
+		}
+	],
+	"notas": "Misión «Que no me echen» (acompañarle a la reunión de inquilinos). Es eso o «El edificio del Sr. Feliu» de Pol: las dos no se pueden hacer. Amigo de la Sra. Encarna."
 }

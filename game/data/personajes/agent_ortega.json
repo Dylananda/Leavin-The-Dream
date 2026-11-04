@@ -54,7 +54,129 @@
 		"¿Estás bien?",
 		"Esto no puede quedar así."
 	],
-	"misiones": [],
-	"relaciones": [],
-	"notas": "Misión cruzada con Joy (trabajadora sexual): si convences a Joy de denunciar y vas de testigo, el agresor desaparece del barrio. Pero ir a comisaría con antecedentes tiene su riesgo."
+	"misiones": [
+		{
+			"id": "la_denuncia_de_joy",
+			"titulo": "La denuncia de Joy",
+			"dice": "A Joy le pegó un cliente y no lo denuncia: tiene miedo de que la expulsen. A ti te escucha. Convéncela: denunciar una agresión no tiene por qué tocar sus papeles.",
+			"condiciones": {
+				"tras": "rosi/que_joy_no_trabaje_sola"
+			},
+			"objetivo": {
+				"tipo": "convencer",
+				"personaje": "joy",
+				"prueba": "",
+				"dificultad": 0.4
+			},
+			"plazo": 24.0,
+			"exito": {
+				"texto": "Joy se lo piensa mucho. «Vale. Pero vienes conmigo.»",
+				"efectos": [
+					{
+						"tipo": "amigo",
+						"valor": 0,
+						"quien": "joy",
+						"que": ""
+					},
+					{
+						"tipo": "dignidad",
+						"valor": 3,
+						"quien": "",
+						"que": ""
+					}
+				]
+			},
+			"fallo": {
+				"texto": "Joy no quiere oír hablar de denuncias.",
+				"efectos": [
+					{
+						"tipo": "mente",
+						"valor": -3,
+						"quien": "",
+						"que": ""
+					}
+				]
+			}
+		},
+		{
+			"id": "testigo_en_comisaria",
+			"titulo": "Testigo en comisaría",
+			"dice": "Mañana a las once, en comisaría. Si vienes de testigo con Joy, ese tipo no vuelve a pisar Robadors. Ya sé que con tus antecedentes no te hace gracia...",
+			"condiciones": {
+				"tras": "agent_ortega/la_denuncia_de_joy"
+			},
+			"objetivo": {
+				"tipo": "cita",
+				"lugar": "comisaria",
+				"desde": 11,
+				"hasta": 12
+			},
+			"exito": {
+				"texto": "Declaras con Joy al lado. El agresor no vuelve a aparecer por el barrio, y en Robadors se sabe quién estuvo allí.",
+				"efectos": [
+					{
+						"tipo": "riesgo_comisaria",
+						"valor": 0,
+						"quien": "",
+						"que": ""
+					},
+					{
+						"tipo": "amigo",
+						"valor": 0,
+						"quien": "joy",
+						"que": ""
+					},
+					{
+						"tipo": "amigo",
+						"valor": 0,
+						"quien": "rosi",
+						"que": ""
+					},
+					{
+						"tipo": "favor",
+						"valor": 0,
+						"quien": "rosi",
+						"que": "soplo"
+					},
+					{
+						"tipo": "dignidad",
+						"valor": 10,
+						"quien": "",
+						"que": ""
+					},
+					{
+						"tipo": "mente",
+						"valor": 6,
+						"quien": "",
+						"que": ""
+					}
+				]
+			},
+			"fallo": {
+				"texto": "Joy fue sola a comisaría y se volvió sin declarar.",
+				"efectos": [
+					{
+						"tipo": "dignidad",
+						"valor": -4,
+						"quien": "",
+						"que": ""
+					},
+					{
+						"tipo": "mente",
+						"valor": -5,
+						"quien": "",
+						"que": ""
+					}
+				]
+			}
+		}
+	],
+	"relaciones": [
+		{
+			"con": "agent_serra",
+			"tipo": "amigo",
+			"nota": "Los dos son Mossos de Ciutat Vella"
+		}
+	],
+	"notas": "Misiones «La denuncia de Joy» (después de «Que Joy no trabaje sola», de Rosi) y «Testigo en comisaría»: si vas de testigo, el agresor desaparece del barrio, pero con antecedentes te pueden retener."
 }

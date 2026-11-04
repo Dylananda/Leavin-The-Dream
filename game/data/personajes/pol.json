@@ -54,7 +54,56 @@
 		"El barrio está cambiando.",
 		"Todo el mundo tiene un precio."
 	],
-	"misiones": [],
+	"misiones": [
+		{
+			"id": "el_edificio_del_sr_feliu",
+			"titulo": "El edificio del Sr. Feliu",
+			"dice": "El viejo del tercero es el único que queda. Convéncele de que coja el dinero y se vaya: 150 € para ti. Ganamos todos.",
+			"condiciones": {
+				"excepto": "sr_feliu/que_no_me_echen"
+			},
+			"objetivo": {
+				"tipo": "convencer",
+				"personaje": "sr_feliu",
+				"prueba": "",
+				"dificultad": 0.7
+			},
+			"plazo": 48.0,
+			"exito": {
+				"texto": "El Sr. Feliu firma con las manos temblando. Pol te paga sin mirarte. En la calle del Carme ya saben quién le convenció.",
+				"efectos": [
+					{
+						"tipo": "dinero",
+						"valor": 150,
+						"quien": "",
+						"que": ""
+					},
+					{
+						"tipo": "enemigo",
+						"valor": 0,
+						"quien": "sr_feliu",
+						"que": ""
+					},
+					{
+						"tipo": "dignidad",
+						"valor": -12,
+						"quien": "",
+						"que": ""
+					},
+					{
+						"tipo": "mente",
+						"valor": -6,
+						"quien": "",
+						"que": ""
+					}
+				]
+			},
+			"fallo": {
+				"texto": "Pol no paga por intentarlo.",
+				"efectos": []
+			}
+		}
+	],
 	"relaciones": [],
-	"notas": "Te paga por convencer al Sr. Feliu de irse (dilema)."
+	"notas": "Misión «El edificio del Sr. Feliu»: te paga 150 € por convencer a Feliu de irse. Si lo haces, la Sra. Encarna (amiga de Feliu) no se fía de ti."
 }
