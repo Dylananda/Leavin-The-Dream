@@ -427,6 +427,8 @@ static var PRECIOS := Equilibrio.aplicar("precios", {
 	"club_cannabico": {"precio": 10, "cantidad": 2, "que": "Captador: que te lleve al club cannábico (porros)"},
 	"rosa": {"precio": 2, "que": "Vendedor de rosas: una rosa"},
 	"caricatura": {"precio": 5, "que": "Caricaturista: que te haga una caricatura"},
+	"club_cuota": {"precio": 20, "que": "Asociación cannábica: la cuota de socio"},
+	"club_porro": {"precio": 5, "que": "Asociación cannábica: un porro (solo a socios)"},
 })
 
 static var ITEMS := Equilibrio.aplicar("objetos", {
@@ -689,6 +691,8 @@ const MILESTONES := {
 	"desalojo": ["Que la Urbana te despierte en la calle", 10],
 	"estatua": ["Hacer reír a una estatua", 3],
 	"flyers": ["Repartir flyers por la Rambla", 5],
+	"socio_club": ["Hacerte socio de un club cannábico", 3],
+	"redada_club": ["Caer en una redada de un club cannábico", 6],
 	# conocer una sustancia nueva (las que ya conoce el perfil no cuentan)
 	"probar_litrona": ["Empezar a beber en la calle", 3],
 	"probar_porro": ["Probar los porros", 3],
@@ -717,6 +721,17 @@ static func profile(id: String) -> Dictionary:
 			return p
 	return PROFILES[0]
 
+
+## Asociaciones cannábicas (Interactions._club): clubs privados en las direcciones del Raval
+## que salen en los directorios (tools/clubs_cannabicos.json). Sin rótulo: hasta que llamas,
+## o te lleva un captador, son una puerta más. Solo venden a socios, con un tope por día.
+const CLUB_DIGNIDAD := 30.0  ## por debajo, en la mirilla no te dejan ni hablar
+const CLUB_AVAL := 0.35  ## sin captador, probabilidad de que algún socio te avale al pedirlo
+const CLUB_LIMITE_DIA := 3  ## porros que te venden al día
+## Redadas: probabilidad cada vez que compras o fumas dentro (en 2024 el Ayuntamiento ordenó
+## cerrar 30 clubs); te identifican, se llevan lo que llevas y precintan el local unos días.
+const CLUB_REDADA := 0.04
+const CLUB_PRECINTO_DIAS := Vector2i(3, 12)
 
 ## Lo que cuesta (o te pagan por) una acción de PRECIOS.
 static func precio(id: String) -> int:

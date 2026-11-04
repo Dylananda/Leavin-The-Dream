@@ -248,6 +248,7 @@ retocado. Vaciar una casilla la devuelve a lo de `defs.gd`, y borrar el archivo,
 | Qué | De dónde | Script |
 |---|---|---|
 | Calles, huellas y alturas de edificios, plazas, árboles, monumentos, lugares (bares, farmacias, cajeros, CAS Baluard...) y rótulos de comercios con los colores de su marca (`BRAND_STYLE`) | OpenStreetMap (Overpass API) | `tools/fetch_osm.py` → `tools/build_map.py` |
+| Asociaciones cannábicas (no están en OSM): direcciones de directorios de clubs, situadas con Nominatim; nombres inventados | coffeeshopdirect.com, cannabisinbarcelona.com | `tools/clubs_cannabicos.json` → `tools/build_map.py` |
 | Incidentes de la Guàrdia Urbana por barrio (2024) | Open Data BCN, dataset `incidents-gestionats-gub` | `tools/build_crime.py` |
 
 Los índices de criminalidad (relativos a la mediana de los 73 barrios) regulan cuántos

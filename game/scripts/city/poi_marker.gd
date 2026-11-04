@@ -15,6 +15,7 @@ const STYLE := {
 	"cas": ["CAS BALUARD", Color("e07a30")],
 	"comisaria": ["POLICÍA", Color("1d2a5a")],
 	"compraventa": ["COMPRO ORO", Color("b0a02f")],
+	"club": ["·", Color("2a3a2a")],  # una puerta sin rótulo; «CLUB» cuando sabes lo que es
 }
 const NAMED_KINDS := ["bar", "kebab", "super", "compraventa"]
 const SIGN_Y := 4.6
@@ -66,6 +67,10 @@ func sign_position() -> Vector3:
 
 
 func _process(delta: float) -> void:
+	if poi["kind"] == "club" and _label:
+		var conocido: bool = poi["name"] in GameState.clubs_conocidos
+		_label.text = "CLUB" if conocido else "·"
+		_label.outline_modulate = Color("3a7a3a") if conocido else Color("2a3a2a")
 	if highlighted and _label:
 		_t += delta
 		_label.visible = int(_t * 3.0) % 2 == 0

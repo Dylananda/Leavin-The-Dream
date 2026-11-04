@@ -2,6 +2,8 @@ extends SceneTree
 ## Lanza una escena, espera unos frames y guarda capturas. Para revisar el aspecto sin abrir el editor.
 ## Uso: godot --path game --script res://tests/screenshot.gd -- <escena> <salida.png> [perfil] [sitio] [hora] [sustancias]
 ## `sustancias` (separadas por comas) se consumen antes de la captura, para ver sus efectos.
+## `sitio` busca un rótulo (monumento) que lo contenga o, con «poi:», un sitio por su nombre
+## («poi:Lluna Verda»); con «poi+:», si es una asociación cannábica, ya la conoces.
 
 func _initialize() -> void:
 	var args := OS.get_cmdline_user_args()
@@ -17,7 +19,17 @@ func _initialize() -> void:
 	change_scene_to_file(scene_path)
 	await process_frame
 	await process_frame
-	if place != "":
+	if place.begins_with("poi:") or place.begins_with("poi+:"):
+		var w := current_scene
+		var que := place.get_slice(":", 1)
+		for p in w.city.pois:
+			if que in p["name"]:
+				w.player.setup(w.city, Vector2i(p["x"], p["y"]))
+				w._camera_focus = w.player.position
+				if place.begins_with("poi+:"):
+					root.get_node("GameState").clubs_conocidos.append(p["name"])
+				break
+	elif place != "":
 		# coloca al jugador junto a un rótulo (monumento) cuyo texto contenga `place`
 		var w := current_scene
 		for l in w.city._data["labels"]:

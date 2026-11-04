@@ -54,6 +54,13 @@ var subs: Dictionary = {}
 ## Empiezan al dormir con lo consumido desde la última vez (subs[id]["resaca_pend"]).
 var resacas: Dictionary = {}
 var _next_receta_day := 0  ## (CAP) desde qué día te vuelve a hacer una receta el médico
+## Asociaciones cannábicas, por su nombre (ver Interactions._club): las que sabes qué son
+## (las demás son una puerta sin rótulo), de las que eres socio, las precintadas tras una
+## redada (nombre -> día en que reabren) y lo que te han vendido hoy ({"dia", "n"}).
+var clubs_conocidos: Array = []
+var clubs_socio: Array = []
+var clubs_cerrados: Dictionary = {}
+var club_compras: Dictionary = {}
 ## Encargos aceptados y lo que apuntaste de ellos en la libreta (ver scripts/errands.gd).
 ## Cada nota guarda lo que crees que te dijeron, que no siempre coincide con el encargo.
 var errands: Array = []
@@ -121,6 +128,10 @@ func new_game(profile_id: String) -> void:
 	subs = {}
 	resacas = {}
 	_next_receta_day = 0
+	clubs_conocidos = []
+	clubs_socio = []
+	clubs_cerrados = {}
+	club_compras = {}
 	for id in profile["knows"]:
 		_learn(id, float(profile["knows"][id]))
 	heat = 0.0

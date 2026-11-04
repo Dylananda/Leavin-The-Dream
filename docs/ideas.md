@@ -507,6 +507,21 @@ personajes como tipo base. Zonas nuevas en `World.ZONE_STREETS` y `World.ZONE_LA
   de paisano que los detiene ([3Cat](https://www.3cat.cat/3catinfo/preocupacio-a-ciutat-vella-per-la-presencia-de-captadors-de-clubs-cannabics/noticia/3254458/)),
   el cierre de 30 clubs en 2024 ([Ara](https://es.ara.cat/sociedad/barcelona/barcelona-ordena-cerrar-30-clubs-cannabicos_1_5084612.html)),
   las rutas de bares prohibidas (ver las despedidas, arriba).
+  - [x] **Asociaciones cannábicas en el mapa** (4 de noviembre de 2026): 16 clubs, sitio `club`.
+    OSM no tiene ninguno (solo tres tiendas de CBD); las direcciones son las de los directorios
+    ([coffeeshopdirect](https://www.coffeeshopdirect.com/barcelona/BarcaPcode.html),
+    [cannabisinbarcelona](https://cannabisinbarcelona.com/club/carme-66-barcelona/)), situadas con
+    Nominatim, en `tools/clubs_cannabicos.json` (`build_map.py` las añade); los nombres, inventados.
+    No hizo falta inventar direcciones: la densidad cuadra con los 37 clubs de Ciutat Vella en 2019
+    ([Metrópoli Abierta](https://metropoliabierta.elespanol.com/el-pulso-de-la-ciudad/20191020/barcelona-tiene-clubs-cannabicos/438206230_0.html))
+    y los cierres de 2024 ([Ara](https://es.ara.cat/sociedad/barcelona/barcelona-ordena-cerrar-30-clubs-cannabicos_1_5084612.html)).
+    Sin rótulo: son una puerta más hasta que llamas o te lleva un captador (te hace socio del
+    más cercano). Socio con la cuota y un aval (o el captador), con dignidad mínima; venden con
+    tope diario, dentro fumas sin que te vea la policía y, a veces, redada: te identifican, se
+    llevan lo que llevas y precintan el local unos días (`Defs.CLUB_*`, precios en el diseñador).
+    - [ ] Pendiente: verlos por dentro (ahora es un menú en la puerta), socios con cuerpo
+      que entran y salen, que los porreros del barrio te digan dónde hay uno, y precintos
+      que también lleguen sin que estés tú (el Ayuntamiento cerrando clubs).
 - [x] **Roseros** (20–3 h, por los bares y las terrazas): comprarles una rosa o preguntarles qué
   bar cierra tarde. Fuentes: la Urbana decomisa las rosas de los vendedores sin licencia y multa
   por encima de 150 € ([betevé](https://beteve.cat/economia/floristes-critiquen-intrusisme-sant-jordi-2026-menys-venda-roses-prevista/)).

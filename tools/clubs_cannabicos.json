@@ -1,0 +1,101 @@
+{
+ "_nota": "Asociaciones cannábicas del Raval para build_map.py: las direcciones son las de clubs que salen en directorios (coffeeshopdirect.com/barcelona/BarcaPcode.html, cannabisinbarcelona.com, noviembre de 2026), situadas con Nominatim; los nombres son inventados, para no poner negocios reales en el juego. La densidad cuadra con lo publicado: 37 clubs en Ciutat Vella en 2019 (Metrópoli Abierta) y 10 cierres entre Ciutat Vella y el Eixample en 2024 (Ara).",
+ "clubs": [
+  {
+   "nombre": "Associació Fum de Ferlandina",
+   "direccion": "Carrer de Ferlandina, 28",
+   "lat": 41.3817662,
+   "lon": 2.165147
+  },
+  {
+   "nombre": "Lluna Verda",
+   "direccion": "Carrer de la Lluna, 23",
+   "lat": 41.3814506,
+   "lon": 2.1655747
+  },
+  {
+   "nombre": "La Riera Social Club",
+   "direccion": "Carrer de la Riera Baixa, 7",
+   "lat": 41.3801753,
+   "lon": 2.1683409
+  },
+  {
+   "nombre": "Associació Boira",
+   "direccion": "Carrer de Lancaster, 4",
+   "lat": 41.3784901,
+   "lon": 2.1741232
+  },
+  {
+   "nombre": "Club Terrat",
+   "direccion": "Carrer de Pelai, 42",
+   "lat": 41.3855348,
+   "lon": 2.1679775
+  },
+  {
+   "nombre": "Associació El Jardí",
+   "direccion": "Carrer de Sant Vicenç, 6",
+   "lat": 41.3807105,
+   "lon": 2.1654447
+  },
+  {
+   "nombre": "Drassanes Grow Club",
+   "direccion": "Carrer de Santa Madrona, 2",
+   "lat": 41.3756578,
+   "lon": 2.1709604
+  },
+  {
+   "nombre": "Associació Port Fumat",
+   "direccion": "Carrer de Santa Mònica, 2",
+   "lat": 41.3775132,
+   "lon": 2.1755775
+  },
+  {
+   "nombre": "Club La Cúpula",
+   "direccion": "Carrer de Valldonzella, 30",
+   "lat": 41.3837434,
+   "lon": 2.1651061
+  },
+  {
+   "nombre": "Associació Cogollo",
+   "direccion": "Carrer del Carme, 29",
+   "lat": 41.3821855,
+   "lon": 2.1701949
+  },
+  {
+   "nombre": "El Rebost Verd",
+   "direccion": "Carrer del Carme, 66",
+   "lat": 41.3810313,
+   "lon": 2.1680421
+  },
+  {
+   "nombre": "Associació Herbolari",
+   "direccion": "Carrer del Doctor Dou, 7",
+   "lat": 41.382209,
+   "lon": 2.1691029
+  },
+  {
+   "nombre": "Barberà Verd",
+   "direccion": "Carrer del Marquès de Barberà, 6",
+   "lat": 41.3786994,
+   "lon": 2.1725082
+  },
+  {
+   "nombre": "Casal de la Planta",
+   "direccion": "Carrer dels Salvador, 20",
+   "lat": 41.3782063,
+   "lon": 2.1649394
+  },
+  {
+   "nombre": "Associació La Torre",
+   "direccion": "Plaça de Castella, 1",
+   "lat": 41.3847795,
+   "lon": 2.1661005
+  },
+  {
+   "nombre": "Club Mitja Lluna",
+   "direccion": "Carrer de la Lluna, 27",
+   "lat": 41.381577,
+   "lon": 2.165429
+  }
+ ]
+}

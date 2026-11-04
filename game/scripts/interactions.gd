@@ -1071,7 +1071,12 @@ func _captador(npc: Npc) -> Array:
 			gs.add_money(-Defs.precio("club_cannabico"))
 			gs.add_item("porro", Defs.PRECIOS["club_cannabico"]["cantidad"])
 			npc.say("Te hago socio. Tú no me has visto, ¿eh?")
-			gs.log_msg("Un local sin rótulo, una ficha de socio con un nombre inventado y dos porros. La Urbana va detrás de estos captadores.", G.C_GOOD)
+			var club := _club_cercano(npc.cell)
+			if club.is_empty():
+				gs.log_msg("Un local sin rótulo, una ficha de socio con un nombre inventado y dos porros. La Urbana va detrás de estos captadores.", G.C_GOOD)
+			else:
+				_hacer_socio(club["name"])
+				gs.log_msg("Te lleva a %s, en %s: un local sin rótulo, una ficha de socio con un nombre inventado y dos porros. Ya puedes volver solo. La Urbana va detrás de estos captadores." % [club["name"], world.city.street_name_near(Vector2i(club["x"], club["y"]))], G.C_GOOD)
 			if world.police_watching("urbana") > 0:
 				gs.mark_wanted("la Urbana te ha visto entrar con un captador", "civismo")))
 	return acts
@@ -1247,8 +1252,17 @@ const POI_LABELS := {
 	"super": "Súper", "farmacia": "Farmacia", "bar": "Bar", "kebab": "Kebab",
 	"cajero": "Cajero", "iglesia": "Iglesia", "banco": "Banco de la calle",
 	"albergue": "Servicio social", "cap": "Centro de salud", "cas": "CAS Baluard",
-	"comisaria": "Comisaría", "compraventa": "Compraventa",
+	"comisaria": "Comisaría", "compraventa": "Compraventa", "club": "Asociación cannábica",
 }
+
+
+## Lo que pone al pasar el ratón o en el menú de un sitio: su tipo y su nombre, con `sep` entre
+## los dos. Las asociaciones cannábicas que no conoces son solo una puerta sin rótulo.
+static func poi_title(p: Dictionary, sep := " · ") -> String:
+	if p["kind"] == "club" and not p["name"] in GameState.clubs_conocidos:
+		return "Puerta sin rótulo"
+	var t: String = POI_LABELS.get(p["kind"], p["kind"])
+	return t + sep + p["name"] if p["name"] != "" else t
 
 
 func for_poi(poi: Dictionary) -> Array:
@@ -1411,6 +1425,8 @@ func for_poi(poi: Dictionary) -> Array:
 				gs.advance(60)
 				gs.log_msg("Te miran de arriba abajo y te hacen esperar una hora para nada.")
 				gs.change_dignity(-1)))
+		"club":
+			acts.append_array(_club(poi))
 		"compraventa":
 			for id in gs.inventory.keys():
 				var item: Dictionary = Defs.ITEMS.get(id, {})
@@ -1429,6 +1445,125 @@ func for_poi(poi: Dictionary) -> Array:
 				acts.append(_act("Mirar el escaparate", func():
 					gs.log_msg("No tienes nada que valga algo. Ni tú.")))
 	return acts
+
+
+# ------------------------------------------------------------------ asociaciones cannábicas
+
+## Una asociación cannábica (club privado): llamar a la puerta, hacerte socio (te tiene que
+## avalar alguien, o traerte un captador), comprar con tope por día, fumar dentro sin que te
+## vea la policía y, a veces, una redada. El equilibrio está en Defs.CLUB_* y Defs.PRECIOS.
+func _club(poi: Dictionary) -> Array:
+	var gs := GameState
+	var nombre: String = poi["name"]
+	var acts := []
+	if not nombre in gs.clubs_conocidos:
+		acts.append(_act("Llamar al timbre", func():
+			gs.advance(5)
+			gs.clubs_conocidos.append(nombre)
+			gs.log_msg("Se abre una mirilla. «¿Eres socio?» Es una asociación cannábica: %s." % nombre)))
+		return acts
+	var reabre: int = gs.clubs_cerrados.get(nombre, 0)
+	if gs.day < reabre:
+		acts.append(_act("Mirar el precinto", func():
+			gs.log_msg("Precinto de la Guàrdia Urbana en la puerta. Reabre (si reabre) el día %d." % reabre)))
+		return acts
+	if not nombre in gs.clubs_socio:
+		var cuota := Defs.precio("club_cuota")
+		if gs.money < cuota:
+			acts.append(_act("Llamar al timbre", func():
+				gs.advance(5)
+				gs.log_msg("«La cuota son %d €. Vuelve cuando los tengas.»" % cuota)))
+			return acts
+		acts.append(_act("Pedir que te hagan socio (%d €)" % cuota, func():
+			gs.advance(15)
+			if gs.dignity < Defs.CLUB_DIGNIDAD:
+				gs.log_msg("«Aquí no entra cualquiera.» La mirilla se cierra.", G.C_BAD)
+				gs.change_dignity(-1, "Que no te abran ni la puerta")
+				return
+			if not _chance(Defs.CLUB_AVAL):
+				gs.log_msg("«Sin un socio que te avale, no.» Vuelve con alguien, o búscate un captador por la Rambla.", G.C_BAD)
+				return
+			gs.add_money(-cuota)
+			_hacer_socio(nombre)
+			gs.log_msg("Uno de la barra dice que te conoce (no te conoce). Firmas una ficha y pagas la cuota.", G.C_GOOD)))
+		return acts
+	# eres socio
+	var hoy := _club_hoy()
+	var precio := Defs.precio("club_porro")
+	if hoy < Defs.CLUB_LIMITE_DIA and gs.money >= precio:
+		acts.append(_act("Comprar un porro (%d €; hoy llevas %d de %d)" % [precio, hoy, Defs.CLUB_LIMITE_DIA], func():
+			gs.advance(5)
+			if _redada(nombre):
+				return
+			gs.add_money(-precio)
+			gs.add_item("porro")
+			gs.club_compras = {"dia": gs.day, "n": hoy + 1}
+			gs.log_msg("Te lo apuntan en tu ficha, como si fuera la cuota del gimnasio.")))
+	elif hoy >= Defs.CLUB_LIMITE_DIA:
+		acts.append(_act("Pedir otro porro", func():
+			gs.log_msg("«Hoy ya has retirado tu parte, socio. Mañana.»")))
+	if gs.has_item("porro"):
+		acts.append(_act("Fumarte uno dentro (1 h)", func():
+			if _redada(nombre):
+				return
+			gs.advance(60)
+			gs.consume("porro")  # dentro no te ve la policía
+			gs.change_sanity(2, "Echar un rato en el club")
+			gs.log_msg("Un sofá, el fútbol en la tele y gente que no te pregunta nada.", G.C_GOOD)))
+	else:
+		acts.append(_act("Sentarte un rato (30 min)", func():
+			gs.advance(30)
+			gs.change_sanity(1, "Echar un rato en el club")
+			gs.log_msg("Nadie te echa. Nadie te mira. Se está bien.")))
+	return acts
+
+
+## Porros que te ha vendido hoy el club (el tope es por socio y por día, en todos los clubs).
+func _club_hoy() -> int:
+	var c: Dictionary = GameState.club_compras
+	return c.get("n", 0) if c.get("dia", -1) == GameState.day else 0
+
+
+func _hacer_socio(nombre: String) -> void:
+	var gs := GameState
+	if not nombre in gs.clubs_conocidos:
+		gs.clubs_conocidos.append(nombre)
+	if not nombre in gs.clubs_socio:
+		gs.clubs_socio.append(nombre)
+	gs.milestone("socio_club")
+
+
+## La asociación abierta más cerca de `cell` ({} si no hay ninguna).
+func _club_cercano(cell: Vector2i) -> Dictionary:
+	var best := {}
+	var best_d := INF
+	for p in world.city.pois_of_kind("club"):
+		if GameState.day < GameState.clubs_cerrados.get(p["name"], 0):
+			continue
+		var d := Vector2(cell).distance_squared_to(Vector2(p["x"], p["y"]))
+		if d < best_d:
+			best_d = d
+			best = p
+	return best
+
+
+## Tira por una redada (Defs.CLUB_REDADA, o siempre con `forzar`): te identifican, se llevan los
+## porros que lleves y precintan el club unos días. Devuelve si la ha habido.
+func _redada(nombre: String, forzar := false) -> bool:
+	if not forzar and not _chance(Defs.CLUB_REDADA):
+		return false
+	var gs := GameState
+	var n: int = gs.inventory.get("porro", 0)
+	if n > 0:
+		gs.remove_item("porro", n)
+	var dias := randi_range(Defs.CLUB_PRECINTO_DIAS.x, Defs.CLUB_PRECINTO_DIAS.y)
+	gs.clubs_cerrados[nombre] = gs.day + dias
+	gs.heat = minf(100.0, gs.heat + 20.0)
+	gs.change_dignity(-3, "Que te identifiquen en una redada")
+	gs.milestone("redada_club")
+	gs.log_msg("¡Redada! Entra la Guàrdia Urbana: os identifican a todos%s y precintan el local %d días." % [
+		", se llevan tus %d porros" % n if n > 0 else "", dias], G.C_BAD)
+	return true
 
 
 func _buy(label: String, price: int, item: String) -> Dictionary:

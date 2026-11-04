@@ -68,6 +68,7 @@ func _initialize() -> void:
 		if profile == Defs.PROFILES[0]:
 			_test_consumo(gs, world)
 			_test_resacas(gs, world)
+			_test_clubs(gs, world)
 		if profile == Defs.PROFILES[0]:
 			_test_police_and_fauna(gs, world)
 		world._rummage()
@@ -1320,6 +1321,57 @@ func _test_consumo(gs, world) -> void:
 ## Las sustancias nuevas (setas, LSD, ketamina, ansiolíticos, antidepresivos, tramadol, tabaco)
 ## y las resacas: empiezan al dormir tras consumir, se notan y se pasan; mal viaje, mezclas de
 ## depresores, la receta del CAP y la farmacia, el tabaco del bar.
+## Asociaciones cannábicas: están en el mapa, son una puerta sin rótulo hasta que llamas, el
+## captador te hace socio del más cercano, venden con tope por día y una redada las precinta.
+func _test_clubs(gs, world) -> void:
+	var I = world.interactions
+	var clubs: Array = world.city.pois_of_kind("club")
+	_check(clubs.size() >= 10, "clubs: hay %d en el mapa" % clubs.size())
+	if clubs.is_empty():
+		return
+	gs.alive = true
+	gs.money = 200
+	gs.dignity = 60.0
+	gs.clubs_conocidos = []
+	gs.clubs_socio = []
+	gs.clubs_cerrados = {}
+	gs.club_compras = {}
+	var club: Dictionary = clubs[0]
+	var nombre: String = club["name"]
+	_check(I.poi_title(club) == "Puerta sin rótulo", "clubs: se ve el nombre sin conocerlo")
+	var acts: Array = I.for_poi(club)
+	_check(acts.size() == 1 and acts[0]["label"] == "Llamar al timbre", "clubs: sin conocerlo no es solo el timbre")
+	acts[0]["do"].call()
+	_check(nombre in gs.clubs_conocidos and I.poi_title(club).ends_with(nombre), "clubs: llamar no te lo descubre")
+	_check(I.for_poi(club).any(func(a): return a["label"].begins_with("Pedir que te hagan socio")), "clubs: no se puede pedir ser socio")
+	# el captador te lleva al más cercano
+	var cerca: Dictionary = I._club_cercano(Vector2i(club["x"], club["y"]))
+	_check(cerca.get("name", "") == nombre, "clubs: el más cercano a un club no es él mismo")
+	I._hacer_socio(nombre)
+	_check(nombre in gs.clubs_socio and "socio_club" in gs.milestones, "clubs: hacerse socio no cuenta")
+	gs.inventory.erase("porro")
+	for i in Defs.CLUB_LIMITE_DIA + 1:
+		var comprar = I.for_poi(club).filter(func(a): return a["label"].begins_with("Comprar un porro"))
+		if i < Defs.CLUB_LIMITE_DIA:
+			_check(comprar.size() == 1, "clubs: no vende el porro %d" % (i + 1))
+			if not comprar.is_empty():
+				gs.clubs_cerrados = {}
+				comprar[0]["do"].call()
+		else:
+			_check(comprar.is_empty(), "clubs: vende por encima del tope del día")
+	if not gs.clubs_cerrados.has(nombre):  # (si una redada se los llevó, no hay que contarlos)
+		_check(gs.inventory.get("porro", 0) == Defs.CLUB_LIMITE_DIA, "clubs: no da los porros comprados")
+	gs.day += 1
+	_check(I._club_hoy() == 0, "clubs: el tope no vuelve a empezar al día siguiente")
+	gs.add_item("porro", 2)
+	I._redada(nombre, true)
+	_check(not gs.has_item("porro") and gs.clubs_cerrados.get(nombre, 0) > gs.day, "clubs: la redada no precinta ni se lleva los porros")
+	_check(I.for_poi(club).size() == 1 and I.for_poi(club)[0]["label"] == "Mirar el precinto", "clubs: precintado sigue abierto")
+	_check(I._club_cercano(Vector2i(club["x"], club["y"])).get("name", "") != nombre, "clubs: el captador te lleva a uno precintado")
+	gs.clubs_cerrados = {}
+	print("  clubs cannábicos: OK")
+
+
 func _test_resacas(gs, world) -> void:
 	var C = load("res://scripts/consumo.gd")
 	for id in ["setas", "lsd", "ketamina", "ansioliticos", "antidepresivos", "tramadol", "tabaco"]:

@@ -34,6 +34,8 @@ const POINTER_MARGIN := 36.0  ## distancia al borde de las flechas de los encarg
 const POINTER_SIZE := 26.0
 const POINTER_FONT := 18
 
+## Parte de la pantalla que puede ocupar de alto un menú de acciones (el resto, con la rueda).
+const MENU_MAX_HEIGHT := 0.85
 var _bars := {}
 var _bar_labels := {}
 var _subs_panel: PanelContainer
@@ -50,6 +52,7 @@ var _title_label: Label
 var _log: RichTextLabel
 var _log_lines: Array[String] = []
 var _menu: PanelContainer
+var _menu_scroll: ScrollContainer  ## si el menú no cabe en la pantalla, se desplaza con la rueda
 var _menu_box: VBoxContainer
 var _inventory: PanelContainer
 var _inventory_box: VBoxContainer
@@ -327,8 +330,12 @@ func _build_menu() -> void:
 	_menu.set_anchors_preset(Control.PRESET_CENTER)
 	_menu.visible = false
 	add_child(_menu)
+	_menu_scroll = ScrollContainer.new()
+	_menu_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_menu.add_child(_menu_scroll)
 	_menu_box = VBoxContainer.new()
-	_menu.add_child(_menu_box)
+	_menu_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_menu_scroll.add_child(_menu_box)
 
 
 func _build_inventory() -> void:
@@ -579,7 +586,9 @@ func open_minigame(game: Minigame) -> void:
 
 ## Muestra un menú con acciones {"label", "do"}; al elegir una se ejecuta y se cierra.
 func show_menu(title: String, actions: Array) -> void:
+	# fuera ya, no al final del frame: si no, el menú se mide con los botones del anterior
 	for c in _menu_box.get_children():
+		_menu_box.remove_child(c)
 		c.queue_free()
 	var t := Label.new()
 	t.text = title
@@ -602,8 +611,17 @@ func show_menu(title: String, actions: Array) -> void:
 	cancel.pressed.connect(close_menu)
 	_menu_box.add_child(cancel)
 	_menu.visible = true
+	_fit_menu()
+
+
+## Ajusta el menú a lo que lleva, hasta MENU_MAX_HEIGHT de la pantalla (lo que no cabe, con
+## la rueda), arriba del todo, y lo centra.
+func _fit_menu() -> void:
+	var screen := get_viewport().get_visible_rect().size
+	_menu_scroll.custom_minimum_size.y = minf(_menu_box.get_combined_minimum_size().y, screen.y * MENU_MAX_HEIGHT)
+	_menu_scroll.scroll_vertical = 0
 	_menu.reset_size()
-	_menu.position = (get_viewport().get_visible_rect().size - _menu.size) / 2.0
+	_menu.position = (screen - _menu.size) / 2.0
 
 
 func close_menu() -> void:

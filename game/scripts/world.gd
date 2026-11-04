@@ -673,9 +673,7 @@ func _update_hover() -> void:
 		var marker := _marker_at(m)
 		if marker:
 			var p: Dictionary = marker.poi
-			text = Interactions.POI_LABELS.get(p["kind"], p["kind"])
-			if p["name"] != "":
-				text += ": " + p["name"]
+			text = Interactions.poi_title(p, ": ")
 		else:
 			var item := street_items.item_at(m)
 			if item:
@@ -816,9 +814,7 @@ func _open_pending() -> void:
 		actions = interactions.for_npc(npc)
 	else:
 		var p: Dictionary = (target as PoiMarker).poi
-		title = Interactions.POI_LABELS.get(p["kind"], p["kind"])
-		if p["name"] != "":
-			title += " · " + p["name"]
+		title = Interactions.poi_title(p)
 		actions = interactions.for_poi(p)
 	get_tree().paused = true
 	hud.show_menu(title, actions)
