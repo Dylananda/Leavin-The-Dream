@@ -149,6 +149,37 @@ const HOME_RESCUE_DIGNITY := 15.0
 const HOME_RESCUE_CHANCE := 0.3
 ## La cárcel: con estas detenciones entras en prisión (fin de la partida); con una menos, aviso.
 const PRISON_ARRESTS := 5
+## Relevo (World.relevo): al acabar con un yonki sigues con otro de los perfiles en el mismo
+## barrio, unos días después. El anterior se queda según cómo acabó (DESTINOS) y el barrio
+## está algo más enganchado cada vez.
+const RELEVO_DIAS := Vector2i(2, 5)  ## días que pasan entre uno y otro
+const RELEVO_CONTAGIOS := 4  ## gente corriente que se ha enganchado en ese tiempo (va con los yonkis)
+const RELEVO_YONKIS := 0.15  ## yonkis de más por la calle en cada relevo (proporción de los de siempre)
+const RELEVO_ENGANCHE := 5.0  ## enganche que suma a los bots en cada relevo
+## Y también día a día: cada día, probabilidad de que alguien de la gente corriente se enganche
+## (sube un poco con cada relevo: el barrio va a peor).
+const CONTAGIO_DIARIO := 0.35
+const CONTAGIO_DIARIO_RELEVO := 0.1
+## Quién se puede enganchar entre relevo y relevo (los personajes del editor, no).
+const RELEVO_CONTAGIABLES := ["vecino", "mendigo", "punki", "latero", "chatarrero", "skater", "musico", "anciano"]
+## Qué fue del yonki: cómo se dice y qué queda de él en el barrio ("altar": donde murió;
+## un tipo de bot: sigue en el censo, de ese tipo; "": no vuelve).
+const DESTINOS := {
+	"muerto": {"texto": "murió en la calle", "queda": "altar"},
+	"leyenda": {"texto": "se hizo leyenda del barrio", "queda": "yonki"},
+	"redimido": {"texto": "rehízo su vida (y perdió)", "queda": "vecino"},
+	"preso": {"texto": "entró en Brians", "queda": ""},
+	"deportado": {"texto": "fue expulsado del país", "queda": ""},
+	"psiquiatrico": {"texto": "se quedó en el psiquiátrico", "queda": ""},
+	"fuera": {"texto": "volvió con su familia", "queda": ""},
+}
+## Lo que dice de sí mismo el que se queda en el barrio («Escuchar su historia»).
+const DESTINO_BIO := {
+	"leyenda": "Lleva en el Raval más que las palomas. Los guías de los free tours paran delante de su portal y cuentan su historia; él les pide un euro.",
+	"redimido": "Hace nada estaba como tú. Ahora descarga en la Boqueria, tiene pareja y un crío, y cruza de acera cuando ve a los de antes.",
+}
+const ALTAR_VELA := 1  ## € que cuesta una vela en el altar de un yonki anterior
+const ALTAR_MONEDAS := Vector2i(2, 12)  ## lo que la gente ha dejado entre las flores
 ## Ajuste de cuentas: con estos enemigos en el barrio (a los que robaste, pegaste o timaste),
 ## a veces te esperan entre varios. Probabilidad en cada evento del barrio.
 const AMBUSH_ENEMIES := 6
@@ -191,7 +222,7 @@ const PROFILES := [
 		"title": "Sin papeles",
 		"desc": "Llegó en patera con un sueño. El sueño se quedó en Tarifa. Sin paro, sin pensión, sin nada que perder... salvo el país.",
 		"money": 15, "health": 85, "dignity": 70, "sanity": 60,
-		"knows": {"porro": 10},
+		"knows": {"porro": 20, "tabaco": 30},
 		"income": {},
 		"perk": "Sabe ganarse la vida en la calle: los manteros le dan curro. Pero tres detenciones y lo deportan.",
 		"items": {"movil_roto": 1},
@@ -204,7 +235,7 @@ const PROFILES := [
 		"title": "Parado de larga duración",
 		"desc": "52 años, 30 cotizando en una fábrica que ahora es un hotel boutique. Le queda el paro y la litrona de las once.",
 		"money": 60, "health": 65, "dignity": 60, "sanity": 55,
-		"knows": {"litrona": 25, "porro": 5},
+		"knows": {"litrona": 45, "porro": 5, "tabaco": 40},
 		"income": {"amount": 120, "every_days": 7, "label": "el paro"},  # subsidio: unos 500 € al mes
 		"perk": "Cobra el paro cada semana en el cajero.",
 		"items": {"litrona": 1},
@@ -217,10 +248,10 @@ const PROFILES := [
 		"title": "Jubilado",
 		"desc": "Viudo, 71 años. Descubrió las tragaperras, después los carajillos, después lo demás. Los nietos ya no llaman.",
 		"money": 120, "health": 45, "dignity": 85, "sanity": 50,
-		"knows": {"litrona": 15},
+		"knows": {"litrona": 35, "ansioliticos": 25},  # los carajillos y el Orfidal de la viudez
 		"income": {"amount": 140, "every_days": 7, "label": "la pensión"},  # no contributiva: unos 600 € al mes
 		"perk": "La policía no sospecha de un abuelo. Da mucha pena pidiendo.",
-		"items": {"bocadillo": 1},
+		"items": {"bocadillo": 1, "ansioliticos": 1},
 		"look": {"skin": Color("e8bfa0"), "shirt": Color("5b4a3a"), "pants": Color("6e6658"), "hair": Color("e8e8e8"),
 			"gender": "m", "hair_style": "calvo", "glasses": true, "jacket": Color("4a3a2a")},  # americana de los domingos
 	},
@@ -230,7 +261,7 @@ const PROFILES := [
 		"title": "Divorciado",
 		"desc": "Ella se quedó la casa, el perro y los amigos. Él se quedó un estudio en la calle del Carme y mucho tiempo libre.",
 		"money": 350, "health": 80, "dignity": 95, "sanity": 55,
-		"knows": {"litrona": 5},
+		"knows": {"litrona": 25, "ansioliticos": 15, "tabaco": 20},  # lo volvió a coger con el divorcio
 		"income": {"amount": -80, "every_days": 4, "label": "la pensión alimenticia"},
 		"perk": "Empieza con ahorros y un anillo de boda que vender. Cada 4 días le cobran la pensión alimenticia.",
 		"items": {"anillo": 1, "movil": 1},
@@ -243,7 +274,7 @@ const PROFILES := [
 		"title": "Recién salida del psiquiátrico",
 		"desc": "Le dieron el alta, una receta y un 'cuídate, Loli'. Las voces dicen que el Raval es un buen sitio para empezar.",
 		"money": 30, "health": 70, "dignity": 50, "sanity": 35,
-		"knows": {"pastillas": 20, "porro": 5},
+		"knows": {"pastillas": 35, "ansioliticos": 30, "porro": 10, "tabaco": 40},
 		"income": {},
 		"perk": "Recoge pastillas gratis en la farmacia cada 2 días. Oye voces.",
 		"items": {"pastillas": 2},
@@ -256,7 +287,7 @@ const PROFILES := [
 		"title": "Niño bien de Pedralbes",
 		"desc": "Bajó al Raval 'a conocer la Barcelona auténtica'. Papá le pasa una paga. Tiene muchísima dignidad que perder.",
 		"money": 600, "health": 95, "dignity": 100, "sanity": 85,
-		"knows": {"farlopa": 3, "litrona": 0},
+		"knows": {"farlopa": 15, "mdma": 5, "litrona": 0},  # de las fiestas de Pedralbes
 		"income": {"amount": 150, "every_days": 4, "label": "la paga de papá"},
 		"perk": "Papá le ingresa dinero... hasta que su dignidad baje de 40 y alguien se lo cuente.",
 		"items": {"movil": 1},
@@ -693,6 +724,8 @@ const MILESTONES := {
 	"flyers": ["Repartir flyers por la Rambla", 5],
 	"socio_club": ["Hacerte socio de un club cannábico", 3],
 	"redada_club": ["Caer en una redada de un club cannábico", 6],
+	"relevo": ["Tomar el relevo de otro yonki", 5],
+	"altar_monedas": ["Coger las monedas del altar de un compañero", 12],
 	# conocer una sustancia nueva (las que ya conoce el perfil no cuentan)
 	"probar_litrona": ["Empezar a beber en la calle", 3],
 	"probar_porro": ["Probar los porros", 3],

@@ -6,6 +6,7 @@ extends CanvasLayer
 
 signal menu_closed
 signal restart_requested
+signal relevo_requested(profile_id: String)  ## seguir con otro yonki (World.relevo)
 signal use_item_requested(id: String)
 signal find_place_requested(poi: Dictionary)
 signal save_requested  ## «Guardar» en la pausa (World.guardar_partida)
@@ -884,6 +885,19 @@ func _fill_notebook() -> void:
 	_notebook.reset_size()
 
 
+## Quita la pantalla final y lo que era del yonki de antes (sus sustancias, su registro):
+## tras un relevo.
+func close_game_over() -> void:
+	if _game_over:
+		_game_over.queue_free()
+		_game_over = null
+	for id in _sub_rows:
+		_sub_rows[id]["row"].queue_free()
+	_sub_rows.clear()
+	_log_lines.clear()
+	_log.text = ""
+
+
 func show_game_over(reason: String) -> void:
 	var gs := GameState
 	_game_over = _panel(Vector2(520, 0))
@@ -896,7 +910,7 @@ func show_game_over(reason: String) -> void:
 		[gs.ending_title if gs.ending_title != "" else "FIN DE LA PARTIDA", 26,
 			{"LEYENDA DEL BARRIO": Color("d08ae8"), "REDENCIÓN": Color("80c8a0")}.get(gs.ending_title, Color("e05a4a"))],
 		[reason, 15, Color.WHITE],
-		["%s aguantó %d días en el Raval." % [gs.profile["name"], gs.day], 14, Color(0.8, 0.8, 0.8)],
+		["%s aguantó %d %s en el Raval." % [gs.profile["name"], gs.day - gs.dia_inicio + 1, "día" if gs.day == gs.dia_inicio else "días"], 14, Color(0.8, 0.8, 0.8)],
 		["Caída total: %d" % int(gs.caida), 22, Color("d08ae8")],
 		["Título: %s" % Defs.title_for(gs.caida), 16, Color("d0b0e8")],
 	]
@@ -914,8 +928,33 @@ func show_game_over(reason: String) -> void:
 		m.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		m.custom_minimum_size.x = 500
 		v.add_child(m)
+	# los de antes (el último es el que acaba ahora)
+	if gs.historia.size() > 1:
+		var h := Label.new()
+		h.text = "Antes que %s:
+" % gs.profile["name"] + "
+".join(gs.historia.slice(0, -1).map(func(e):
+			return "· %s (días %d–%d): %s" % [e["nombre"], e["desde"], e["dia"], Defs.DESTINOS.get(e["destino"], {}).get("texto", "")]))
+		h.add_theme_color_override("font_color", Color(0.75, 0.7, 0.8))
+		h.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		h.custom_minimum_size.x = 500
+		v.add_child(h)
+	# el relevo: otro de los que aún no han salido, en este mismo barrio
+	var libres := World.perfiles_libres()
+	if not libres.is_empty():
+		var t := Label.new()
+		t.text = "El barrio sigue. Toma el relevo:"
+		t.add_theme_color_override("font_color", Color("e0a070"))
+		v.add_child(t)
+		for p in libres:
+			var rb := Button.new()
+			rb.text = "%s — %s" % [p["name"], p["title"]]
+			rb.alignment = HORIZONTAL_ALIGNMENT_LEFT
+			var id: String = p["id"]
+			rb.pressed.connect(func(): relevo_requested.emit(id))
+			v.add_child(rb)
 	var b := Button.new()
-	b.text = "Otra vida"
+	b.text = "Otra vida (otro barrio, desde cero)" if not libres.is_empty() else "Otra vida"
 	b.pressed.connect(func(): restart_requested.emit())
 	v.add_child(b)
 	_game_over.reset_size()

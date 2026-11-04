@@ -29,7 +29,8 @@ static func nuevo(npc: Npc) -> Dictionary:
 	rng.seed = hash(npc.kind + "|" + npc.display_name + "|consumo")
 	var spec: Dictionary = Defs.NPC_HABITS.get(npc.kind, {})
 	var range_: Array = spec.get("enganche", Defs.NPC_PERSONAJE_ENGANCHE)
-	var enganche := rng.randf_range(range_[0], range_[1])
+	# el barrio se engancha más con cada relevo (Defs.RELEVO_ENGANCHE)
+	var enganche := minf(100.0, rng.randf_range(range_[0], range_[1]) + Defs.RELEVO_ENGANCHE * GameState.historia.size())
 	var high: float = Defs.SUBSTANCES[id]["high"]
 	# cómo le pilla al salir: más o menos colocado, con más o menos mono (a voleo)
 	return {

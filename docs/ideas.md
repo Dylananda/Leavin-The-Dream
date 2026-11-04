@@ -192,6 +192,47 @@ sí y una memoria poco fiable**, que puede ir creciendo hacia misiones de rol en
   más yonkis hay, menos resaltas: una forma de ganar dignidad (o discreción) es que el barrio
   se llene de gente como tú.
 
+### La partida como una historia de relevos (hablado el 4 de noviembre de 2026)
+
+- [x] **Relevo en cada final**: al acabar con un yonki (muera, entre en prisión, se redima...)
+  sigues con otro, y el anterior se queda en el mundo: su tumba, su celda con visitas, la
+  pareja con la que se fue o su leyenda en los free tours. Es la forma de avanzar del juego.
+  Hecho, primer paso (`World.relevo`, `Defs.RELEVO_*` y `Defs.DESTINOS`):
+  - La pantalla final ofrece seguir con uno de los perfiles que aún no han salido; pasan de
+    2 a 5 días en el mismo barrio y la misma partida guardada. Lo tuyo empieza de cero; el
+    censo, los clubs precintados y los detenidos de las misiones se quedan.
+  - Cada final dice qué fue del yonki (`GameState.destino`) y se apunta en `GameState.historia`.
+    Si murió, deja un **altar** en la calle (cartón, velas, flores y una litrona): leer el
+    cartón, encenderle una vela o coger las monedas de entre las flores (hito). La leyenda se
+    queda en su portal como yonki y el redimido, de vecino limpio; los dos cuentan su historia.
+  - Quien le conocía se acuerda de él (amigo, enemigo o conocido) y se le puede preguntar
+    («Preguntarle por Paco»), pero a ti no te conoce: sin memoria, sin deudas, sin rencor.
+  - La pantalla final lista a los de antes.
+  - [ ] Pendiente: visitas a la cárcel y al psiquiátrico; que se pueda repetir perfil cuando
+    se acaben (otro «Paco» distinto); legado (contactos, escondites, deudas que heredas);
+    que el de antes salga en las conversaciones con IA; jugarlo y ajustar.
+- [x] **La ciudad se vuelve más yonki con el tiempo**: en cada relevo, unos cuantos de la gente
+  corriente se han enganchado (pasan a ser yonkis con su aspecto de siempre, y lo cuentan),
+  hay un 15 % más de yonkis por la calle y todos los bots tienen algo más de enganche.
+  - [x] También día a día: cada día, a veces, alguien más se engancha y corre el rumor
+    (`Defs.CONTAGIO_DIARIO`, más probable con cada relevo).
+  - [ ] Pendiente: que se note quién engancha a quién (ver «Contagio»), y el camino de vuelta.
+- [ ] **Un propósito para cada yonki**, más allá de pasar un día más. Ideas por valorar:
+  Youssef, mandar dinero a casa y conseguir los papeles; Paco, recuperar a su hija o
+  pagar una deuda vieja; Don Ramón, que los nietos vuelvan a llamar o dejar algo en herencia;
+  Jordi, ver al perro o volver con ella (o vengarse); Mari Loli, que las voces callen o
+  encontrar a alguien del psiquiátrico; Borja, demostrar a papá que es alguien (o lo contrario).
+  Cumplirlo podría ser otro final, o lo que se lleva el siguiente.
+- [ ] **Amistades y enemistades entre los NPC**, por lo que se hacen, lo que ven y lo que les
+  cuentan, con **niveles de fama**; de ahí pueden salir **bandas**.
+- [ ] **Sucesos de la historia del barrio**: llega el fentanilo, redadas fuertes de la
+  policía, fiestas de barrio, manifestaciones, obras que cortan calles.
+- [x] **Empezar más enganchados** (4 de noviembre): todos los perfiles empiezan con más
+  enganche y algo más de lo de siempre (tabaco, ansiolíticos; en `Defs.PROFILES`, `knows`).
+- El tono: **denuncia de situaciones reales con humor**, que sale de mostrar las cosas como son
+  o suelen ser; los estereotipos tienen su parte de verdad, pero cada personaje tiene nombre,
+  historia y motivos.
+
 ## 3. Personajes nuevos (basados en fuentes reales)
 
 Investigar en prensa y estudios sobre el barrio y anotar las fuentes. Personajes con

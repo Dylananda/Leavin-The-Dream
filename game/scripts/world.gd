@@ -172,6 +172,10 @@ func _ready() -> void:
 	conversation = Conversation.new(self)
 	add_child(conversation)
 	_place_markers()
+	# los altares de los yonkis de antes que murieron (una partida cargada)
+	for i in GameState.historia.size():
+		if Defs.DESTINOS.get(GameState.historia[i]["destino"], {}).get("queda", "") == "altar":
+			_altar(i)
 	_personajes = Personajes.cargar_todos()
 	if Partida.pendiente.is_empty():
 		misiones.preparar()  # (una partida cargada ya trae lo que debes)
@@ -203,11 +207,15 @@ func _ready() -> void:
 	hud.restart_requested.connect(func():
 		get_tree().paused = false
 		get_tree().change_scene_to_file("res://scenes/main_menu.tscn"))
+	hud.relevo_requested.connect(func(id: String):
+		get_tree().paused = false
+		relevo(id))
 	hud.use_item_requested.connect(use_item)
 	hud.find_place_requested.connect(highlight_poi)
 	GameState.game_over.connect(_on_game_over)
 	GameState.relocated.connect(_on_relocated)
 	GameState.new_day.connect(_autoguardar)
+	GameState.new_day.connect(_contagio_diario)
 	hud.save_requested.connect(guardar_partida)
 
 	if not Partida.pendiente.is_empty():
@@ -283,6 +291,8 @@ func _target_count(kind: String) -> int:
 	var category: String = BASE_NPCS[kind][1]
 	if category != "":
 		base *= city.crime_factor(category)
+	if kind == "yonki":
+		base *= 1.0 + Defs.RELEVO_YONKIS * GameState.historia.size()  # cada vez hay más
 	return roundi(base)
 
 
@@ -1440,7 +1450,7 @@ func _check_redemption() -> bool:
 	var p: Dictionary = partners.pick_random()
 	var who: String = p["name"]
 	gs.finish("%s te invita a cenar, y luego a quedarte. Encuentras curro descargando en la Boqueria, la metadona baja hasta cero y al año siguiente hay un crío llorando en un piso de la calle de la Cera. Has salido del pozo. Y el objetivo era caer: has perdido." % who,
-		"REDENCIÓN")
+		"REDENCIÓN", "redimido")
 	return true
 
 
@@ -1555,9 +1565,170 @@ func _exit_tree() -> void:
 
 func _on_game_over(reason: String) -> void:
 	Engine.time_scale = 1.0
-	# la partida guardada queda como terminada: «Continuar» ya no la ofrece
-	if Partida.automatico and GameState.partida_id != "":
+	var gs := GameState
+	# el yonki que acaba pasa a la historia de la partida (ver relevo)
+	gs.historia.append({"perfil": gs.profile["id"], "nombre": gs.profile["name"],
+		"destino": gs.destino, "titulo": gs.ending_title, "motivo": reason, "desde": gs.dia_inicio,
+		"dia": gs.day, "caida": roundi(gs.caida), "celda": player.cell, "look": gs.profile["look"].duplicate(),
+		"calle": city.street_name_near(player.cell), "rebuscado": false})
+	# la partida guardada queda como terminada: «Continuar» ya no la ofrece (hasta un relevo)
+	if Partida.automatico and gs.partida_id != "":
 		Partida.guardar(self)
 	player.stop()
 	hud.close_menu()
 	hud.show_game_over(reason)
+
+
+# ------------------------------------------------------------------- relevo
+
+## Los perfiles con los que se puede tomar el relevo: los que aún no han salido en esta
+## partida (ni el de ahora).
+static func perfiles_libres() -> Array:
+	var usados := GameState.historia.map(func(h): return h["perfil"]) + [GameState.profile.get("id", "")]
+	return Defs.PROFILES.filter(func(p): return not p["id"] in usados)
+
+
+## Sigues con otro yonki (`profile_id`) en este mismo barrio unos días después
+## (Defs.RELEVO_DIAS). El de antes se queda según cómo acabó (Defs.DESTINOS: un altar donde
+## murió, o en el censo); quien le conocía se acuerda de él, pero a ti no te conoce; y en
+## esos días algunos se han enganchado.
+func relevo(profile_id: String) -> void:
+	var gs := GameState
+	var antes: Dictionary = gs.historia.back()
+	var dias := randi_range(Defs.RELEVO_DIAS.x, Defs.RELEVO_DIAS.y)
+	# todos a dormir: así el censo guarda lo que les ha pasado y nadie sigue persiguiendo al de antes
+	for r in censo.registros:
+		censo.dormir(r)
+	for n in npcs.duplicate():
+		npcs.erase(n)
+		n.queue_free()
+	_olvidan(antes)
+	gs.relevo(profile_id, dias)
+	gs.minute_of_day = 9.0 * 60.0
+	var contagiados := _contagio()
+	_queda_en_el_barrio(antes)
+	_npc_targets["yonki"] = _target_count("yonki")
+	# el nuevo, en un banco
+	player.display_name = gs.profile["name"]
+	player.look = gs.profile["look"]
+	player.rebuild()
+	var benches := city.pois_of_kind("banco")
+	var start: Vector2i = city.random_walkable()
+	if not benches.is_empty():
+		var b: Dictionary = benches.pick_random()
+		start = Vector2i(b["x"], b["y"])
+	player.setup(city, city.nearest_walkable(start))
+	_camera_focus = player.position
+	misiones.preparar()
+	hud.close_game_over()
+	censo.repasar(0, 0, true)
+	gs.log_msg("Han pasado %d días desde que %s %s." % [dias, antes["nombre"], Defs.DESTINOS[antes["destino"]]["texto"]], gs.C_FALL)
+	for r in contagiados.slice(0, 2):
+		gs.log_msg("En estos días, %s se ha enganchado: ahora va con los yonkis." % _quien(r), gs.C_INFO)
+	gs.log_msg("Ahora eres %s, %s." % [gs.profile["name"], gs.profile["title"].to_lower()])
+	gs.log_msg(gs.profile["perk"])
+	gs.milestone("relevo")
+	gs.changed.emit()
+	if Partida.automatico:
+		Partida.guardar(self)
+
+
+## Quien conocía al de antes se acuerda de él (meta «recuerda_a»: su nombre y cómo le
+## trataba), pero al nuevo no le conoce: sin memoria, sin deudas, sin rencor.
+func _olvidan(antes: Dictionary) -> void:
+	for r in censo.registros:
+		var e: Dictionary = r["estado"]
+		if e.is_empty():
+			continue  # nunca ha tenido cuerpo: no conoció a nadie
+		var mem: Dictionary = e.get("memory", {})
+		if not mem.is_empty() or e.get("known", false):
+			var trato := "conocido"
+			if Defs.LATENT_GRUDGES.any(func(g): return mem.get(g, 0) > 0):
+				trato = "enemigo"
+			elif mem.get("ayudado", 0) > 0:
+				trato = "amigo"
+			if not e.has("metas"):
+				e["metas"] = {}
+			e["metas"]["recuerda_a"] = {"nombre": antes["nombre"], "trato": trato, "destino": antes["destino"]}
+		e["memory"] = {}
+		e["known"] = false
+		e["debt"] = 0
+		if e.has("metas"):
+			e["metas"].erase("enemigo")
+
+
+## Entre relevo y relevo, algunos de la gente corriente se enganchan (`n`, Defs.RELEVO_CONTAGIOS):
+## pasan a ser yonkis con el aspecto de siempre. Solo los latentes (sin cuerpo: no cambia nadie
+## delante de ti). Devuelve sus registros.
+func _contagio(n := Defs.RELEVO_CONTAGIOS) -> Array:
+	var posibles := censo.registros.filter(func(r): return r["kind"] in Defs.RELEVO_CONTAGIABLES 		and r["personaje"].is_empty() and r["npc"] == null)
+	posibles.shuffle()
+	var out := posibles.slice(0, n)
+	for r in out:
+		var k: Dictionary = Npc.KINDS[r["kind"]]
+		var nombre: String = r["estado"].get("display_name", r["name"])
+		var gender: String = r["estado"].get("gender", "f" if nombre in k.get("women", []) else "m")
+		var antes_era := Npc.kind_label(r["kind"], gender).to_lower()
+		r["antes_era"] = antes_era
+		r["kind"] = "yonki"
+		var e: Dictionary = r["estado"]
+		# el aspecto se queda; la sustancia, el paso y lo que lleva encima son ya de yonki
+		for campo in ["consumo", "speed", "wander_radius", "accessory"]:
+			e.erase(campo)
+		if not e.has("metas"):
+			e["metas"] = {}
+		e["metas"]["historia_propia"] = "Hasta hace unos días era %s del barrio, de los de toda la vida. Primero fue una vez, para aguantar. Ahora ya no se acuerda de por qué." % antes_era
+	return out
+
+
+## Cada día, a veces, alguien más se engancha (Defs.CONTAGIO_DIARIO), y te llega el rumor.
+func _contagio_diario() -> void:
+	var gs := GameState
+	if not gs.alive or randf() >= Defs.CONTAGIO_DIARIO + Defs.CONTAGIO_DIARIO_RELEVO * gs.historia.size():
+		return
+	for r in _contagio(1):
+		gs.log_msg("Se comenta por el barrio que %s se ha enganchado." % _quien(r), gs.C_INFO)
+
+
+## «Jaume, vecino del barrio,»: cómo se llama en el registro a uno que se ha enganchado.
+func _quien(r: Dictionary) -> String:
+	var nombre: String = r["estado"].get("display_name", r["name"])
+	return "%s, %s del barrio," % [nombre, r["antes_era"]] if r.has("antes_era") else nombre
+
+
+## Lo que queda en el barrio del yonki de antes: su altar, o él mismo en el censo.
+func _queda_en_el_barrio(antes: Dictionary) -> void:
+	var queda: String = Defs.DESTINOS.get(antes["destino"], {}).get("queda", "")
+	if queda == "altar":
+		_altar(GameState.historia.size() - 1)
+	elif queda != "":
+		var r := {"kind": queda, "name": antes["nombre"], "personaje": {}, "home": city.nearest_walkable(antes["celda"]),
+			"bed": Vector2i(-1, -1), "zona": [], "seguidores": [], "visto": GameState.now(), "npc": null,
+			"estado": {"display_name": antes["nombre"], "look": antes["look"].duplicate(),
+				"gender": antes["look"].get("gender", "m"), "accessory": "", "known": true, "memory": {},
+				"metas": {"historia_propia": Defs.DESTINO_BIO.get(antes["destino"], ""), "relevo": antes["perfil"]}}}
+		if queda == "vecino":
+			r["estado"]["consumo"] = {}  # limpio
+		censo.registros.append(r)
+
+
+## El altar de la calle donde murió el yonki `i` de la historia: velas, flores y su nombre
+## (un lugar más del mapa, kind "altar"). Lo rehace World._ready al cargar una partida.
+func _altar(i: int) -> void:
+	var h: Dictionary = GameState.historia[i]
+	# junto a donde murió, sin pisar otro sitio (si murió en un banco, al lado del banco)
+	var ocupadas := {}
+	for q in city.pois:
+		ocupadas[Vector2i(q["x"], q["y"])] = true
+	var cell := city.nearest_walkable(h["celda"])
+	for d in [Vector2i.ZERO, Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(0, -1), Vector2i(1, 1), Vector2i(-1, -1)]:
+		var c: Vector2i = cell + d
+		if city.is_walkable(c) and not ocupadas.has(c):
+			cell = c
+			break
+	var p := {"kind": "altar", "name": h["nombre"], "x": cell.x, "y": cell.y, "historia": i}
+	city.pois.append(p)
+	var m := PoiMarker.new()
+	m.setup(p, city.cell_to_world(cell))
+	city.entities.add_child(m)
+	markers.append(m)
