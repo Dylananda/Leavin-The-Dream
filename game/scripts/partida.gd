@@ -26,7 +26,7 @@ const CAMPOS := ["money", "bank", "health", "hunger", "fatigue", "starving", "vi
 	"pistas", "misiones", "favores", "debe_a", "apartados", "clock_skew", "_clock_lie_left",
 	"_clock_blank", "day", "minute_of_day", "alive", "ending_title", "papa_cut",
 	"_next_income_day", "_last_meds_day", "_last_methadone_day", "_next_receta_day",
-	"clubs_conocidos", "clubs_socio", "clubs_cerrados", "club_compras"]
+	"clubs_conocidos", "clubs_socio", "clubs_cerrados", "club_compras", "destino", "historia", "dia_inicio"]
 ## Claves del registro del censo que no se guardan tal cual (se rehacen al cargar).
 const REGISTRO_APARTE := ["npc", "personaje", "zona", "perros", "_d"]
 

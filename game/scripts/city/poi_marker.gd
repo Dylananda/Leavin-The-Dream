@@ -16,6 +16,7 @@ const STYLE := {
 	"comisaria": ["POLICÍA", Color("1d2a5a")],
 	"compraventa": ["COMPRO ORO", Color("b0a02f")],
 	"club": ["·", Color("2a3a2a")],  # una puerta sin rótulo; «CLUB» cuando sabes lo que es
+	"altar": ["DEP", Color("4a3a5a")],  # donde murió un yonki de antes (World._altar)
 }
 const NAMED_KINDS := ["bar", "kebab", "super", "compraventa"]
 const SIGN_Y := 4.6
@@ -45,6 +46,9 @@ func _ready() -> void:
 		for x in [-0.85, 0.85]:
 			CityProps.part(self, CityProps.box(Vector3(0.1, 0.55, 0.5)), Color("2a2a2a"), Vector3(x, 0.27, 0))
 		return
+	if poi["kind"] == "altar":
+		_altar()
+		return
 	CityProps.part(self, CityProps.cylinder(0.07, 0.07, SIGN_Y), Color("303034"), Vector3(0, SIGN_Y / 2.0, 0))
 	_label = Label3D.new()
 	_label.text = style[0]
@@ -62,8 +66,37 @@ func _ready() -> void:
 	add_child(_label)
 
 
+## El altar de la calle: un cartón con su nombre contra la pared, velas, flores de gasolinera
+## y alguna lata, y el nombre encima («DEP Paco»), más bajo que los carteles.
+func _altar() -> void:
+	var a := Node3D.new()  # todo algo más grande que en la realidad, como los muñecos
+	a.scale = Vector3.ONE * 1.6
+	add_child(a)
+	var carton := CityProps.part(a, CityProps.box(Vector3(0.9, 0.7, 0.04)), Color("c8a46a"), Vector3(0, 0.45, -0.5))
+	carton.rotation.x = deg_to_rad(-12.0)
+	CityProps.part(a, CityProps.box(Vector3(0.6, 0.06, 0.05)), Color("2a2a2a"), Vector3(0, 0.55, -0.47))
+	for i in 5:
+		var x := -0.45 + 0.22 * i
+		CityProps.part(a, CityProps.cylinder(0.05, 0.05, 0.16 + 0.05 * (i % 3), 8), Color("f0e8d0"), Vector3(x, 0.1, -0.15 + 0.08 * (i % 2)))
+		CityProps.part(a, CityProps.sphere(0.035), Color(1.6, 1.1, 0.4), Vector3(x, 0.22 + 0.05 * (i % 3), -0.15 + 0.08 * (i % 2)))  # la llama (brilla)
+	for i in 4:
+		var ang := 0.6 + i * 0.5
+		CityProps.part(a, CityProps.sphere(0.09), [Color("d02040"), Color("f0d030"), Color("f0f0f0"), Color("e06080")][i], Vector3(cos(ang) * 0.4, 0.08, -0.35 + sin(ang) * 0.12))
+	CityProps.part(a, CityProps.cylinder(0.05, 0.05, 0.18, 8), Color("2a6a3a"), Vector3(0.55, 0.09, -0.05))  # la litrona
+	_label = Label3D.new()
+	_label.text = "DEP " + str(poi["name"]).to_upper()
+	_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_label.position = Vector3(0, 2.4, 0)
+	_label.font_size = 40
+	_label.pixel_size = 0.016
+	_label.outline_size = 24
+	_label.outline_modulate = Color("4a3a5a")
+	add_child(_label)
+
+
 func sign_position() -> Vector3:
-	return global_position + Vector3(0, SIGN_Y + 0.4 if poi["kind"] != "banco" else 0.6, 0)
+	var y: float = {"banco": 0.6, "altar": 2.4}.get(poi["kind"], SIGN_Y + 0.4)
+	return global_position + Vector3(0, y, 0)
 
 
 func _process(delta: float) -> void:

@@ -110,6 +110,12 @@ func for_npc(npc: Npc) -> Array:
 	acts.append_array(world.trade.offers_for(npc))
 	acts.append_array(world.errands.offers_for(npc))
 	acts.append_array(world.misiones.for_npc(npc))
+	if npc.has_meta("recuerda_a"):
+		var r: Dictionary = npc.get_meta("recuerda_a")
+		acts.append(_act("Preguntarle por %s" % r["nombre"], func():
+			GameState.advance(10)
+			npc.say(_recuerdo(r), 6.0)
+			GameState.log_msg("%s: «%s»" % [npc.display_name, _recuerdo(r)])))
 	if npc.bio() != "":
 		acts.append(_act("Escuchar su historia", func():
 			GameState.advance(15)
@@ -1253,11 +1259,61 @@ const POI_LABELS := {
 	"cajero": "Cajero", "iglesia": "Iglesia", "banco": "Banco de la calle",
 	"albergue": "Servicio social", "cap": "Centro de salud", "cas": "CAS Baluard",
 	"comisaria": "Comisaría", "compraventa": "Compraventa", "club": "Asociación cannábica",
+	"altar": "Altar de la calle",
 }
 
 
 ## Lo que pone al pasar el ratón o en el menú de un sitio: su tipo y su nombre, con `sep` entre
 ## los dos. Las asociaciones cannábicas que no conoces son solo una puerta sin rótulo.
+## Lo que cuenta del yonki de antes quien le conocía (World._olvidan): según cómo le trataba
+## y qué fue de él.
+static func _recuerdo(r: Dictionary) -> String:
+	var n: String = r["nombre"]
+	var fue: String = {"muerto": "Lo encontraron en la calle una mañana.", "preso": "Ahora está en Brians.",
+		"deportado": "Lo echaron del país.", "psiquiatrico": "Se lo llevaron al psiquiátrico y no ha vuelto.",
+		"fuera": "Vino su familia a por él.", "redimido": "Dicen que ahora tiene curro y un crío.",
+		"leyenda": "Sigue por ahí, en su portal."}.get(r["destino"], "")
+	match r["trato"]:
+		"amigo":
+			return "¿%s? Me echó una mano cuando nadie lo hacía. %s" % [n, fue]
+		"enemigo":
+			return "%s me la jugó. %s Tú tienes la misma cara, ¿sabes?" % [n, fue]
+	return "¿%s? Le veía por aquí. %s" % [n, fue]
+
+
+## El altar de un yonki de antes (World._altar): una vela por él (te sube la mente), leer lo
+## que le han escrito o coger las monedas que le ha dejado la gente (una vez, y está feo).
+func _altar(poi: Dictionary) -> Array:
+	var gs := GameState
+	var h: Dictionary = gs.historia[poi["historia"]]
+	var acts := []
+	acts.append(_act("Leer el cartón", func():
+		gs.advance(5)
+		gs.log_msg("En el cartón, a rotulador: «%s. Días %d a %d. %s».%s" % [h["nombre"], h["desde"], h["dia"],
+			["Te vamos a echar de menos", "Descansa, hermano", "Ya no te duele nada"].pick_random(),
+			" Alguien ha añadido: «Me debías 5 €»." if randf() < 0.3 else ""])))
+	if gs.money >= Defs.ALTAR_VELA:
+		acts.append(_act("Encenderle una vela (%d €)" % Defs.ALTAR_VELA, func():
+			gs.advance(10)
+			gs.add_money(-Defs.ALTAR_VELA)
+			gs.change_sanity(4)
+			gs.change_dignity(1)
+			gs.log_msg("Enciendes una vela por %s. Te quedas un rato. Podrías ser tú." % h["nombre"], G.C_INFO)))
+	if not h.get("rebuscado", false):
+		acts.append(_act("Coger las monedas de entre las flores", func():
+			gs.advance(5)
+			h["rebuscado"] = true
+			var n := randi_range(Defs.ALTAR_MONEDAS.x, Defs.ALTAR_MONEDAS.y)
+			gs.add_money(n)
+			gs.change_dignity(-6, "Robarle a un muerto")
+			gs.milestone("altar_monedas")
+			gs.log_msg("Te llevas %d € de entre las flores. %s lo habría hecho también." % [n, h["nombre"]], G.C_FALL)
+			var seen := world.robbery_witnesses(null)
+			if not seen.is_empty():
+				world.scandal(seen[0], "¡Eh! ¡Que eso es de %s!" % h["nombre"])))
+	return acts
+
+
 static func poi_title(p: Dictionary, sep := " · ") -> String:
 	if p["kind"] == "club" and not p["name"] in GameState.clubs_conocidos:
 		return "Puerta sin rótulo"
@@ -1425,6 +1481,8 @@ func for_poi(poi: Dictionary) -> Array:
 				gs.advance(60)
 				gs.log_msg("Te miran de arriba abajo y te hacen esperar una hora para nada.")
 				gs.change_dignity(-1)))
+		"altar":
+			acts.append_array(_altar(poi))
 		"club":
 			acts.append_array(_club(poi))
 		"compraventa":

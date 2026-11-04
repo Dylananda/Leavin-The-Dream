@@ -112,6 +112,7 @@ func _initialize() -> void:
 			gs.day, gs.caida, gs.dignity, gs.health, gs.hunger, gs.fatigue, gs.sanity, gs.alive, gs.milestones])
 		get_root().get_tree().paused = false
 	await _test_finales()
+	await _test_relevo()
 	await _test_partida()
 	await _test_editor()
 	await _test_sustancias()
@@ -389,6 +390,86 @@ func _test_finales() -> void:
 	_check(world._check_redemption() and gs.ending_title == "REDENCIÓN", "redención: no llega con todo a favor")
 	get_root().get_tree().paused = false
 	print("  finales: OK")
+
+
+## El relevo: Paco muere, sigue Don Ramón en el mismo barrio unos días después (con un altar
+## donde murió Paco, la gente que le conocía se acuerda de él y no del nuevo, y algunos se han
+## enganchado); Don Ramón se hace leyenda y sigue Jordi, con Don Ramón en el censo. Todo vuelve
+## al cargar la partida.
+func _test_relevo() -> void:
+	var gs = root.get_node("GameState")
+	var Pa = load("res://scripts/partida.gd")
+	gs.new_game("parado")
+	change_scene_to_file("res://scenes/world.tscn")
+	await process_frame
+	await process_frame
+	var world = current_scene
+	world.censo.pausado = true
+	var amigo = _fresh(world, "vecino")
+	amigo.remember("ayudado")
+	var r_amigo: Dictionary = world.censo.de(amigo)  # (por su registro: hay vecinos que se llaman igual)
+	var dolido = _fresh(world, "vecino")
+	dolido.remember("robado")
+	var dia: int = gs.day
+	_steady(gs)
+	gs.subs = {}
+	gs.change_health(-500, "Prueba del relevo")
+	_check(not gs.alive and gs.destino == "muerto" and gs.historia.size() == 1, "relevo: morir no queda en la historia (%s)" % gs.destino)
+	_check(world.perfiles_libres().size() == Defs.PROFILES.size() - 1, "relevo: Paco sigue entre los que pueden tomar el relevo")
+	_check(world.hud._game_over != null, "relevo: no sale la pantalla final")
+	var regs: int = world.censo.registros.size()
+	world.relevo("jubilado")
+	_check(gs.alive and gs.profile["id"] == "jubilado" and gs.day >= dia + Defs.RELEVO_DIAS.x and gs.dia_inicio == gs.day,
+		"relevo: no sigue Don Ramón unos días después (día %d)" % gs.day)
+	_check(world.hud._game_over == null and world.player.display_name == "Don Ramón", "relevo: sigue la pantalla final o el muñeco de Paco")
+	var altares: Array = world.city.pois_of_kind("altar")
+	_check(altares.size() == 1 and altares[0]["name"] == "Paco", "relevo: no hay altar donde murió Paco")
+	var antes_money: int = gs.money
+	for a in world.interactions.for_poi(altares[0]):
+		a["do"].call()
+	_check(gs.historia[0]["rebuscado"] and world.interactions.for_poi(altares[0]).size() == 2,
+		"relevo: las monedas del altar no se cogen una sola vez")
+	var contagiados: Array = world.censo.registros.filter(func(r): return r.has("antes_era"))
+	_check(contagiados.size() == mini(Defs.RELEVO_CONTAGIOS, regs) and contagiados.all(func(r): return r["kind"] == "yonki"),
+		"relevo: nadie se ha enganchado (%d)" % contagiados.size())
+	_check(not r_amigo.is_empty() and r_amigo in world.censo.registros and r_amigo["estado"]["metas"].get("recuerda_a", {}).get("trato", "") == "amigo"
+		and r_amigo["estado"]["memory"].is_empty(), "relevo: el vecino al que ayudó Paco no se acuerda de él, o se acuerda de ti")
+	if not r_amigo.is_empty():
+		var n = world.censo.despertar(r_amigo, world.player.cell)
+		var pregunta = world.interactions.for_npc(n).filter(func(a): return a["label"] == "Preguntarle por Paco")
+		_check(not pregunta.is_empty() and n.memory.is_empty(), "relevo: no se le puede preguntar por Paco")
+		if not pregunta.is_empty():
+			pregunta[0]["do"].call()
+	_check(world.censo.rencorosos().is_empty(), "relevo: el rencor a Paco pasa al nuevo")
+	# también día a día
+	var antes_dia: int = world.censo.registros.filter(func(r): return r.has("antes_era")).size()
+	for i in 10:
+		world._contagio_diario()
+	_check(world.censo.registros.filter(func(r): return r.has("antes_era")).size() > antes_dia, "contagio diario: en diez días no se engancha nadie")
+	# Don Ramón se hace leyenda: se queda en el barrio cuando sigue Jordi
+	gs.add_caida(Defs.LEGEND_CAIDA)
+	_check(not gs.alive and gs.destino == "leyenda" and gs.historia.size() == 2, "relevo: la leyenda no queda en la historia")
+	world.relevo("divorciado")
+	var ramon: Array = world.censo.registros.filter(func(r): return r["name"] == "Don Ramón" and r["kind"] == "yonki")
+	_check(ramon.size() == 1, "relevo: Don Ramón, leyenda, no sigue en el barrio")
+	if ramon.size() == 1:
+		var n = world.censo.despertar(ramon[0], world.player.cell)
+		_check(n.display_name == "Don Ramón" and n.look["skin"] == Defs.profile("jubilado")["look"]["skin"] and n.bio() != "",
+			"relevo: Don Ramón no tiene su aspecto o su historia")
+	# a la partida guardada
+	var path := "user://partidas/prueba_relevo.json"
+	_check(Pa.guardar(world, path) == OK and Pa.cargar(path), "relevo: no se guarda o no se carga")
+	change_scene_to_file("res://scenes/world.tscn")
+	await process_frame
+	await process_frame
+	world = current_scene
+	world.censo.pausado = true
+	_check(gs.historia.size() == 2 and gs.profile["id"] == "divorciado" and world.city.pois_of_kind("altar").size() == 1,
+		"relevo: al cargar no vuelven la historia o el altar")
+	_check(world.perfiles_libres().size() == Defs.PROFILES.size() - 3, "relevo: los que ya salieron vuelven a estar libres")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+	get_root().get_tree().paused = false
+	print("  relevo: OK (Paco → Don Ramón → Jordi, %d enganchados)" % contagiados.size())
 
 
 ## Género según el nombre, etiquetas en femenino y el mismo aspecto para el mismo nombre.

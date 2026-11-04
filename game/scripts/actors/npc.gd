@@ -673,6 +673,8 @@ func reveal() -> void:
 
 ## Historia de este personaje, si la tiene.
 func bio() -> String:
+	if has_meta("historia_propia"):  # un yonki de antes, o alguien que se ha enganchado (World.relevo)
+		return get_meta("historia_propia")
 	if personaje.get("historia", "") != "":
 		return personaje["historia"]
 	return KINDS[kind].get("bios", {}).get(display_name, "")

@@ -84,6 +84,12 @@ var day := 1
 var minute_of_day := 9.0 * 60.0  ## Se empieza a las 9:00
 var alive := true
 var ending_title := ""  ## título de la pantalla final ("" = «Fin de la partida»)
+## Qué ha sido del yonki al acabar (clave de Defs.DESTINOS: "muerto", "preso"...).
+var destino := ""
+## Los yonkis anteriores de esta partida, del primero al último (ver World.relevo):
+## [{perfil, nombre, destino, titulo, motivo, desde, dia, caida, celda, look, rebuscado}]
+var historia: Array = []
+var dia_inicio := 1  ## día en que empezó el yonki de ahora
 var papa_cut := false
 var sleeping := false
 var _sleep_quality := 1.0
@@ -139,6 +145,9 @@ func new_game(profile_id: String) -> void:
 	wanted_crime = ""
 	caida = 0.0
 	ending_title = ""
+	destino = ""
+	historia = []
+	dia_inicio = 1
 	pistas = []
 	debt = 0
 	inventory = profile["items"].duplicate()
@@ -165,6 +174,23 @@ func new_game(profile_id: String) -> void:
 	clock_skew = 0.0
 	_clock_lie_left = 0.0
 	_clock_blank = false
+	changed.emit()
+
+
+## Sigues con otro yonki (`profile_id`) en el mismo barrio, `dias` después: todo lo tuyo
+## empieza de cero, pero se quedan la historia, la partida guardada y lo que es del barrio
+## (los clubs precintados, los personajes detenidos por una misión).
+func relevo(profile_id: String, dias: int) -> void:
+	var keep := {"historia": historia, "partida_id": partida_id, "clubs_cerrados": clubs_cerrados,
+		"apartados": apartados}
+	var hoy := day + dias
+	new_game(profile_id)
+	for k in keep:
+		set(k, keep[k])
+	day = hoy
+	dia_inicio = hoy
+	if profile["income"]:
+		_next_income_day = day + int(profile["income"].get("every_days", 0))
 	changed.emit()
 
 
@@ -427,7 +453,7 @@ func _new_day() -> void:
 	# Borja: si cae demasiado, su familia viene a por él (y eso, aquí, es perder)
 	if profile.get("id") == "nino_bien" and dignity < Defs.HOME_RESCUE_DIGNITY and alive and randf() < Defs.HOME_RESCUE_CHANCE:
 		_end("Un domingo aparece tu madre con el chófer y una psicóloga. Te meten en el coche sin preguntar. Una clínica en Suiza, luego un máster. En las cenas de Navidad, lo del Raval es «aquella etapa».",
-			"TE LLEVAN A CASA")
+			"TE LLEVAN A CASA", "fuera")
 		return
 	if dignity < 20.0:
 		add_caida(5.0)
@@ -536,7 +562,7 @@ func add_caida(points: float) -> void:
 	changed.emit()
 	if alive and caida >= Defs.LEGEND_CAIDA:
 		_end("Has caído tan hondo que ya formas parte del paisaje. Los guías de los free tours paran delante de tu portal y cuentan tu historia, cada vez con más detalles inventados. Lo has conseguido: eres patrimonio del Raval.",
-			"LEYENDA DEL BARRIO")
+			"LEYENDA DEL BARRIO", "leyenda")
 
 
 ## Perder dignidad es caer: cada punto perdido suma un punto de caída. También pesa en la cabeza.
@@ -865,7 +891,7 @@ func _admit() -> void:
 	add_caida(10.0)
 	var limit := 2 if profile.get("id") == "psiquiatrico" else 3
 	if admissions >= limit:
-		_end("Esta vez no te dan el alta. El Raval sigue sin ti.")
+		_end("Esta vez no te dan el alta. El Raval sigue sin ti.", "", "psiquiatrico")
 	else:
 		log_msg("Dos días después te dan el alta, una receta y un «cuídate».")
 		relocated.emit("cap")
@@ -924,9 +950,9 @@ func arrest() -> void:
 	_add_mono(25.0)
 	change_sanity(-5)
 	if profile.get("id") == "sin_papeles" and arrests >= 3 and alive:
-		_end("Orden de expulsión. Te deportan. El Raval no se acuerda de ti.")
+		_end("Orden de expulsión. Te deportan. El Raval no se acuerda de ti.", "", "deportado")
 	elif arrests >= Defs.PRISON_ARRESTS and alive:
-		_end("A la %sª detención, el juez ya no te suelta. Te caen dos años en Brians. Cuando sales, el Raval ya no es tu barrio." % arrests)
+		_end("A la %sª detención, el juez ya no te suelta. Te caen dos años en Brians. Cuando sales, el Raval ya no es tu barrio." % arrests, "", "preso")
 	elif arrests == Defs.PRISON_ARRESTS - 1:
 		log_msg("El juez te mira por encima de las gafas: «A la próxima, entras».", C_BAD)
 
@@ -951,13 +977,15 @@ func _check_death(cause: String) -> void:
 
 
 ## Acaba la partida con un final que decide otro sistema (World: la redención).
-func finish(reason: String, title := "") -> void:
+func finish(reason: String, title := "", p_destino := "muerto") -> void:
 	if alive:
-		_end(reason, title)
+		_end(reason, title, p_destino)
 
 
-func _end(reason: String, title := "") -> void:
+## Acaba con el yonki de ahora: `p_destino`, qué ha sido de él (Defs.DESTINOS).
+func _end(reason: String, title := "", p_destino := "muerto") -> void:
 	alive = false
 	ending_title = title
+	destino = p_destino
 	changed.emit()
 	game_over.emit(reason)

@@ -19,6 +19,7 @@ const KINDS := {
 	"farmacia": [Color("70e070"), "F", "Farmacia"],
 	"compraventa": [Color("e0b040"), "€", "Compraventa"],
 	"club": [Color("60c060"), "*", "Club cannábico"],
+	"altar": [Color("b090e0"), "V", "Altar de un yonki de antes"],
 	"cajero": [Color("f0f0f0"), "$", "Cajero"],
 	"super": [Color("70d0ff"), "S", "Súper"],
 	"kebab": [Color("e09040"), "K", "Kebab"],
