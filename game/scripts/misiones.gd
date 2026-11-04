@@ -112,14 +112,26 @@ static func clave(pid: String, m: Dictionary) -> String:
 	return pid + "/" + m["id"]
 
 
+## Sitios que van con «una» (una farmacia, una comisaría...) en `resumen`.
+const SITIOS_FEMENINOS := ["farmacia", "iglesia", "comisaria"]
+
+
+## El nombre con la primera letra en minúscula, para ponerlo a media frase sin perder las
+## mayúsculas de los nombres propios («pasaporte de Grzegorz», «piso de Sant Ramon»).
+static func _min(t: String) -> String:
+	if t.length() > 1 and t[1] == t[1].to_upper() and t[1] != t[1].to_lower():
+		return t  # siglas: «CAS Baluard»
+	return t.left(1).to_lower() + t.substr(1)
+
+
 ## Lo que hay que hacer, en pocas palabras (para el editor, la libreta y el menú).
 ## `nombres` = {id de personaje: nombre}; `donde` = el sitio, si ya se sabe cuál; `horas` = con
 ## las horas de la cita (en la libreta van aparte, que se pueden apuntar mal).
 static func resumen(m: Dictionary, nombres: Dictionary, donde := "", horas := true) -> String:
 	var o: Dictionary = m["objetivo"]
-	var obj := Defs.item_name(o["objeto"]).to_lower()
+	var obj := _min(Defs.item_name(o["objeto"]))
 	var quien: String = nombres.get(o["personaje"], o["personaje"] if o["personaje"] != "" else "¿?")
-	var sitio := donde if donde != "" else "un %s" % Interactions.POI_LABELS.get(o["lugar"], o["lugar"]).to_lower()
+	var sitio := donde if donde != "" else "%s %s" % ["una" if o["lugar"] in SITIOS_FEMENINOS else "un", _min(Interactions.POI_LABELS.get(o["lugar"], o["lugar"]))]
 	match o["tipo"]:
 		"llevar_lugar": return "llevar a %s: %s" % [sitio, obj]
 		"llevar_personaje": return "llevarle a %s: %s" % [quien, obj]
@@ -133,7 +145,7 @@ static func resumen(m: Dictionary, nombres: Dictionary, donde := "", horas := tr
 			return "estar en %s mañana de %02d:00 a %02d:00" % [sitio, o["desde"], o["hasta"]]
 		"convencer":
 			if o["prueba"] != "":
-				return "convencer a %s (con %s, o mintiendo)" % [quien, Defs.item_name(o["prueba"]).to_lower()]
+				return "convencer a %s (con %s, o mintiendo)" % [quien, _min(Defs.item_name(o["prueba"]))]
 			return "convencer a %s" % quien
 		"robar": return "robarle la cartera a %s" % quien
 		"vigilar": return "hacerle de vigía (%d min)" % o["minutos"]
@@ -398,11 +410,11 @@ func _cumplir_con(npc: Npc, pid: String, e: Dictionary) -> Array:
 		"llevar_personaje", "traer":
 			if not gs.has_item(o["objeto"]):
 				return []
-			return [Interactions._act("Darle: %s%s" % [Defs.item_name(o["objeto"]).to_lower(), de], func(): cumplir(e))]
+			return [Interactions._act("Darle: %s%s" % [_min(Defs.item_name(o["objeto"])), de], func(): cumplir(e))]
 		"convencer":
 			var acts := []
 			if o["prueba"] != "" and gs.has_item(o["prueba"]):
-				acts.append(Interactions._act("Convencerle: enseñarle %s%s" % [Defs.item_name(o["prueba"]).to_lower(), de], func():
+				acts.append(Interactions._act("Convencerle: enseñarle %s%s" % [_min(Defs.item_name(o["prueba"])), de], func():
 					gs.advance(15)
 					cumplir(e)))
 			var lie := "Convencerle sin pruebas (mentir)" if o["prueba"] != "" else "Convencerle"
@@ -440,7 +452,7 @@ func _lo_tiene(npc: Npc, pid: String, e: Dictionary) -> Array:
 	var o: Dictionary = e["mision"]["objetivo"]
 	if o["tipo"] != "traer" or gs.has_item(o["objeto"]):
 		return []
-	var obj := Defs.item_name(o["objeto"]).to_lower()
+	var obj := _min(Defs.item_name(o["objeto"]))
 	var de := " (misión de %s)" % e["who"]
 	var acts := []
 	if o["lo_tiene"] == pid:
@@ -476,7 +488,7 @@ func _lo_tiene(npc: Npc, pid: String, e: Dictionary) -> Array:
 func _robado(result: String, npc: Npc, objeto: String) -> void:
 	var gs := GameState
 	var ints := world.interactions
-	var obj := Defs.item_name(objeto).to_lower()
+	var obj := _min(Defs.item_name(objeto))
 	if result == "ok":
 		gs.add_item(objeto)
 		gs.log_msg("Se lo sacas sin que se dé cuenta: %s." % obj, G.C_GOOD)
@@ -503,7 +515,7 @@ func _espiar(npc: Npc, e: Dictionary) -> void:
 	gs.advance(o["minutos"])
 	if randf() < clampf(p, 0.05, 0.95):
 		gs.add_item(o["objeto"])
-		gs.log_msg("Desde un portal lo ves todo y lo apuntas: %s." % Defs.item_name(o["objeto"]).to_lower(), G.C_GOOD)
+		gs.log_msg("Desde un portal lo ves todo y lo apuntas: %s." % _min(Defs.item_name(o["objeto"])), G.C_GOOD)
 		cumplir(e)
 	else:
 		npc.say("¿Y tú qué miras? ¿Eh? ¿Quién te manda?", 4.0)
@@ -773,7 +785,7 @@ func actions_for_poi(e: Dictionary) -> Array:
 	if o["tipo"] == "llevar_lugar":
 		if not gs.has_item(o["objeto"]):
 			return []
-		return [Interactions._act("Dejar aquí: %s (misión de %s)" % [Defs.item_name(o["objeto"]).to_lower(), e["who"]], func(): cumplir(e))]
+		return [Interactions._act("Dejar aquí: %s (misión de %s)" % [_min(Defs.item_name(o["objeto"])), e["who"]], func(): cumplir(e))]
 	if gs.now() < e["from"]:
 		return [Interactions._act("Esperar a la cita de %s (hasta las %s)" % [e["who"], gs.time_text(e["from"])], func():
 			gs.advance(e["from"] - gs.now())
