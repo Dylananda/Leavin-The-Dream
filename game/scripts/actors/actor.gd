@@ -11,8 +11,8 @@ const SCALE := 1.35  ## más grandes que en la realidad para que se lean bien de
 const WALL_PROBE := 0.6  ## margen hasta la pared al moverse con WASD, para no meterse en las fachadas
 ## Peinados según el género (los dos primeros de cada lista son los más corrientes).
 const HAIR_STYLES := {
-	"m": ["corto", "rapado", "calvo", "tupe", "rizos", "coleta"],
-	"f": ["melena", "coleta", "moño", "corta", "rizos", "rapado"],
+	"m": ["corto", "rapado", "calvo", "tupe", "rizos", "coleta", "media_melena"],
+	"f": ["melena", "coleta", "moño", "corta", "rizos", "rapado", "flequillo"],
 }
 ## Silueta a través de las paredes: color y opacidad por defecto (ver set_silhouette).
 const SILHOUETTE := Color(0.85, 0.88, 1.0, 0.35)
@@ -64,6 +64,9 @@ static var _materials := {}
 ## nombre) y montar uno de cero cuesta unos milisegundos; así, el segundo sale casi gratis.
 static var _mesh_cache := {}
 const MESH_CACHE_MAX := 600
+## Montar a las personas con el cuerpo con más detalle (scripts/actors/cuerpo.gd); false, el
+## muñeco de antes, más sencillo.
+static var cuerpo_nuevo := true
 static var _toon_material: StandardMaterial3D
 static var _silhouette_shader: Shader = preload("res://shaders/silhouette.gdshader")
 
@@ -252,16 +255,13 @@ static func _mat(color: Color) -> StandardMaterial3D:
 
 
 ## El único material de los personajes ya montados: toon, con el color en los vértices,
-## el contorno negro (otra pasada que crece hacia fuera) y la marca en el stencil.
+## el contorno negro (otra pasada que crece hacia fuera, shaders/contorno.gdshader) y la
+## marca en el stencil. Una pieza de color con alfa 0 no lleva contorno.
 static func _toon() -> StandardMaterial3D:
 	if _toon_material == null:
-		var outline := StandardMaterial3D.new()
-		outline.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		outline.albedo_color = Color(0.08, 0.06, 0.06)
-		outline.cull_mode = BaseMaterial3D.CULL_FRONT
-		outline.grow = true
-		outline.grow_amount = 0.035
-		_stencil_write(outline)
+		# contorno: crece según el alfa del color del vértice (las piezas con alfa 0, sin contorno)
+		var outline := ShaderMaterial.new()
+		outline.shader = load("res://shaders/contorno.gdshader")
 		var m := StandardMaterial3D.new()
 		m.vertex_color_use_as_albedo = true
 		m.vertex_color_is_srgb = true
@@ -480,27 +480,47 @@ func _build_person() -> void:
 	elif accessory != "capucha":
 		_build_hair(look.get("hair_style", "melena" if female else "corto"), accessory in ["gorra_poli", "gorra", "mochila"])
 	_build_face()
+	_accesorio({"arm_x": arm_x, "hombros": shoulders, "mangas": sleeves,
+		"cabeza": Vector3(0, 1.86, 0), "k": 1.0})
+
+
+## El accesorio (`accessory`) sobre el cuerpo ya montado, con sus anclas en `an`: arm_x (dónde
+## cuelgan los brazos), hombros (anchura), mangas (color), cabeza (su centro) y k (lo grande
+## que es la cabeza respecto a la del muñeco de siempre); el cuerpo nuevo (Cuerpo) añade
+## tronco ([hombro, cintura, fondo]) y nuevo.
+func _accesorio(an: Dictionary) -> void:
+	var arm_x: float = an["arm_x"]
+	var shoulders: float = an["hombros"]
+	var sleeves: Color = an["mangas"]
+	var c: Vector3 = an["cabeza"]
+	var k: float = an["k"]
+	var nuevo: bool = an.get("nuevo", false)
+	var shirt: Color = look["shirt"]
 	match accessory:
 		"gorra_poli":
 			# gorra de plato con la banda de su cuerpo: cuadros blancos la Urbana, roja los Mossos
 			var cap_color: Color = look.get("cap", Color("1d2a5a"))
-			_part(_body, CityProps.cylinder(0.36, 0.38, 0.22), cap_color, Vector3(0, 2.14, 0))
-			_part(_body, CityProps.box(Vector3(0.5, 0.05, 0.3)), cap_color.darkened(0.4), Vector3(0, 2.05, 0.3))
+			_part(_body, CityProps.cylinder(0.36, 0.38, 0.22), cap_color, c + Vector3(0, 0.28, 0) * k, Vector3.ONE * k)
+			_part(_body, CityProps.box(Vector3(0.5, 0.05, 0.3)), cap_color.darkened(0.4), c + Vector3(0, 0.19, 0.3) * k, Vector3.ONE * k)
 			if look.has("cap_band"):
-				_part(_body, CityProps.cylinder(0.385, 0.385, 0.07), look["cap_band"], Vector3(0, 2.09, 0))
+				_part(_body, CityProps.cylinder(0.385, 0.385, 0.07), look["cap_band"], c + Vector3(0, 0.23, 0) * k, Vector3.ONE * k)
 		"capucha":
-			_part(_body, CityProps.sphere(0.42), sleeves.darkened(0.2), Vector3(0, 1.9, -0.08), Vector3(1, 1, 0.9))
+			_part(_body, CityProps.sphere(0.42), sleeves.darkened(0.2), c + Vector3(0, 0.04, -0.08 - 0.04 * float(nuevo)) * k, Vector3(1, 1, 0.9) * k)
 		"mochila":
 			_part(_body, CityProps.box(Vector3(0.5, 0.55, 0.25)), Color("c04a3a"), Vector3(0, 1.15, -0.3))
-			_part(_body, CityProps.cylinder(0.42, 0.42, 0.06), Color("f0e0a0"), Vector3(0, 2.2, 0))  # sombrero de guiri
+			_part(_body, CityProps.cylinder(0.42, 0.42, 0.06), Color("f0e0a0"), c + Vector3(0, 0.34, 0) * k, Vector3.ONE * k)  # sombrero de guiri
 		"chaleco":
-			_part(_body, CityProps.box(Vector3(shoulders + 0.04, 0.5, 0.4)), Color("f0d030"), Vector3(0, 1.2, 0))
+			if nuevo:
+				var t: Array = an["tronco"]  # [hombro, cintura, fondo]: el chaleco se ciñe al tronco
+				_part(_body, CityProps.cylinder(t[0] * 1.09, t[1] * 1.16, 0.5, 14), Color("f0d030"), Vector3(0, 1.24, 0), Vector3(1, 1, t[2] * 1.08))
+			else:
+				_part(_body, CityProps.box(Vector3(shoulders + 0.04, 0.5, 0.4)), Color("f0d030"), Vector3(0, 1.2, 0))
 		"despedida":
 			# banda cruzada y diadema de despedida de soltero
 			var sash := _part(_body, CityProps.box(Vector3(0.18, 0.95, 0.4)), Color("fff0f8"), Vector3(0, 1.13, 0))
 			sash.rotation.z = deg_to_rad(40.0)
-			_part(_body, CityProps.sphere(0.1), Color("ff3c96"), Vector3(-0.18, 2.3, 0))
-			_part(_body, CityProps.sphere(0.1), Color("ff3c96"), Vector3(0.18, 2.3, 0))
+			_part(_body, CityProps.sphere(0.1), Color("ff3c96"), c + Vector3(-0.18, 0.44, 0) * k, Vector3.ONE * k)
+			_part(_body, CityProps.sphere(0.1), Color("ff3c96"), c + Vector3(0.18, 0.44, 0) * k, Vector3.ONE * k)
 		"bolsa":
 			# bolsa de plástico con las latas, colgando de la mano
 			_part(_body, CityProps.box(Vector3(0.34, 0.4, 0.22)), Color("f4f4ee"), Vector3(arm_x + 0.07, 0.62, 0))
@@ -509,8 +529,8 @@ func _build_person() -> void:
 			_part(_body, CityProps.box(Vector3(0.7, 0.6, 0.5)), Color("b08850"), Vector3(0, 0.3, 0.6))
 		"gorra":
 			# gorra del revés
-			_part(_body, CityProps.cylinder(0.36, 0.38, 0.16), shirt.lightened(0.3), Vector3(0, 2.1, 0))
-			_part(_body, CityProps.box(Vector3(0.4, 0.04, 0.26)), shirt.lightened(0.2), Vector3(0, 2.04, -0.32))
+			_part(_body, CityProps.cylinder(0.36, 0.38, 0.16), shirt.lightened(0.3), c + Vector3(0, 0.24, 0) * k, Vector3.ONE * k)
+			_part(_body, CityProps.box(Vector3(0.4, 0.04, 0.26)), shirt.lightened(0.2), c + Vector3(0, 0.18, -0.32) * k, Vector3.ONE * k)
 		"baston":
 			# bastón en la mano, apoyado en el suelo
 			_part(_body, CityProps.cylinder(0.035, 0.035, 1.0), Color("4a3020"), Vector3(arm_x + 0.1, 0.5, 0.12))
@@ -577,8 +597,7 @@ func _build_person() -> void:
 			# cresta de colores de la frente a la nuca
 			for i in 6:
 				var a := PI * (0.15 + 0.7 * i / 5.0)
-				_part(_body, CityProps.box(Vector3(0.07, 0.24, 0.1)), look["hair"], Vector3(0, 1.86 + sin(a) * 0.4, cos(a) * 0.36))
-
+				_part(_body, CityProps.box(Vector3(0.07, 0.24, 0.1)), look["hair"], c + Vector3(0, sin(a) * 0.4, cos(a) * 0.36) * k, Vector3.ONE * k)
 
 
 ## El muñeco (cuerpo y extremidades) según `look`, `accessory` y `body_size`.
@@ -586,14 +605,17 @@ func _build_model() -> void:
 	_body = Node3D.new()
 	_body.scale = Vector3.ONE * SCALE * body_size
 	add_child(_body)
-	var key := "%d|%s|%s" % [var_to_str(look).hash(), accessory, body_size]
+	var key := "%d|%s|%s|%s" % [var_to_str(look).hash(), accessory, body_size, cuerpo_nuevo]
 	if _mesh_cache.has(key):
 		_from_cache(_mesh_cache[key])
 	else:
 		if look.get("species", "") == "perro":
 			_build_dog()
 		else:
-			_build_person()
+			if cuerpo_nuevo:
+				Cuerpo.persona(self)
+			else:
+				_build_person()
 			if look.get("bici", false):
 				_build_bike()
 		_merge_parts()
