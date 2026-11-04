@@ -22,10 +22,10 @@ const DIR := "user://partidas/"
 ## Lo que se guarda de GameState (el perfil va aparte, por su id).
 const CAMPOS := ["money", "bank", "health", "hunger", "fatigue", "starving", "vitality", "riding",
 	"exhausted", "sanity", "dignity", "heat", "caida", "debt", "wanted_until", "wanted_crime",
-	"inventory", "fakes", "milestones", "arrests", "fines", "admissions", "subs", "errands", "notes",
+	"inventory", "fakes", "milestones", "arrests", "fines", "admissions", "subs", "resacas", "errands", "notes",
 	"pistas", "misiones", "favores", "debe_a", "apartados", "clock_skew", "_clock_lie_left",
 	"_clock_blank", "day", "minute_of_day", "alive", "ending_title", "papa_cut",
-	"_next_income_day", "_last_meds_day", "_last_methadone_day"]
+	"_next_income_day", "_last_meds_day", "_last_methadone_day", "_next_receta_day"]
 ## Claves del registro del censo que no se guardan tal cual (se rehacen al cargar).
 const REGISTRO_APARTE := ["npc", "personaje", "zona", "perros", "_d"]
 

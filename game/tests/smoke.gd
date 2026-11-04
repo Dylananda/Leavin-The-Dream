@@ -67,6 +67,7 @@ func _initialize() -> void:
 		_test_trade(gs, world)
 		if profile == Defs.PROFILES[0]:
 			_test_consumo(gs, world)
+			_test_resacas(gs, world)
 		if profile == Defs.PROFILES[0]:
 			_test_police_and_fauna(gs, world)
 		world._rummage()
@@ -99,6 +100,9 @@ func _initialize() -> void:
 		gs.advance(1)
 		_check(gs.fatigue < 100.0 and "frito" in gs.milestones, "el sueño al máximo no te tumba")
 		_steady(gs)
+		for id in gs.subs:
+			gs.subs[id]["high"] = 0.0  # (los antidepresivos, tomados, subirían la mente)
+		gs.resacas = {}
 		gs.sanity = 0.0
 		gs.advance(1)
 		_check(gs.sanity > 0.0 and "psiquiatrico" in gs.milestones, "la salud mental a 0 no acaba en ingreso")
@@ -1279,6 +1283,113 @@ func _test_consumo(gs, world) -> void:
 		_check(gs.subs[id]["crash"] > 0.0, "%s: no da bajón" % id)
 	_steady(gs)
 	print("  consumo de los bots, speed y MDMA: OK")
+
+
+## Las sustancias nuevas (setas, LSD, ketamina, ansiolíticos, antidepresivos, tramadol, tabaco)
+## y las resacas: empiezan al dormir tras consumir, se notan y se pasan; mal viaje, mezclas de
+## depresores, la receta del CAP y la farmacia, el tabaco del bar.
+func _test_resacas(gs, world) -> void:
+	var C = load("res://scripts/consumo.gd")
+	for id in ["setas", "lsd", "ketamina", "ansioliticos", "antidepresivos", "tramadol", "tabaco"]:
+		_check(Defs.SUBSTANCES.has(id) and Defs.MILESTONES.has("probar_" + id), "%s: no existe o no tiene su hito" % id)
+	# resaca de litrona: no al consumir, sí al dormir; se nota y se pasa
+	_steady(gs)
+	gs.resacas = {}
+	for id in gs.subs:
+		gs.subs[id]["resaca_pend"] = 0.0
+		gs.subs[id]["high"] = 0.0
+		gs.subs[id]["crash"] = 0.0
+	gs.add_item("litrona", 3)
+	for i in 3:
+		world.use_item("litrona")
+	_check(gs.resacas.is_empty(), "resaca: empieza sin haber dormido")
+	gs.rest(480, 1.0)
+	_check(gs.resacas.has("litrona"), "resaca: tres latas y una noche no dan resaca")
+	var fx: Dictionary = gs.effects()
+	_check(fx["fx"].get("resaca", 0.0) > 0.0 and fx["causes"].any(func(c): return c[0].begins_with("Resaca de litrona")), "resaca: no se nota (%s)" % [fx["causes"]])
+	_check(gs.vitality_max() < 100.0, "resaca: no baja la vitalidad máxima")
+	var left: float = gs.resacas["litrona"]["left"]
+	gs.add_item("litrona")
+	world.use_item("litrona")
+	_check(gs.resacas["litrona"]["left"] < left, "resaca: la del perro no la quita a medias")
+	gs.advance(24 * 60)
+	_check(not gs.resacas.has("litrona"), "resaca: no se pasa con las horas")
+	# el caballo no da resaca (da mono)
+	_steady(gs)
+	gs.resacas = {}
+	gs.add_item("caballo")
+	world.use_item("caballo")
+	gs.rest(480, 1.0)
+	_check(not gs.resacas.has("caballo"), "resaca: el caballo da resaca")
+	# el MDMA: martes negro, baja la mente
+	_steady(gs)
+	gs.resacas = {}
+	gs.add_item("mdma")
+	world.use_item("mdma")
+	gs.subs["mdma"]["high"] = 0.0
+	gs.rest(480, 1.0)
+	_check(gs.resacas.has("mdma"), "resaca: el MDMA no da resaca")
+	gs.sanity = 80.0
+	gs.advance(120)
+	_check(gs.sanity < 80.0, "resaca: la del MDMA no baja la mente")
+	# mal viaje con la cabeza mal
+	var trip := false
+	for i in 30:
+		_steady(gs)
+		gs.sanity = 20.0
+		gs.subs.get("lsd", {})["malviaje"] = 0.0
+		gs.add_item("lsd")
+		world.use_item("lsd")
+		gs.subs["lsd"]["high"] = 0.0
+		if gs.subs["lsd"]["malviaje"] > 0.0:
+			trip = true
+			break
+	_check(trip and gs.effects()["causes"].any(func(c): return c[0].begins_with("Mal viaje")), "lsd: con la cabeza mal nunca hay mal viaje")
+	# mezclar depresores
+	_steady(gs)
+	gs.add_item("litrona", 2)
+	world.use_item("litrona")
+	world.use_item("litrona")
+	gs.add_item("ansioliticos")
+	world.use_item("ansioliticos")
+	_check("mezcla" in gs.milestones, "ansiolíticos: mezclarlos con alcohol no cuenta como mezcla")
+	# receta del CAP y farmacia; tabaco del bar
+	_steady(gs)
+	gs.alive = true
+	gs.money = 100
+	gs._next_receta_day = 0
+	gs.inventory.erase("receta")
+	gs.inventory.erase("antidepresivos")
+	var cap: Dictionary = world.city.pois_of_kind("cap")[0]
+	var farmacia: Dictionary = world.city.pois_of_kind("farmacia")[0]
+	var bar: Dictionary = world.city.pois_of_kind("bar")[0]
+	var cita = world.interactions.for_poi(cap).filter(func(a): return a["label"].begins_with("Pedir cita con el médico"))
+	_check(cita.size() == 1, "CAP: no se puede pedir cita con el médico")
+	if not cita.is_empty():
+		cita[0]["do"].call()
+	_check(gs.has_item("receta"), "CAP: el médico no hace receta")
+	_check(world.interactions.for_poi(cap).all(func(a): return not a["label"].begins_with("Pedir cita")), "CAP: te hace otra receta el mismo día")
+	var caja = world.interactions.for_poi(farmacia).filter(func(a): return a["label"].begins_with("Con la receta: antidepresivos"))
+	_check(caja.size() == 1, "farmacia: no se compra con receta")
+	if not caja.is_empty():
+		caja[0]["do"].call()
+	_check(gs.inventory.get("antidepresivos", 0) == Defs.RECETA["antidepresivos"][0] and not gs.has_item("receta"), "farmacia: la receta no da la caja")
+	var tabaco: int = gs.inventory.get("tabaco", 0)
+	var maquina = world.interactions.for_poi(bar).filter(func(a): return a["label"].begins_with("Sacar tabaco"))
+	_check(maquina.size() == 1, "bar: no hay máquina de tabaco")
+	if not maquina.is_empty():
+		maquina[0]["do"].call()
+	_check(gs.inventory.get("tabaco", 0) == tabaco + Defs.TABACO_PAQUETE[0], "bar: la máquina no da tabaco")
+	# los bots también: alguno fuma, alguno toma ansiolíticos
+	var habitos := {}
+	for i in 300:
+		habitos[C.habito("vecino", "Vecino %d" % i, {})] = true
+		habitos[C.habito("fiestero", "Fiestero %d" % i, {})] = true
+	for id in ["tabaco", "ansioliticos", "antidepresivos", "ketamina"]:
+		_check(habitos.has(id), "consumo: ningún bot consume %s" % id)
+	_steady(gs)
+	gs.resacas = {}
+	print("  sustancias nuevas y resacas: OK")
 
 
 ## Un bot nuevo del tipo `kind`, sin pasado contigo.

@@ -1034,7 +1034,11 @@ func _skater(npc: Npc) -> Array:
 		_act("Pedirles un cigarro", func():
 			gs.advance(2)
 			npc.remember("pedido")
-			npc.say("Toma, pero no me pidas otro" if _chance(0.5) else "Liado, el último")
+			if _chance(0.5):
+				gs.add_item("tabaco")
+				npc.say("Toma, pero no me pidas otro")
+			else:
+				npc.say("Liado, el último")
 			gs.change_dignity(-1)),
 	]
 
@@ -1212,6 +1216,7 @@ func _punki(npc: Npc) -> Array:
 		_act("Pedirle un cigarro", func():
 			gs.advance(2)
 			npc.remember("pedido")
+			gs.add_item("tabaco")  # entero o a medias, pero algo cae
 			npc.say("Toma, compa" if _chance(0.6) else "Me queda medio, ¿lo partimos?")),
 	]
 	if gs.has_item("litrona"):
@@ -1278,7 +1283,23 @@ func for_poi(poi: Dictionary) -> Array:
 				gs.change_health(3)
 				gs.log_msg("Agua, gasas y un folleto. Algo es algo.")))
 			acts.append(_buy_effect("Comprar ibuprofeno", 3, func(): gs.change_health(5)))
+			# con la receta del médico del CAP: una caja de lo que te ha recetado
+			if gs.has_item("receta"):
+				for id in Defs.RECETA:
+					var caja: Array = Defs.RECETA[id]
+					if gs.money >= caja[1]:
+						acts.append(_act("Con la receta: %s (caja de %d, %d €)" % [Defs.item_name(id).to_lower(), caja[0], caja[1]], func():
+							gs.advance(10)
+							gs.remove_item("receta")
+							gs.add_money(-caja[1])
+							gs.add_item(id, caja[0])
+							gs.log_msg("La farmacéutica te da la caja y te explica cómo tomarlo. Tú sabrás.")))
 		"bar":
+			if gs.money >= Defs.TABACO_PAQUETE[1]:
+				acts.append(_act("Sacar tabaco de la máquina (%d €)" % Defs.TABACO_PAQUETE[1], func():
+					gs.add_money(-Defs.TABACO_PAQUETE[1])
+					gs.add_item("tabaco", Defs.TABACO_PAQUETE[0])
+					gs.log_msg("Un paquete de %d cigarros." % Defs.TABACO_PAQUETE[0])))
 			acts.append(_buy_effect("Tomarte un carajillo", 2, func():
 				gs.add_item("litrona")
 				gs.consume("litrona")))
@@ -1352,6 +1373,13 @@ func for_poi(poi: Dictionary) -> Array:
 				gs.advance(30)
 				gs.change_dignity(3, "Agua caliente")))
 		"cap":
+			if gs.day >= gs._next_receta_day:
+				acts.append(_act("Pedir cita con el médico de cabecera (2 h)", func():
+					gs.advance(120)
+					gs._next_receta_day = gs.day + Defs.RECETA_DIAS
+					gs.add_item("receta")
+					gs.log_msg("El médico te escucha diez minutos, mira la pantalla y te hace una receta. «Y deje lo otro, ¿eh?»", G.C_GOOD)
+					gs.change_sanity(2)))
 			acts.append(_act("Ir a urgencias (4 h)", func():
 				gs.advance(240)
 				gs.change_health(25)

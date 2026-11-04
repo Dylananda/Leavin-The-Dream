@@ -641,7 +641,7 @@ El barrio entero tiende a engancharse, también el jugador, y salir de ahí es l
   móvil, que no lo sueltan y no ven que les robas), del juego (tragaperras de los bares),
   del trabajo, de las compras...
 - [ ] **Más sustancias**, cada una con sus efectos visuales, de manejo y de enganche:
-  ~~speed, MDMA~~ (hechas), LSD, setas, DMT, ketamina; de farmacia: benzodiacepinas y otros ansiolíticos,
+  ~~speed, MDMA, LSD, setas, ketamina~~ (hechas), DMT; de farmacia: benzodiacepinas y otros ansiolíticos,
   antidepresivos, opioides de receta (tramadol, fentanilo en parches), y el alcohol y el tabaco
   de todos los días. Las de farmacia, con receta (médico del CAP) o de estraperlo.
   - [x] **Speed** (8 €): dura horas, acelera, la cámara tiembla un poco y la pantalla se ve
@@ -650,6 +650,35 @@ El barrio entero tiende a engancharse, también el jugador, y salir de ahí es l
     late a 128 golpes por minuto (`love`), y el bajón de días después es de la cabeza. Los
     venden los camellos (y La Rubia, el MDMA); los compran las despedidas, los pijos (MDMA)
     y los yonkis (speed). Cada una con su hito de la caída.
+  - [x] **Setas** y **LSD** (10 €): casi no enganchan; la imagen ondula y los colores respiran
+    (`psico` en el shader), el tiempo se estira; el LSD dura unas diez horas y no te deja dormir.
+    Con la salud mental baja (o, a veces, sin más) el viaje se tuerce: **mal viaje** (paranoia,
+    túnel, temblor y un golpe a la mente; `malviaje` en `Defs.SUBSTANCES`).
+    **Ketamina** (15 €): corta e intensa, todo se aleja y se desdobla (`disocia`), vas lento y
+    a la deriva. Las tres las venden los camellos; las compran despedidas, pijos y guiris (setas).
+  - [x] **De farmacia**, con **receta** (el médico de cabecera del CAP, una vez por semana; con
+    ella, una caja en la farmacia: `Defs.RECETA`) o de estraperlo (los yonkis las llevan y las
+    cambian): **ansiolíticos** (quitan la paranoia y el miedo, dan sueño, enganchan bastante),
+    **antidepresivos** (casi no se notan, pero tomados cada día sostienen la mente;
+    `sanity_rate`; dejarlos de golpe da su síndrome) y **tramadol** (opioide: calma el mono del
+    caballo, da sueño, puede dar sobredosis).
+  - [x] **Tabaco**: un cigarro casi no hace nada, pero engancha y calma el temblor de las manos.
+    Paquetes de 20 en la máquina del bar (6 €); los skaters y los punkis te dan alguno.
+  - [x] **Mezclar depresores** (ansiolíticos, tramadol o ketamina con alcohol o caballo, `mezcla`)
+    sube mucho el riesgo de sobredosis (`Defs.MEZCLA_OD`) y es un hito.
+  - [x] Los bots también: fuman (vecinos, chatarreros, camellos...), los vecinos y los abuelos
+    toman ansiolíticos y antidepresivos, las despedidas ketamina y LSD, los punkis setas.
+- [x] **Resacas** (las sustancias que la dan en la vida real: alcohol, porros, pastillas,
+  farlopa, base, speed, MDMA, ketamina, ansiolíticos, tramadol, setas, LSD; no el caballo, la
+  metadona, el tabaco ni los antidepresivos). Cada dosis suma resaca pendiente y, **al dormir**,
+  se convierte en resaca de verdad, más larga y fuerte cuanto más consumiste
+  (`Defs.RESACA_*`, `resaca` en `Defs.SUBSTANCES`). Cada una con sus efectos (la de alcohol:
+  luz que molesta y cabeza que late, `resaca` en el shader; la de speed, hecho polvo; la del MDMA,
+  el martes negro que te baja la mente durante un día), te quita vitalidad máxima y sale en la
+  lista de efectos. Con las que lo permiten, «la del perro» (volver a meterte lo mismo) te la
+  quita a medias.
+  - [ ] Pendiente: DMT, fentanilo en parches; que las del médico tengan efectos con el tiempo
+    (los antidepresivos tardan semanas); jugarlo y ajustar duraciones y precios.
 - [ ] **Contagio y conversiones** entre yonki y «no yonki», en los dos sentidos, con una
   tendencia general a engancharse (ver «Contagio» en «Personajes que viven»).
 - [ ] **Equilibrio**: consumo, enganche, precios y premios de las misiones. Ahora mismo es

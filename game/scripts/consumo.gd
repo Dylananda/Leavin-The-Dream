@@ -15,7 +15,7 @@ extends RefCounted
 ## El equilibrio está en Defs (NPC_HABITS y las constantes NPC_* que lo siguen).
 
 ## Sustancias que, colocado, le hacen cabecear (y quedarse dormido en un portal) o buscar bronca.
-const DOWNERS := ["caballo", "pastillas", "litrona", "metadona"]
+const DOWNERS := ["caballo", "pastillas", "litrona", "metadona", "ansioliticos", "tramadol", "ketamina"]
 const UPPERS := ["farlopa", "base", "speed"]
 
 

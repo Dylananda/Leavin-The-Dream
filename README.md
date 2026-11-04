@@ -84,6 +84,14 @@ el tiempo y acerca la cámara, el alcohol te hace andar en eses y responder tard
 pastillas saturan los colores, la base da una euforia corta y un bajón brusco, y el mono
 trae temblores, viñeta roja y tropiezos. El speed acelera durante horas y lo ve todo con
 los bordes duros; el MDMA lo pone todo cálido, con un halo que late, y el bajón llega después.
+Con setas o LSD la imagen ondula y los colores respiran (con la cabeza mal, el viaje se tuerce);
+con ketamina todo se aleja. Los ansiolíticos, los antidepresivos y el tramadol se sacan con
+receta del médico del CAP (o de estraperlo), y el tabaco en la máquina del bar. Mezclar
+depresores es jugársela.
+
+**Resaca**: lo que consumes se paga al despertar. Si duermes después de beber, de una noche de
+farlopa o de MDMA, te levantas con resaca: la luz molesta, vas hecho polvo o, con el MDMA, triste
+todo el día siguiente. El caballo no da resaca: da mono.
 
 ### Quién anda por la calle
 
