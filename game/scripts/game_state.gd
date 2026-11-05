@@ -95,6 +95,9 @@ var proposito: Dictionary = {}
 ## ({id: now()}); ver Sucesos y Defs.SUCESOS. Son del barrio: sobreviven a un relevo.
 var sucesos: Dictionary = {}
 var sucesos_fin: Dictionary = {}
+## Tu fama por zonas del barrio ({"x,y": {"buena", "mala"}}; ver Fama). Es tuya: al relevo
+## pasa a la historia del de antes y el nuevo empieza sin.
+var fama: Dictionary = {}
 var dia_inicio := 1  ## día en que empezó el yonki de ahora
 var papa_cut := false
 var sleeping := false
@@ -183,6 +186,7 @@ func new_game(profile_id: String) -> void:
 	proposito = _nuevo_proposito()
 	sucesos = {}
 	sucesos_fin = {}
+	fama = {}
 	changed.emit()
 
 

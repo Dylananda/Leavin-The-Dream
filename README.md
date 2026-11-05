@@ -140,6 +140,14 @@ los yonkis poco. Los clientes que repiten pagan más y te buscan; si se la vende
 más pero no se les olvida. Que no te vea un agente, ni un camello: vender en su esquina se paga.
 Con los otros yonkis también se hace trueque: te cambian lo que llevan encima por tus objetos.
 
+### Amigos, enemigos y fama
+
+Los bots se conocen entre ellos: los que se pelean, se roban o se dan el tirón quedan
+enemigos (y discuten o se pegan al cruzarse) y los que se pasan una dosis, amigos. Tú tienes
+fama por zonas: lo que haces a la vista se cuenta. Con mala fama, quien no te conoce se aparta
+y los camellos no te venden; con buena, los de la calle te piden y alguien te avisa cuando
+viene la policía. La libreta dice qué se dice de ti por donde estás.
+
 ### Lo que le pasa al barrio
 
 A veces pasan cosas que cambian el Raval unos días (se anuncian en el registro y la gente lo
@@ -298,6 +306,8 @@ python tools/make_textures.py
   ido mientras estaban latentes (equilibrio en `Defs.NPC_HABITS` y `Defs.NPC_*`)
 - `game/scripts/errands.gd` — encargos con plazo (ofrecer, cumplir, fallar) y la libreta que
   se apunta y se lee peor cuanto más ido vas (equilibrio en `Defs.ERRANDS`)
+- `game/scripts/vinculos.gd` — amistades y enemistades entre los bots (en el censo) y lo que
+  hacen al cruzarse; `game/scripts/fama.gd` — tu fama por zonas del barrio (`Defs.FAMA_*`)
 - `game/scripts/sucesos.gd` — sucesos del barrio (fentanilo, redadas, Fiesta Mayor, obras), con
   su calendario y lo que cambian (`Defs.SUCESOS`)
 - `game/scripts/proposito.gd` — el propósito de cada yonki: pasos, avisos, la libreta y el

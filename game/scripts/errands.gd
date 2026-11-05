@@ -528,6 +528,10 @@ func notebook_entries() -> Array:
 	var prop := Proposito.texto_libreta()
 	if prop != "":
 		entries.append({"text": "[color=#f0c060][b]%s[/b][/color]" % garble(prop, amount, mono_share, hash([hour_seed, "proposito"])), "poi": {}})
+	# y lo que se dice de ti por aquí (Fama)
+	var fama := Fama.texto(world.player.cell)
+	if fama != "":
+		entries.append({"text": "[color=#d0a0d0]%s[/color]" % fama, "poi": {}})
 	for i in range(gs.notes.size() - 1, -1, -1):
 		var note: Dictionary = gs.notes[i]
 		var state: String = note["errand"]["state"]

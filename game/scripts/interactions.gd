@@ -265,6 +265,10 @@ func _rob_tourist(npc: Npc) -> void:
 func _camello(npc: Npc) -> Array:
 	var gs := GameState
 	var acts := []
+	# con mala fama en su zona, quien no te conoce no te vende (Fama)
+	if npc.memory.is_empty() and npc.debt <= 0 and Fama.de(npc.cell, "mala") >= Defs.FAMA_NO_VENDE:
+		npc.say("Contigo no hago tratos. Ya sé quién eres.", 3.0)
+		return acts
 	if npc.debt > 0:
 		npc.say("Primero me pagas lo que me debes")
 		if gs.money > 0:
@@ -1312,6 +1316,10 @@ static func _recuerdo(r: Dictionary) -> String:
 			return "¿%s? Me echó una mano cuando nadie lo hacía. %s" % [n, fue]
 		"enemigo":
 			return "%s me la jugó. %s Tú tienes la misma cara, ¿sabes?" % [n, fue]
+		"fama_mala":
+			return "¿%s? No le conocí, pero por aquí todo el mundo sabe que robaba a quien podía. %s" % [n, fue]
+		"fama_buena":
+			return "¿%s? Dicen que ayudaba a la gente de esta calle cuando nadie lo hacía. %s" % [n, fue]
 	return "¿%s? Le veía por aquí. %s" % [n, fue]
 
 

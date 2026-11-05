@@ -981,3 +981,44 @@ const AMBULANCIA_A_TIEMPO := 0.4  ## sin naloxona, que la ambulancia llegue a ti
 const NALOXONA_SALUD := 15.0  ## la salud que te quita una sobredosis si llevas naloxona (sin ella, 45)
 ## Opiáceos: lo que la naloxona revierte.
 const OPIACEOS := ["caballo", "fentanilo", "tramadol", "metadona"]
+
+
+# ------------------------------------------------------------------ amistades y fama
+
+## Amistades y enemistades entre bots (scripts/vinculos.gd): de -100 (enemigo a muerte) a 100
+## (uña y carne). Lo que suma o resta cada cosa que pasa entre ellos; desde VINCULO_AMIGO son
+## amigos y hasta VINCULO_ENEMIGO enemigos. Cada uno recuerda como mucho VINCULOS_MAX y se va
+## olvidando VINCULO_OLVIDO por día; los amigos del agredido se enteran (VINCULO_SE_CUENTA).
+const VINCULO_PELEA := -45.0
+const VINCULO_ROBO := -35.0
+const VINCULO_TIRON := -35.0
+const VINCULO_DOSIS := 35.0
+const VINCULO_AMIGO := 25.0
+const VINCULO_ENEMIGO := -25.0
+const VINCULOS_MAX := 6
+const VINCULO_OLVIDO := 8.0
+const VINCULO_SE_CUENTA := 0.5
+const VINCULO_CRUCE := 7  ## casillas a las que dos que se conocen se ven y reaccionan al cruzarse
+const VINCULO_CRUCE_PAUSA := 60.0  ## segundos antes de que vuelvan a reaccionar
+const VINCULO_BRONCA := 0.35  ## probabilidad de que dos enemigos que se cruzan acaben a golpes
+## Tu fama por zonas del barrio (scripts/fama.gd): cuadrados de FAMA_ZONA casillas, con fama
+## «buena» y «mala» de 0 a 100. Lo que suma cada cosa que haces (`FAMA_HECHOS`, por lo que
+## recuerda la víctima: Npc.remember), multiplicado por cada testigo que te ve
+## (FAMA_TESTIGO); cada día se olvida FAMA_OLVIDO y corre a las zonas de al lado (FAMA_CORRE).
+const FAMA_ZONA := 40
+const FAMA_HECHOS := {"ayudado": ["buena", 6.0], "robado": ["mala", 8.0], "pegado": ["mala", 8.0], "timado": ["mala", 6.0]}
+const FAMA_TESTIGO := 0.5
+const FAMA_SOLO := 0.5  ## sin testigos, solo lo cuenta la víctima: esta parte
+const FAMA_OLVIDO := 4.0
+const FAMA_CORRE := 0.25
+## Cómo te trata quien no te conoce según tu fama en su zona: te evita (mala), no te vende ni
+## te compra (mala), viene a pedirte (buena, los de la calle) o te avisa de la policía (buena).
+const FAMA_EVITA := 40.0
+const FAMA_NO_VENDE := 55.0
+const FAMA_PIDEN := 40.0
+const FAMA_PEDIGUENOS := ["yonki", "mendigo", "punki", "chaval"]
+const FAMA_AVISA := 30.0
+const FAMA_AVISO_PAUSA := 90.0  ## segundos entre dos avisos de la policía
+## Al relevo, quien vivía donde el de antes tenía fama (por encima de esto) se acuerda de él
+## de oídas («recuerda_a»).
+const FAMA_RECUERDO := 30.0

@@ -30,6 +30,9 @@ func offers_for(npc: Npc) -> Array:
 		if Defs.CLIENTS.has(client_kind(npc)):
 			npc.say("A ti no te compro nada más. Aquello era yeso")
 		return acts
+	# con mala fama en la zona, quien no te conoce no te compra (Fama)
+	if npc.memory.is_empty() and Fama.de(npc.cell, "mala") >= Defs.FAMA_NO_VENDE:
+		return acts
 	acts.append_array(_sales(npc))
 	acts.append_array(_gift(npc))
 	acts.append_array(_purchases(npc))

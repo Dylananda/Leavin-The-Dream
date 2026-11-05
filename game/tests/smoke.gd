@@ -117,6 +117,7 @@ func _initialize() -> void:
 	await _test_partida()
 	await _test_proposito()
 	await _test_sucesos()
+	await _test_fama()
 	await _test_editor()
 	await _test_sustancias()
 	print("FALLOS: %d" % _failures if _failures > 0 else "OK")
@@ -206,7 +207,7 @@ func _test_peticiones(world) -> void:
 	gs.add_pista("Toni", "dos agentes en la Rambla")
 	_check(errands.notebook_entries().size() == before + 1, "pistas: no salen en la libreta")
 	gs.advance((Defs.PISTA_HOURS + 1.0) * 60.0)
-	_check(errands.notebook_entries().size() <= before, "pistas: no caducan")
+	_check(not errands.notebook_entries().any(func(x): return x["text"].contains("Toni")), "pistas: no caducan")
 	world.player.setup(world.city, world.city.street_cells("La Rambla")[0])
 	var count_lies := func() -> int:
 		var lies := 0
@@ -806,6 +807,92 @@ func _test_misiones(gs, world) -> void:
 	gs.wanted_until = -1.0
 	gs.inventory.erase("papeles_albergue")
 	print("  misiones: OK")
+
+
+## Amistades y enemistades entre bots, y tu fama por zonas: dos bots que se pelean quedan
+## enemigos (y los amigos del agredido se enteran); pasarse una dosis los hace amigos; se
+## olvida con el tiempo. Robar a la vista sube la mala fama de la zona y otro bot de allí, que
+## no te conoce, se aparta; con buena fama te piden y te avisan de la policía. Al relevo, la
+## gente de esa zona se acuerda del de antes de oídas.
+func _test_fama() -> void:
+	var gs = root.get_node("GameState")
+	var V = load("res://scripts/vinculos.gd")
+	var F = load("res://scripts/fama.gd")
+	gs.new_game("parado")
+	change_scene_to_file("res://scenes/world.tscn")
+	await process_frame
+	await process_frame
+	var world = current_scene
+	world.censo.pausado = true
+	_steady(gs)
+	var me: Vector2i = world.player.cell
+	# bots: pelea, amigos que se enteran, dosis, tope y olvido
+	var a = _fresh(world, "yonki")
+	var b = _fresh(world, "yonki")
+	var c = _fresh(world, "yonki")
+	V.cambiar(world.censo, c.reg, a.reg, 40.0)
+	world.vinculos.pelea(a, b)
+	_check(V.valor(a.reg, b.reg) <= Defs.VINCULO_ENEMIGO and V.valor(b.reg, a.reg) <= Defs.VINCULO_ENEMIGO, "vínculos: dos que se pelean no quedan enemigos")
+	_check(V.valor(c.reg, b.reg) < 0.0, "vínculos: el amigo del agredido no se entera")
+	var d = _fresh(world, "yonki")
+	var e = _fresh(world, "yonki")
+	d.consumo = {"id": "caballo", "enganche": 50.0, "colocon": 0.0, "mono": 0.0, "dosis": 2, "t": gs.now()}
+	e.consumo = {"id": "caballo", "enganche": 80.0, "colocon": 0.0, "mono": 90.0, "dosis": 0, "t": gs.now()}
+	world.vinculos.dosis(d, e)
+	_check(V.valor(e.reg, d.reg) >= Defs.VINCULO_AMIGO and e.consumo["colocon"] > 0.0, "vínculos: pasarse una dosis no les hace amigos")
+	for i in 10:
+		V.cambiar(world.censo, a.reg, _fresh(world, "vecino").reg, -30.0 - i, false, false)
+	_check(a.reg["vinculos"].size() <= Defs.VINCULOS_MAX, "vínculos: no tienen tope")
+	e.reg["vinculos_t"] -= 30.0 * 1440.0
+	_check(V.valor(e.reg, d.reg) == 0.0, "vínculos: no se olvidan con el tiempo")
+	# robar a la vista: mala fama en la zona; otro de la zona, que no te conoce, se aparta
+	var testigo = _fresh(world, "vecino")
+	_place(testigo, me + Vector2i(2, 0), me)
+	var victima = _fresh(world, "turista")
+	for i in 4:
+		victima.remember("robado")
+	_check(F.de(me, "mala") >= Defs.FAMA_EVITA, "fama: robar a la vista no da mala fama (%s)" % F.de(me, "mala"))
+	var otro = _fresh(world, "vecino")
+	otro.known = false  # (no te conoce: te trata por tu fama)
+	otro.setup(world.city, me)
+	_check(otro.grudge() == "aparta", "fama: con mala fama, quien no te conoce no se aparta (%s)" % otro.grudge())
+	_check(world.errands.notebook_entries().any(func(x): return x["text"].contains("Lo que se dice de ti")), "fama: no sale en la libreta")
+	F.sumar(me, "mala", 30.0)
+	var dealer = _fresh(world, "camello")
+	dealer.setup(world.city, me)
+	gs.money = 200
+	_check(not world.interactions.for_npc(dealer).any(func(x): return x["label"].begins_with("Comprar")), "fama: con muy mala fama el camello te vende")
+	# buena fama: te piden y te avisan de la policía
+	gs.fama = {}
+	F.sumar(me, "buena", 60.0)
+	var pedigueno = _fresh(world, "yonki")
+	pedigueno.known = false
+	pedigueno.setup(world.city, me)
+	pedigueno.consumo = {"id": "litrona", "enganche": 20.0, "colocon": 0.0, "mono": 0.0, "dosis": 1, "t": gs.now()}
+	_check(pedigueno.grudge() == "pide", "fama: con buena fama los de la calle no vienen a pedirte (%s)" % pedigueno.grudge())
+	gs.mark_wanted("prueba de la fama", "hurto")
+	var poli = _fresh(world, "urbano")
+	poli.setup(world.city, me + Vector2i(6, 0))
+	var vecina = _fresh(world, "vecino")
+	vecina.setup(world.city, me + Vector2i(1, 0))
+	world.vinculos._aviso = -INF
+	world.vinculos._aviso_policia()
+	_check(world.vinculos._aviso > -INF, "fama: con buena fama nadie te avisa de la policía")
+	gs.wanted_until = -1.0
+	_check(load("res://scripts/partida.gd")._estado(world).has("fama"), "fama: no se guarda en la partida")
+	# al relevo, quien vive donde tenías fama se acuerda de ti de oídas
+	var r: Dictionary = {}
+	for x in world.censo.registros:
+		if x["npc"] == null and x["estado"].is_empty() and x["personaje"].is_empty():
+			r = x
+			break
+	gs.fama = {}
+	F.sumar(r["home"], "mala", 80.0)
+	gs.finish("Prueba de la fama.", "", "preso")
+	world.relevo("jubilado")
+	_check(r["estado"].get("metas", {}).get("recuerda_a", {}).get("trato", "") == "fama_mala", "fama: al relevo nadie se acuerda del de antes de oídas")
+	_check(gs.fama.is_empty() and gs.historia[-1].has("fama"), "fama: el nuevo no empieza sin fama o el de antes no se la lleva")
+	print("  amistades entre bots y fama: OK")
 
 
 ## Sucesos del barrio: la Fiesta Mayor empieza por fecha y trae más gente; las redadas, más
@@ -1598,16 +1685,22 @@ func _test_clubs(gs, world) -> void:
 	I._hacer_socio(nombre)
 	_check(nombre in gs.clubs_socio and "socio_club" in gs.milestones, "clubs: hacerse socio no cuenta")
 	gs.inventory.erase("porro")
-	for i in Defs.CLUB_LIMITE_DIA + 1:
+	var redadas := 0
+	for i in Defs.CLUB_LIMITE_DIA * 4:
+		if I._club_hoy() >= Defs.CLUB_LIMITE_DIA:
+			break
+		gs.clubs_cerrados = {}  # (si una redada al azar lo ha precintado, se reabre para seguir probando)
 		var comprar = I.for_poi(club).filter(func(a): return a["label"].begins_with("Comprar un porro"))
-		if i < Defs.CLUB_LIMITE_DIA:
-			_check(comprar.size() == 1, "clubs: no vende el porro %d" % (i + 1))
-			if not comprar.is_empty():
-				gs.clubs_cerrados = {}
-				comprar[0]["do"].call()
-		else:
-			_check(comprar.is_empty(), "clubs: vende por encima del tope del día")
-	if not gs.clubs_cerrados.has(nombre):  # (si una redada se los llevó, no hay que contarlos)
+		_check(comprar.size() == 1, "clubs: no vende el porro %d" % (I._club_hoy() + 1))
+		if comprar.is_empty():
+			break
+		comprar[0]["do"].call()
+		if gs.clubs_cerrados.has(nombre):
+			redadas += 1
+	gs.clubs_cerrados = {}
+	_check(I._club_hoy() == Defs.CLUB_LIMITE_DIA and not I.for_poi(club).any(func(a): return a["label"].begins_with("Comprar un porro")),
+		"clubs: vende por encima del tope del día")
+	if redadas == 0:  # (si una redada se los llevó, no hay que contarlos)
 		_check(gs.inventory.get("porro", 0) == Defs.CLUB_LIMITE_DIA, "clubs: no da los porros comprados")
 	gs.day += 1
 	_check(I._club_hoy() == 0, "clubs: el tope no vuelve a empezar al día siguiente")
@@ -1958,6 +2051,7 @@ func _test_street_items(gs, world) -> void:
 func _test_trade(gs, world) -> void:
 	var trade = world.trade
 	_steady(gs)
+	gs.fama = {}  # (con la mala fama de robar antes, quien no te conoce no trata contigo: Fama)
 	gs.alive = true
 	var client = _npc_of(world, "fiestero")
 	client.memory = {}

@@ -247,8 +247,32 @@ sí y una memoria poco fiable**, que puede ir creciendo hacia misiones de rol en
   - [ ] Pendiente: que los pasos tengan más que ver con la gente del barrio (personajes del
     editor, misiones); que el siguiente yonki herede algo del propósito del de antes; un segundo
     propósito «oscuro» por perfil (vengarse, hundirse a propósito); jugarlo y ajustar.
-- [ ] **Amistades y enemistades entre los NPC**, por lo que se hacen, lo que ven y lo que les
+- [x] **Amistades y enemistades entre los NPC**, por lo que se hacen, lo que ven y lo que les
   cuentan, con **niveles de fama**; de ahí pueden salir **bandas**.
+  Hecho, primer paso:
+  - **Entre bots** (`scripts/vinculos.gd`, `Defs.VINCULO*`): cada registro del censo tiene un
+    número fijo (`uid`) y sus amistades y enemistades (de -100 a 100, como mucho seis, que se
+    olvidan con los días). Se hacen enemigos al pelearse (las peleas de yonkis), al robarse (el
+    carterista al que pilla el guiri) o al darse el tirón (un yonki con mono y sin dinero a otro
+    que lleva algo); amigos, al pasarse una dosis cuando el otro está fatal. Lo que le hacen a
+    uno lo saben sus amigos. Al cruzarse, los enemigos discuten (y a veces se pegan) y los
+    amigos se saludan y van juntos un rato. Se guardan en el censo y siguen tras un relevo.
+  - **Tu fama por zonas** (`scripts/fama.gd`, `Defs.FAMA_*`): cuadrados de 80 m con fama buena
+    (ayudar) y mala (robar, pegar, timar), más cuanta más gente te ve; cada día corre a las
+    zonas de al lado y se va olvidando. Quien no te conoce te trata según tu fama: con mala te
+    evita y, con muy mala, los camellos no te venden ni los clientes te compran; con buena, los
+    de la calle vienen a pedirte y alguien te avisa cuando viene la policía. Sale en la libreta.
+  - **El de antes**: al relevo, su fama se va con él (a la historia) y quien vive donde la tenía
+    se acuerda de él de oídas («Preguntarle por Paco»: «dicen que robaba a quien podía»).
+  - [ ] Pendiente: que se vean las amistades (grupos que andan juntos), venganzas entre bots que
+    duran, que los amigos de un bot que has ayudado te defiendan; jugarlo y ajustar.
+  - **Bandas** (por hacer, ideas): con las amistades ya hay grupos; una banda sería un grupo de
+    tres o más que son amigos entre sí (sobre todo yonkis, carteristas, camellos) con un
+    cabecilla (el de más fama o más fuerza) y una zona (donde duermen o venden). Se defenderían
+    entre ellos (al pegar a uno van todos), tendrían enemistades con otras bandas por las
+    esquinas y la mercancía, harían cosas juntos (robos con pantalla, vigilar al camello) y
+    podrías entrar en una (te piden algo para fiarse: una misión) o enfrentarte a ella. Con el
+    tiempo, una banda de yonkis organizada es el camino hacia el final de la revolución.
 - [x] **Sucesos de la historia del barrio**: llega el fentanilo, redadas fuertes de la
   policía, fiestas de barrio, manifestaciones, obras que cortan calles.
   Hecho, primer paso (`scripts/sucesos.gd`, `Defs.SUCESOS` y lo que le sigue): cada día se

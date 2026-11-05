@@ -94,6 +94,7 @@ var misiones: Misiones  ## Misiones de los personajes del editor
 var relaciones: Relaciones  ## Lo que le haces a un personaje lo saben los suyos
 var proposito: Proposito  ## Lo que quiere conseguir el yonki de ahora
 var sucesos: Sucesos  ## Lo que le pasa al barrio unos días (fentanilo, redadas, fiesta, obras)
+var vinculos: Vinculos  ## Amistades y enemistades entre los bots
 var street_items: StreetItems  ## Objetos tirados por la calle
 var trade: Trade  ## Trapicheo: revender y cambiar cosas con otros yonkis
 var conversation: Conversation  ## Conversación libre con IA (scripts/ai/)
@@ -170,6 +171,7 @@ func _ready() -> void:
 	relaciones = Relaciones.new(self)
 	proposito = Proposito.new(self)
 	sucesos = Sucesos.new(self)
+	vinculos = Vinculos.new(self)
 	street_items = StreetItems.new(self)
 	trade = Trade.new(self)
 	street_items.populate()
@@ -220,6 +222,7 @@ func _ready() -> void:
 	GameState.relocated.connect(_on_relocated)
 	GameState.new_day.connect(proposito.nuevo_dia)
 	GameState.new_day.connect(sucesos.nuevo_dia)
+	GameState.new_day.connect(Fama.nuevo_dia)
 	GameState.new_day.connect(_autoguardar)
 	GameState.new_day.connect(_contagio_diario)
 	hud.save_requested.connect(guardar_partida)
@@ -505,6 +508,7 @@ func _process(delta: float) -> void:
 		errands.update()
 		misiones.update()
 		proposito.update()
+		vinculos.tick(delta)
 		street_items.update()
 	_fx = GameState.effects()
 	hud.show_effects(_fx)
@@ -1512,6 +1516,8 @@ func _random_event() -> void:
 		return
 	if randf() < Defs.URBANA_SWEEP + Defs.MOSSOS_SWEEP and police_event():
 		return
+	if randf() < 0.3 and vinculos.suceso():
+		return  # entre bots: el tirón, o alguien que le pasa una dosis a otro (Vinculos)
 	var yonkis := npcs.filter(func(n): return n.kind == "yonki")
 	if yonkis.is_empty():
 		return
@@ -1526,11 +1532,7 @@ func _random_event() -> void:
 			closest = b
 			break
 	if closest:
-		closest.walk_to(a.cell)
-		a.say(["¡Me has robado la base!", "¡Esa esquina es mía!", "¡Devuélveme el mechero!"].pick_random(), 4.0)
-		closest.say("¡Ven aquí si tienes huevos!", 4.0)
-		if a.distance_to_cell(player.cell) < 40:
-			GameState.log_msg("Pelea de yonkis cerca de %s." % city.street_name_near(a.cell))
+		vinculos.pelea(a, closest)  # quedan enemigos
 		# una pelea es cosa de los Mossos
 		var mosso := _nearest_of(["mosso"], a.cell)
 		if mosso and mosso.distance_to_cell(a.cell) < 80:
@@ -1578,6 +1580,8 @@ func pickpocket_event() -> bool:
 				victim.robbed = true
 				thief.money += victim.money
 				victim.money = 0
+				if randf() < 0.5:  # se ha dado cuenta: no se lo perdona
+					Vinculos.cambiar(censo, victim.reg, thief.reg, Defs.VINCULO_ROBO, false)
 				thief.walk_to(victim.cell)
 				if victim.distance_to_cell(player.cell) < 20:
 					victim.say(["My wallet!", "¿Y mi móvil?", "Where is my bag?!"].pick_random(), 4.0)
@@ -1598,7 +1602,7 @@ func _on_game_over(reason: String) -> void:
 		"destino": gs.destino, "titulo": gs.ending_title, "motivo": reason, "desde": gs.dia_inicio,
 		"dia": gs.day, "caida": roundi(gs.caida), "celda": player.cell, "look": gs.profile["look"].duplicate(),
 		"calle": city.street_name_near(player.cell), "rebuscado": false,
-		"proposito": Defs.PROPOSITOS.get(gs.profile["id"], {}).get("titulo", ""),
+		"proposito": Defs.PROPOSITOS.get(gs.profile["id"], {}).get("titulo", ""), "fama": gs.fama.duplicate(true),
 		"proposito_estado": gs.proposito.get("estado", "")})
 	# la partida guardada queda como terminada: «Continuar» ya no la ofrece (hasta un relevo)
 	if Partida.automatico and gs.partida_id != "":
@@ -1666,9 +1670,19 @@ func relevo(profile_id: String) -> void:
 ## Quien conocía al de antes se acuerda de él (meta «recuerda_a»: su nombre y cómo le
 ## trataba), pero al nuevo no le conoce: sin memoria, sin deudas, sin rencor.
 func _olvidan(antes: Dictionary) -> void:
+	var fama: Dictionary = antes.get("fama", {})
 	for r in censo.registros:
 		var e: Dictionary = r["estado"]
+		# quien no le conoció pero vive donde tenía fama, se acuerda de él de oídas (Fama)
+		var home: Vector2i = r.get("home", Vector2i.ZERO)
+		var oidas := ""
+		if Fama.de(home, "mala", fama) >= Defs.FAMA_RECUERDO:
+			oidas = "fama_mala"
+		elif Fama.de(home, "buena", fama) >= Defs.FAMA_RECUERDO:
+			oidas = "fama_buena"
 		if e.is_empty():
+			if oidas != "":
+				r["estado"] = {"metas": {"recuerda_a": {"nombre": antes["nombre"], "trato": oidas, "destino": antes["destino"]}}}
 			continue  # nunca ha tenido cuerpo: no conoció a nadie
 		var mem: Dictionary = e.get("memory", {})
 		if not mem.is_empty() or e.get("known", false):
@@ -1680,6 +1694,10 @@ func _olvidan(antes: Dictionary) -> void:
 			if not e.has("metas"):
 				e["metas"] = {}
 			e["metas"]["recuerda_a"] = {"nombre": antes["nombre"], "trato": trato, "destino": antes["destino"]}
+		elif oidas != "":
+			if not e.has("metas"):
+				e["metas"] = {}
+			e["metas"]["recuerda_a"] = {"nombre": antes["nombre"], "trato": oidas, "destino": antes["destino"]}
 		e["memory"] = {}
 		e["known"] = false
 		e["debt"] = 0

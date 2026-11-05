@@ -455,6 +455,9 @@ var _denounce_to: Npc  ## el agente al que va a contarle lo que le hiciste
 ## Lo que consume (ver Consumo): {} si nada; si no, su sustancia, enganche, colocón, mono y lo
 ## que lleva encima. El censo lo guarda al dormirlo y lo pone al día al despertarlo.
 var consumo := {}
+## Su registro del censo (lo pone Censo.despertar; {} los que van detrás de otro): ahí están
+## sus amistades y enemistades con los demás (Vinculos).
+var reg := {}
 var _nod_until := 0.0  ## (segundos de reloj) hasta entonces cabecea, dormido en un portal
 var _acerca_why := ""  ## (mode "acerca") a qué viene: "" saludar o comprarte, "pide" con mono
 
@@ -738,6 +741,9 @@ static func active_at(p_kind: String, h: int) -> bool:
 ## Apunta algo que ha pasado contigo ("pedido", "robado", "ayudado", "pegado").
 func remember(what: String) -> void:
 	memory[what] = memory.get(what, 0) + 1
+	# se corre por la zona: tu fama (Fama), más cuantos más te han visto
+	if world != null and player != null and Defs.FAMA_HECHOS.has(what):
+		Fama.hecho(player.cell, what, world.watching([], self).size())
 	# los suyos se enteran (personajes del editor con relaciones; ver Relaciones)
 	if world != null and world.relaciones != null and not personaje.is_empty():
 		world.relaciones.propagar(personaje.get("id", ""), what)
@@ -785,6 +791,12 @@ func grudge() -> String:
 	# lo que le has hecho a los suyos (Relaciones)
 	if remembers("oido_mal") > remembers("oido_bien"):
 		return "venganza" if stat("agresividad") >= Defs.STAT_HOTHEAD else "aparta"
+	# quien no te conoce te trata según tu fama en su zona (Fama)
+	if memory.is_empty() and not known and player != null:
+		if Fama.de(cell, "mala") >= Defs.FAMA_EVITA:
+			return "aparta"
+		if kind in Defs.FAMA_PEDIGUENOS and Fama.de(cell, "buena") >= Defs.FAMA_PIDEN and not consumo.is_empty():
+			return "pide"
 	if Consumo.acelerado(consumo) and _trait("bronca") < Defs.NPC_BRONCA_TRAIT + (stat("agresividad") - 5) * 0.05:
 		return "bronca"
 	if Consumo.necesita(consumo):

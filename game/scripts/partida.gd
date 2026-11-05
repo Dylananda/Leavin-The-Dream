@@ -25,7 +25,7 @@ const CAMPOS := ["money", "bank", "health", "hunger", "fatigue", "starving", "vi
 	"inventory", "fakes", "milestones", "arrests", "fines", "admissions", "subs", "resacas", "errands", "notes",
 	"pistas", "misiones", "favores", "debe_a", "apartados", "clock_skew", "_clock_lie_left",
 	"_clock_blank", "day", "minute_of_day", "alive", "ending_title", "papa_cut",
-	"_next_income_day", "_last_meds_day", "_last_methadone_day", "_next_receta_day", "proposito", "sucesos", "sucesos_fin",
+	"_next_income_day", "_last_meds_day", "_last_methadone_day", "_next_receta_day", "proposito", "sucesos", "sucesos_fin", "fama",
 	"clubs_conocidos", "clubs_socio", "clubs_cerrados", "club_compras", "destino", "historia", "dia_inicio"]
 ## Claves del registro del censo que no se guardan tal cual (se rehacen al cargar).
 const REGISTRO_APARTE := ["npc", "personaje", "zona", "perros", "_d"]
@@ -251,6 +251,7 @@ static func aplicar_mundo(world: World) -> void:
 		registros.append(r)
 		indices[i] = r
 	censo.registros = registros
+	censo._seq = -1  # (los números de registro vienen de la partida)
 	var jugador: Dictionary = datos.get("jugador", {})
 	if jugador.has("cell"):
 		world.player.setup(world.city, world.city.nearest_walkable(jugador["cell"]))
