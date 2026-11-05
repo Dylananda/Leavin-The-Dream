@@ -279,7 +279,8 @@ func _setup_lighting() -> void:
 
 func _intro() -> void:
 	var c := city.crime
-	GameState.log_msg("Bienvenido a %s, %s." % [city.barrio_name, GameState.profile["name"]])
+	var barrio: String = city.barrio_name
+	GameState.log_msg("Bienvenido %s, %s." % ["al " + barrio.substr(3) if barrio.begins_with("el ") else "a " + barrio, GameState.profile["name"]])
 	if not c.is_empty():
 		GameState.log_msg("Datos reales: nº%d de %d barrios de Barcelona en incidentes de la Guàrdia Urbana (%s en %d)." % [
 			c["rank"], c["barrios"], _thousands(c["total_incidents"]), c["year"]], Color("e0c080"))
@@ -293,7 +294,7 @@ func _anunciar_proposito() -> void:
 	var d := Proposito.def()
 	if not d.is_empty():
 		GameState.log_msg("Lo que de verdad quieres: %s. Empieza por %s (lo tienes en la libreta, L)." % [
-			d["titulo"].to_lower(), d["pasos"][0]["texto"]], Color("f0c060"))
+			d["titulo"].left(1).to_lower() + d["titulo"].substr(1), d["pasos"][0]["texto"]], Color("f0c060"))
 
 
 func _thousands(n: int) -> String:

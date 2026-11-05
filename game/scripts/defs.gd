@@ -846,7 +846,7 @@ const PROPOSITOS := {
 		"final": "Una carta certificada: permiso de residencia y trabajo. Llamas a tu madre desde el locutorio y no sabes qué decir; ella llora por las dos. El lunes empiezas en una obra en Badalona. El Raval te ha visto llegar y te ve irte.",
 	},
 	"parado": {
-		"titulo": "Recuperar a su hija, Laia",
+		"titulo": "Recuperar a tu hija, Laia",
 		"pasos": [
 			{"tipo": "barra", "texto": "tres días seguidos sin emborracharte y con la dignidad por encima de 40",
 				"dias": 3, "cond": [{"limpio": "litrona"}, {"stat": "dignity", "min": 40.0}]},
@@ -903,7 +903,7 @@ const PROPOSITOS := {
 		"final": "Una mañana te das cuenta de que llevas días sin oírlas. La psiquiatra lo apunta sin levantar la vista. En el grupo te piden que cuentes cómo lo has hecho y no sabes qué decir. Te dan un piso tutelado en Sants.",
 	},
 	"nino_bien": {
-		"titulo": "Demostrarle a papá que es alguien",
+		"titulo": "Demostrarle a papá que eres alguien",
 		"pasos": [
 			{"tipo": "ir", "texto": "llamar a papá desde un cajero y decirle que no te ingrese más la paga", "lugar": ["cajero"],
 				"desde": 0, "hasta": 0, "veces": 1, "minutos": 10, "efecto": "sin_paga",
