@@ -217,12 +217,36 @@ sí y una memoria poco fiable**, que puede ir creciendo hacia misiones de rol en
   - [x] También día a día: cada día, a veces, alguien más se engancha y corre el rumor
     (`Defs.CONTAGIO_DIARIO`, más probable con cada relevo).
   - [ ] Pendiente: que se note quién engancha a quién (ver «Contagio»), y el camino de vuelta.
-- [ ] **Un propósito para cada yonki**, más allá de pasar un día más. Ideas por valorar:
+- [x] **Un propósito para cada yonki**, más allá de pasar un día más. Ideas por valorar:
   Youssef, mandar dinero a casa y conseguir los papeles; Paco, recuperar a su hija o
   pagar una deuda vieja; Don Ramón, que los nietos vuelvan a llamar o dejar algo en herencia;
   Jordi, ver al perro o volver con ella (o vengarse); Mari Loli, que las voces callen o
   encontrar a alguien del psiquiátrico; Borja, demostrar a papá que es alguien (o lo contrario).
   Cumplirlo podría ser otro final, o lo que se lleva el siguiente.
+  Hecho, primer paso (`scripts/proposito.gd`, `Defs.PROPOSITOS` y `Defs.PROPOSITO_*`): uno por
+  perfil, en tres pasos de cuatro tipos (mandar dinero desde un sitio, ir a un sitio a ciertas
+  horas, a veces sereno; tener algo; aguantar unos días seguidos con una barra o sin colocarte
+  de algo o sin que te fichen):
+  - Youssef: mandar 150 € a casa (el Western Union o un cajero), ir dos días a la asesoría de
+    extranjería a por el informe de arraigo y pasar tres días sin que te fichen. Se pierde con
+    otra detención.
+  - Paco: tres días sin emborracharse, ingresar 100 € de la pensión de Laia y comer con ella en
+    un kebab, sereno (si llega colocado, se acabó). Se pierde si la dignidad toca fondo.
+  - Don Ramón: un móvil que funcione, 60 € para el cumpleaños de su nieto y dos días con la
+    dignidad alta. Si baja mucho, los nietos dejan de llamar.
+  - Jordi: la pensión atrasada, tres días dignos y sin fichar, y ver a Kira en una terraza. Se
+    pierde con otra detención.
+  - Mari Loli: la psiquiatra del CAP, tres días con la mente bien y dos tardes en el grupo de
+    apoyo. Se pierde con otro ingreso.
+  - Borja: decirle a papá que no le pase más la paga, cuatro días por su cuenta (con algo de
+    dinero y dignidad) y cenar con papá, sereno.
+  Sale en la libreta (arriba, con su progreso), en el registro al avanzar y al empezar. Cada
+  paso baja la caída y sube la dignidad y la mente: lo que te acerca a lo tuyo te aleja del
+  fondo. Cumplirlo es un final («CUMPLIDO», destino `cumplido`: se queda de vecino y deja
+  relevo) y queda en `GameState.historia`; perderlo para siempre es un hito.
+  - [ ] Pendiente: que los pasos tengan más que ver con la gente del barrio (personajes del
+    editor, misiones); que el siguiente yonki herede algo del propósito del de antes; un segundo
+    propósito «oscuro» por perfil (vengarse, hundirse a propósito); jugarlo y ajustar.
 - [ ] **Amistades y enemistades entre los NPC**, por lo que se hacen, lo que ven y lo que les
   cuentan, con **niveles de fama**; de ahí pueden salir **bandas**.
 - [ ] **Sucesos de la historia del barrio**: llega el fentanilo, redadas fuertes de la

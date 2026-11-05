@@ -140,6 +140,16 @@ los yonkis poco. Los clientes que repiten pagan más y te buscan; si se la vende
 más pero no se les olvida. Que no te vea un agente, ni un camello: vender en su esquina se paga.
 Con los otros yonkis también se hace trueque: te cambian lo que llevan encima por tus objetos.
 
+### Lo que de verdad quieres
+
+Cada yonki tiene un propósito, además de pasar un día más: Youssef, mandar dinero a casa y
+conseguir los papeles; Paco, recuperar a su hija; Don Ramón, que los nietos vuelvan a llamar;
+Jordi, volver a ver a su perro; Mari Loli, que callen las voces; Borja, demostrarle algo a
+papá. Va por pasos (en la libreta, arriba): mandar dinero desde el cajero, ir a una cita a
+cierta hora (a veces sin ir colocado), aguantar unos días sin beber o con la cabeza en su sitio.
+Cada paso te aleja del fondo, que es justo lo contrario del objetivo; cumplirlo es un final
+(«CUMPLIDO») y perderlo para siempre, un hito de la caída.
+
 ### Encargos y libreta
 
 Algunos personajes te hacen encargos con plazo («Encargo: ...» en su menú): el camello, que
@@ -280,6 +290,8 @@ python tools/make_textures.py
   ido mientras estaban latentes (equilibrio en `Defs.NPC_HABITS` y `Defs.NPC_*`)
 - `game/scripts/errands.gd` — encargos con plazo (ofrecer, cumplir, fallar) y la libreta que
   se apunta y se lee peor cuanto más ido vas (equilibrio en `Defs.ERRANDS`)
+- `game/scripts/proposito.gd` — el propósito de cada yonki: pasos, avisos, la libreta y el
+  final «CUMPLIDO» (los propósitos están en `Defs.PROPOSITOS`)
 - `game/scripts/partida.gd` — partidas guardadas: un JSON por partida en `user://partidas/` con
   `GameState`, el censo, la memoria de la IA y dónde estás (`Partida.CAMPOS`, `Partida.VERSION`)
 - `game/scripts/relaciones.gd` — relaciones entre personajes y cómo se corre la voz de lo que les haces

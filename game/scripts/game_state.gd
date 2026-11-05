@@ -89,6 +89,8 @@ var destino := ""
 ## Los yonkis anteriores de esta partida, del primero al último (ver World.relevo):
 ## [{perfil, nombre, destino, titulo, motivo, desde, dia, caida, celda, look, rebuscado}]
 var historia: Array = []
+## Lo que quiere conseguir este yonki y cómo va (ver Proposito y Defs.PROPOSITOS); {} si nada.
+var proposito: Dictionary = {}
 var dia_inicio := 1  ## día en que empezó el yonki de ahora
 var papa_cut := false
 var sleeping := false
@@ -174,7 +176,16 @@ func new_game(profile_id: String) -> void:
 	clock_skew = 0.0
 	_clock_lie_left = 0.0
 	_clock_blank = false
+	proposito = _nuevo_proposito()
 	changed.emit()
+
+
+## El propósito del perfil de ahora, por empezar (ver Proposito): {} si no tiene.
+func _nuevo_proposito() -> Dictionary:
+	if not Defs.PROPOSITOS.has(profile.get("id", "")):
+		return {}
+	return {"paso": 0, "progreso": 0, "racha": 0, "hoy_ok": true, "dias": [], "arrests": arrests,
+		"admissions": admissions, "estado": "activo"}
 
 
 ## Sigues con otro yonki (`profile_id`) en el mismo barrio, `dias` después: todo lo tuyo

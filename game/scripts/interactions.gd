@@ -1324,6 +1324,7 @@ static func poi_title(p: Dictionary, sep := " · ") -> String:
 func for_poi(poi: Dictionary) -> Array:
 	var gs := GameState
 	var acts := world.errands.actions_for_poi(poi)
+	acts.append_array(world.proposito.actions_for_poi(poi))
 	match poi["kind"]:
 		"super":
 			acts.append(_buy("Comprar una litrona", Defs.precio("super_litrona"), "litrona"))

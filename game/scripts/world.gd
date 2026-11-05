@@ -92,6 +92,7 @@ var interactions: Interactions
 var errands: Errands  ## Encargos con plazo y libreta
 var misiones: Misiones  ## Misiones de los personajes del editor
 var relaciones: Relaciones  ## Lo que le haces a un personaje lo saben los suyos
+var proposito: Proposito  ## Lo que quiere conseguir el yonki de ahora
 var street_items: StreetItems  ## Objetos tirados por la calle
 var trade: Trade  ## Trapicheo: revender y cambiar cosas con otros yonkis
 var conversation: Conversation  ## Conversación libre con IA (scripts/ai/)
@@ -166,6 +167,7 @@ func _ready() -> void:
 	errands = Errands.new(self)
 	misiones = Misiones.new(self)
 	relaciones = Relaciones.new(self)
+	proposito = Proposito.new(self)
 	street_items = StreetItems.new(self)
 	trade = Trade.new(self)
 	street_items.populate()
@@ -214,6 +216,7 @@ func _ready() -> void:
 	hud.find_place_requested.connect(highlight_poi)
 	GameState.game_over.connect(_on_game_over)
 	GameState.relocated.connect(_on_relocated)
+	GameState.new_day.connect(proposito.nuevo_dia)
 	GameState.new_day.connect(_autoguardar)
 	GameState.new_day.connect(_contagio_diario)
 	hud.save_requested.connect(guardar_partida)
@@ -273,6 +276,15 @@ func _intro() -> void:
 			c["rank"], c["barrios"], _thousands(c["total_incidents"]), c["year"]], Color("e0c080"))
 	GameState.log_msg("Objetivo: caer lo más bajo posible... sin morirte antes de tiempo.", GameState.C_FALL)
 	GameState.log_msg(GameState.profile["perk"])
+	_anunciar_proposito()
+
+
+## Lo que quiere conseguir el yonki de ahora (Proposito), en el registro.
+func _anunciar_proposito() -> void:
+	var d := Proposito.def()
+	if not d.is_empty():
+		GameState.log_msg("Lo que de verdad quieres: %s. Empieza por %s (lo tienes en la libreta, L)." % [
+			d["titulo"].to_lower(), d["pasos"][0]["texto"]], Color("f0c060"))
 
 
 func _thousands(n: int) -> String:
@@ -478,6 +490,7 @@ func _process(delta: float) -> void:
 		GameState.advance(delta * Defs.GAME_MINUTES_PER_SECOND)
 		errands.update()
 		misiones.update()
+		proposito.update()
 		street_items.update()
 	_fx = GameState.effects()
 	hud.show_effects(_fx)
@@ -1570,7 +1583,9 @@ func _on_game_over(reason: String) -> void:
 	gs.historia.append({"perfil": gs.profile["id"], "nombre": gs.profile["name"],
 		"destino": gs.destino, "titulo": gs.ending_title, "motivo": reason, "desde": gs.dia_inicio,
 		"dia": gs.day, "caida": roundi(gs.caida), "celda": player.cell, "look": gs.profile["look"].duplicate(),
-		"calle": city.street_name_near(player.cell), "rebuscado": false})
+		"calle": city.street_name_near(player.cell), "rebuscado": false,
+		"proposito": Defs.PROPOSITOS.get(gs.profile["id"], {}).get("titulo", ""),
+		"proposito_estado": gs.proposito.get("estado", "")})
 	# la partida guardada queda como terminada: «Continuar» ya no la ofrece (hasta un relevo)
 	if Partida.automatico and gs.partida_id != "":
 		Partida.guardar(self)
@@ -1627,6 +1642,7 @@ func relevo(profile_id: String) -> void:
 		gs.log_msg("En estos días, %s se ha enganchado: ahora va con los yonkis." % _quien(r), gs.C_INFO)
 	gs.log_msg("Ahora eres %s, %s." % [gs.profile["name"], gs.profile["title"].to_lower()])
 	gs.log_msg(gs.profile["perk"])
+	_anunciar_proposito()
 	gs.milestone("relevo")
 	gs.changed.emit()
 	if Partida.automatico:

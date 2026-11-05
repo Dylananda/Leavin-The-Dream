@@ -172,6 +172,7 @@ const DESTINOS := {
 	"deportado": {"texto": "fue expulsado del país", "queda": ""},
 	"psiquiatrico": {"texto": "se quedó en el psiquiátrico", "queda": ""},
 	"fuera": {"texto": "volvió con su familia", "queda": ""},
+	"cumplido": {"texto": "consiguió lo que buscaba", "queda": "vecino"},
 }
 ## Lo que dice de sí mismo el que se queda en el barrio («Escuchar su historia»).
 const DESTINO_BIO := {
@@ -725,6 +726,7 @@ const MILESTONES := {
 	"socio_club": ["Hacerte socio de un club cannábico", 3],
 	"redada_club": ["Caer en una redada de un club cannábico", 6],
 	"relevo": ["Tomar el relevo de otro yonki", 5],
+	"proposito_perdido": ["Perder para siempre lo que buscabas", 20],
 	"altar_monedas": ["Coger las monedas del altar de un compañero", 12],
 	# conocer una sustancia nueva (las que ya conoce el perfil no cuentan)
 	"probar_litrona": ["Empezar a beber en la calle", 3],
@@ -795,3 +797,117 @@ static func title_for(caida: float) -> String:
 ## Convierte un índice de criminalidad (1.0 = barrio mediano) en un multiplicador suave.
 static func crime_factor(index: float) -> float:
 	return clampf(1.0 + 0.3 * log(maxf(index, 0.01)) / log(2.0), 0.5, 3.5)
+
+
+# ------------------------------------------------------------------ propósitos
+
+## Lo que quiere conseguir cada perfil, además de pasar un día más (scripts/proposito.gd).
+## Por pasos, en orden; cada paso es de un tipo:
+##   "enviar": mandar `total` € (de `minimo` en `minimo` como poco) desde un sitio de `lugar`
+##     (tipos de Interactions.POI_LABELS), con la acción `accion`.
+##   "ir": ir a un sitio de `lugar` entre las `desde` y las `hasta` h, `veces` días distintos,
+##     con la acción `accion` (dura `minutos`). Con `sobrio`, no cuenta si vas colocado (por
+##     encima de PROPOSITO_SOBRIO) y, si además `estricto`, lo pierdes para siempre. `efecto`:
+##     algo que pasa al hacerlo ("sin_paga": papá deja de ingresarte).
+##   "tener": tener el objeto `objeto` en el inventario.
+##   "barra": aguantar `dias` días seguidos (empezando por el de hoy) sin que falle ninguna
+##     condición de `cond`: {"stat": campo de GameState, "min"/"max"}, {"limpio": sustancia}
+##     (sin pasar de PROPOSITO_LIMPIO de colocón) o {"no_fichado": true}.
+## `falla` = lo que lo pierde para siempre (es un hito): "detenido" (otra detención desde que
+## empezó), "ingreso" (otro ingreso en el psiquiátrico) o {"dignidad": mínimo}. `final` = el
+## texto del final «CUMPLIDO»; `perdido` = lo que dice al perderlo.
+const PROPOSITOS := {
+	"sin_papeles": {
+		"titulo": "Mandar dinero a casa y conseguir los papeles",
+		"pasos": [
+			{"tipo": "enviar", "texto": "mandar 150 € a casa", "lugar": ["cajero"], "total": 150, "minimo": 20,
+				"accion": "Mandar dinero a casa (envío)"},
+			{"tipo": "ir", "texto": "ir dos días a la asesoría de extranjería del servicio social (9 a 14 h) a por el informe de arraigo",
+				"lugar": ["albergue"], "desde": 9, "hasta": 14, "veces": 2, "minutos": 90,
+				"accion": "Pedir el informe de arraigo"},
+			{"tipo": "barra", "texto": "pasar tres días seguidos sin que te fichen, mientras resuelven",
+				"dias": 3, "cond": [{"no_fichado": true}]},
+		],
+		"falla": "detenido",
+		"perdido": "Con una detención más en el expediente, el arraigo se ha ido a la basura. Los papeles ya no llegarán.",
+		"final": "Una carta certificada: permiso de residencia y trabajo. Llamas a tu madre desde el locutorio y no sabes qué decir; ella llora por las dos. El lunes empiezas en una obra en Badalona. El Raval te ha visto llegar y te ve irte.",
+	},
+	"parado": {
+		"titulo": "Recuperar a su hija, Laia",
+		"pasos": [
+			{"tipo": "barra", "texto": "tres días seguidos sin emborracharte y con la dignidad por encima de 40",
+				"dias": 3, "cond": [{"limpio": "litrona"}, {"stat": "dignity", "min": 40.0}]},
+			{"tipo": "enviar", "texto": "ingresar 100 € de la pensión de Laia que debes", "lugar": ["cajero"], "total": 100, "minimo": 10,
+				"accion": "Ingresar para la pensión de Laia"},
+			{"tipo": "ir", "texto": "comer con Laia en un kebab (13 a 15 h), sereno", "lugar": ["kebab"],
+				"desde": 13, "hasta": 15, "veces": 1, "minutos": 90, "sobrio": true, "estricto": true,
+				"accion": "Comer con Laia"},
+		],
+		"falla": {"dignidad": 15.0},
+		"perdido": "Laia te ha visto en la calle, tirado. Su madre te llama esa noche: que no vuelvas a acercarte.",
+		"final": "Laia se pide un dürüm sin cebolla, como cuando tenía ocho años. Hablan de todo menos de lo importante, y al despedirse te dice «hasta el sábado». Dejas la litrona en el portal. Ya no caes: subes, despacio.",
+	},
+	"jubilado": {
+		"titulo": "Que los nietos vuelvan a llamar",
+		"pasos": [
+			{"tipo": "tener", "texto": "conseguir un móvil que funcione", "objeto": "movil"},
+			{"tipo": "enviar", "texto": "mandarle 60 € a Marc por su cumpleaños", "lugar": ["cajero"], "total": 60, "minimo": 10,
+				"accion": "Mandar el regalo de cumpleaños de Marc"},
+			{"tipo": "barra", "texto": "dos días seguidos con la dignidad por encima de 70, que cuando llamen no te noten nada",
+				"dias": 2, "cond": [{"stat": "dignity", "min": 70.0}]},
+		],
+		"falla": {"dignidad": 30.0},
+		"perdido": "Tu hija ha hablado con alguien del barrio. Los nietos ya no van a llamar.",
+		"final": "Suena el móvil un domingo: es Marc, que quiere enseñarte el patinete que le compró con tu dinero. Luego se pone Anna. Te invitan a comer a Sabadell. Te pones la americana de los domingos y coges el tren.",
+	},
+	"divorciado": {
+		"titulo": "Ver otra vez a Kira, el perro",
+		"pasos": [
+			{"tipo": "enviar", "texto": "pagar 160 € de la pensión atrasada", "lugar": ["cajero"], "total": 160, "minimo": 20,
+				"accion": "Pagar la pensión atrasada"},
+			{"tipo": "barra", "texto": "tres días seguidos con la dignidad por encima de 60 y sin que te fichen",
+				"dias": 3, "cond": [{"stat": "dignity", "min": 60.0}, {"no_fichado": true}]},
+			{"tipo": "ir", "texto": "quedar con ella y con Kira en la terraza de un bar (18 a 20 h), sereno", "lugar": ["bar"],
+				"desde": 18, "hasta": 20, "veces": 1, "minutos": 60, "sobrio": true,
+				"accion": "Esperar a Kira en la terraza"},
+		],
+		"falla": "detenido",
+		"perdido": "Se ha enterado de lo de la comisaría. Te ha bloqueado en todo. A Kira no la vas a volver a ver.",
+		"final": "Kira te reconoce desde la otra punta de la plaza y casi tira a tu ex al suelo. Ella se sienta, pide un café y te deja pasear al perro cada domingo. No es volver. Pero es algo.",
+	},
+	"psiquiatrico": {
+		"titulo": "Que callen las voces",
+		"pasos": [
+			{"tipo": "ir", "texto": "ir a la cita con la psiquiatra del CAP (9 a 13 h)", "lugar": ["cap"],
+				"desde": 9, "hasta": 13, "veces": 1, "minutos": 60, "accion": "Ir a la cita con la psiquiatra"},
+			{"tipo": "barra", "texto": "tres días seguidos con la salud mental por encima de 60",
+				"dias": 3, "cond": [{"stat": "sanity", "min": 60.0}]},
+			{"tipo": "ir", "texto": "ir dos tardes al grupo de apoyo del servicio social (17 a 19 h)", "lugar": ["albergue"],
+				"desde": 17, "hasta": 19, "veces": 2, "minutos": 90, "accion": "Ir al grupo de apoyo"},
+		],
+		"falla": "ingreso",
+		"perdido": "Otra vez dentro. Cuando sales, las voces han ganado: ya no intentas que se callen.",
+		"final": "Una mañana te das cuenta de que llevas días sin oírlas. La psiquiatra lo apunta sin levantar la vista. En el grupo te piden que cuentes cómo lo has hecho y no sabes qué decir. Te dan un piso tutelado en Sants.",
+	},
+	"nino_bien": {
+		"titulo": "Demostrarle a papá que es alguien",
+		"pasos": [
+			{"tipo": "ir", "texto": "llamar a papá desde un cajero y decirle que no te ingrese más la paga", "lugar": ["cajero"],
+				"desde": 0, "hasta": 0, "veces": 1, "minutos": 10, "efecto": "sin_paga",
+				"accion": "Llamar a papá: que no te pase más la paga"},
+			{"tipo": "barra", "texto": "cuatro días seguidos por tu cuenta: con 30 € encima al menos y la dignidad por encima de 60",
+				"dias": 4, "cond": [{"stat": "money", "min": 30.0}, {"stat": "dignity", "min": 60.0}]},
+			{"tipo": "ir", "texto": "cenar con papá en un bar (20 a 22 h), sereno", "lugar": ["bar"],
+				"desde": 20, "hasta": 22, "veces": 1, "minutos": 90, "sobrio": true, "estricto": true,
+				"accion": "Cenar con papá"},
+		],
+		"falla": {"dignidad": 30.0},
+		"perdido": "Alguien le ha enseñado a papá una foto tuya en la Rambla del Raval. Ya no hay nada que demostrar.",
+		"final": "Papá pide la cuenta y, por primera vez, te deja pagar a ti. No dice nada, pero en el coche le cuenta a mamá que has «madurado». Vuelves a Pedralbes con una historia que nadie te va a creer.",
+	},
+}
+const PROPOSITO_SOBRIO := 30.0  ## colocón por encima del cual vas «colocado» a una cita del propósito
+const PROPOSITO_LIMPIO := 0.4  ## colocón (0..1) de una sustancia que rompe un «limpio de»
+const PROPOSITO_PASO_CAIDA := 10.0  ## lo que baja la caída cada paso: acercarte a lo tuyo te aleja del fondo
+const PROPOSITO_PASO_DIGNIDAD := 5.0  ## ... y lo que sube la dignidad
+const PROPOSITO_PASO_MENTE := 5.0  ## ... y la salud mental

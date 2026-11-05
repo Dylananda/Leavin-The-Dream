@@ -114,6 +114,7 @@ func _initialize() -> void:
 	await _test_finales()
 	await _test_relevo()
 	await _test_partida()
+	await _test_proposito()
 	await _test_editor()
 	await _test_sustancias()
 	print("FALLOS: %d" % _failures if _failures > 0 else "OK")
@@ -742,7 +743,7 @@ func _test_misiones(gs, world) -> void:
 	_check(gs.has_item("paquete") and misiones.activas().size() == 1, "aceptar la misión no te da el paquete")
 	_check(world.errands.marker_for(quique) == "★" and world.errands.marker_for(txell) == "★", "la misión en marcha no marca a Quique y a Txell")
 	_check(world.censo.anclado(quique), "Quique se duerme con la misión en marcha")
-	_check(world.errands.notebook_entries()[0]["text"].contains("Txell"), "la misión no se apunta en la libreta")
+	_check(world.errands.notebook_entries().any(func(x): return x["text"].contains("Txell")), "la misión no se apunta en la libreta")
 	print("  misiones: %s" % world.errands.note_text(gs.notes[-1]))
 	var dar = world.interactions.for_npc(txell).filter(func(a): return a["label"].begins_with("Darle: paquete"))
 	_check(dar.size() == 1, "no se le puede dar el paquete a Txell")
@@ -803,6 +804,74 @@ func _test_misiones(gs, world) -> void:
 	gs.wanted_until = -1.0
 	gs.inventory.erase("papeles_albergue")
 	print("  misiones: OK")
+
+
+## Un propósito para cada yonki: el de Paco (recuperar a Laia), paso a paso hasta el final
+## «CUMPLIDO», que deja relevo y queda en la historia; luego el de Don Ramón, perdido para siempre.
+func _test_proposito() -> void:
+	var gs = root.get_node("GameState")
+	gs.new_game("parado")
+	change_scene_to_file("res://scenes/world.tscn")
+	await process_frame
+	await process_frame
+	var world = current_scene
+	world.censo.pausado = true
+	var prop = world.proposito
+	_check(gs.proposito.get("estado", "") == "activo" and gs.proposito["paso"] == 0, "propósito: Paco no empieza con el suyo")
+	_check(world.errands.notebook_entries()[0]["text"].contains("Tu propósito"), "propósito: no sale en la libreta")
+	# paso 1: tres días sin emborracharse (un día con litrona no cuenta)
+	_steady(gs)
+	gs.dignity = 80.0
+	for id in gs.subs:
+		gs.subs[id]["high"] = 0.0
+	gs.subs["litrona"]["high"] = 50.0
+	prop.update()
+	_check(not gs.proposito["hoy_ok"], "propósito: emborracharse no rompe el día")
+	prop.nuevo_dia()
+	_check(gs.proposito["racha"] == 0, "propósito: un día borracho cuenta")
+	gs.subs["litrona"]["high"] = 0.0
+	for i in 3:
+		prop.update()
+		prop.nuevo_dia()
+	_check(gs.proposito["paso"] == 1, "propósito: tres días limpio no pasan al siguiente paso (%s)" % gs.proposito)
+	# paso 2: ingresar 100 € en el cajero, en dos veces
+	var cajero: Dictionary = world.city.pois_of_kind("cajero")[0]
+	gs.caida = 50.0  # (empezando de cero no puede bajar)
+	var caida: float = gs.caida
+	gs.money = 30
+	var ingresar = world.interactions.for_poi(cajero).filter(func(a): return a["label"].begins_with("Ingresar para la pensión de Laia: 30"))
+	_check(ingresar.size() == 1, "propósito: no se puede ingresar en el cajero")
+	if not ingresar.is_empty():
+		ingresar[0]["do"].call()
+	_check(gs.proposito["progreso"] == 30 and gs.money == 0, "propósito: ingresar no cuenta o no cuesta")
+	gs.money = 200
+	world.interactions.for_poi(cajero).filter(func(a): return a["label"].begins_with("Ingresar para la pensión"))[0]["do"].call()
+	_check(gs.proposito["paso"] == 2 and gs.money == 130, "propósito: los 100 € no pasan al siguiente paso")
+	# paso 3: comer con Laia, sereno, de 13 a 15
+	var kebab: Dictionary = world.city.pois_of_kind("kebab")[0]
+	gs.minute_of_day = 10.0 * 60.0
+	_check(world.interactions.for_poi(kebab).any(func(a): return a["label"].begins_with("Comer con Laia (de 13")), "propósito: la cita no dice la hora")
+	gs.minute_of_day = 13.0 * 60.0 + 30.0
+	for id in gs.subs:
+		gs.subs[id]["high"] = 0.0
+	var comer = world.interactions.for_poi(kebab).filter(func(a): return a["label"] == "Comer con Laia")
+	_check(comer.size() == 1, "propósito: no se puede comer con Laia a su hora")
+	if not comer.is_empty():
+		comer[0]["do"].call()
+	_check(not gs.alive and gs.ending_title == "CUMPLIDO" and gs.destino == "cumplido", "propósito: cumplirlo no es un final")
+	_check(gs.caida < caida, "propósito: avanzar no baja la caída")
+	_check(not gs.historia.is_empty() and gs.historia[-1]["proposito_estado"] == "hecho", "propósito: no queda en la historia")
+	# relevo: Don Ramón, con el suyo; Paco se queda de vecino
+	world.relevo("jubilado")
+	_check(gs.alive and gs.proposito.get("estado", "") == "activo" and gs.proposito["paso"] == 0, "propósito: el relevo no empieza el suyo")
+	_check(world.censo.registros.any(func(r): return r["kind"] == "vecino" and r["name"] == "Paco"), "propósito: Paco no se queda en el barrio de vecino")
+	# el de Don Ramón: con la dignidad por los suelos, los nietos dejan de llamar para siempre
+	gs.dignity = 20.0
+	prop.update()
+	_check(gs.proposito["estado"] == "perdido" and "proposito_perdido" in gs.milestones, "propósito: perderlo no es un hito")
+	_check(world.errands.notebook_entries()[0]["text"].contains("Ya no puede ser"), "propósito: la libreta no dice que se ha perdido")
+	_check(load("res://scripts/partida.gd")._estado(world).has("proposito"), "propósito: no se guarda en la partida")
+	print("  propósitos: OK")
 
 
 ## Partidas guardadas: se guarda a media partida (con un encargo en marcha, un vecino que te
