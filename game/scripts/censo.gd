@@ -92,6 +92,8 @@ func con_amo(d: Dictionary) -> bool:
 
 ## Si anda por la calle a la hora `h`.
 func activo(r: Dictionary, h: int) -> bool:
+	if Sucesos.escondido(r):
+		return false  # un camello escondido por las redadas
 	if not r["personaje"].is_empty():
 		# los detenidos por una misión (Misiones.apartar) no andan por el barrio
 		return Personajes.activo(r["personaje"], h) and not Misiones.apartado(r["personaje"].get("id", ""))

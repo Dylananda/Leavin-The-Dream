@@ -140,6 +140,14 @@ los yonkis poco. Los clientes que repiten pagan más y te buscan; si se la vende
 más pero no se les olvida. Que no te vea un agente, ni un camello: vender en su esquina se paga.
 Con los otros yonkis también se hace trueque: te cambian lo que llevan encima por tus objetos.
 
+### Lo que le pasa al barrio
+
+A veces pasan cosas que cambian el Raval unos días (se anuncian en el registro y la gente lo
+comenta): llega el fentanilo (parches baratísimos, caballo cortado, gente que cae en los
+portales; las educadoras reparten naloxona), hay redadas fuertes (policía por todas partes,
+camellos escondidos, droga cara), la Fiesta Mayor (a mediados de julio: el barrio lleno de
+gente) u obras que cortan una calle.
+
 ### Lo que de verdad quieres
 
 Cada yonki tiene un propósito, además de pasar un día más: Youssef, mandar dinero a casa y
@@ -290,6 +298,8 @@ python tools/make_textures.py
   ido mientras estaban latentes (equilibrio en `Defs.NPC_HABITS` y `Defs.NPC_*`)
 - `game/scripts/errands.gd` — encargos con plazo (ofrecer, cumplir, fallar) y la libreta que
   se apunta y se lee peor cuanto más ido vas (equilibrio en `Defs.ERRANDS`)
+- `game/scripts/sucesos.gd` — sucesos del barrio (fentanilo, redadas, Fiesta Mayor, obras), con
+  su calendario y lo que cambian (`Defs.SUCESOS`)
 - `game/scripts/proposito.gd` — el propósito de cada yonki: pasos, avisos, la libreta y el
   final «CUMPLIDO» (los propósitos están en `Defs.PROPOSITOS`)
 - `game/scripts/partida.gd` — partidas guardadas: un JSON por partida en `user://partidas/` con

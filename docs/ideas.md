@@ -249,8 +249,27 @@ sí y una memoria poco fiable**, que puede ir creciendo hacia misiones de rol en
     propósito «oscuro» por perfil (vengarse, hundirse a propósito); jugarlo y ajustar.
 - [ ] **Amistades y enemistades entre los NPC**, por lo que se hacen, lo que ven y lo que les
   cuentan, con **niveles de fama**; de ahí pueden salir **bandas**.
-- [ ] **Sucesos de la historia del barrio**: llega el fentanilo, redadas fuertes de la
+- [x] **Sucesos de la historia del barrio**: llega el fentanilo, redadas fuertes de la
   policía, fiestas de barrio, manifestaciones, obras que cortan calles.
+  Hecho, primer paso (`scripts/sucesos.gd`, `Defs.SUCESOS` y lo que le sigue): cada día se
+  mira si acaba alguno y si empieza otro, por fecha (hay calendario: el día 1 es el 10 de julio,
+  `Defs.CALENDARIO_INICIO`) o al azar; duran días. Se anuncian en el registro, corren como
+  rumor en la libreta y en lo que dice la gente al pasar, y la IA de las conversaciones lo sabe.
+  Se guardan en la partida y sobreviven al relevo (son del barrio).
+  - **Llega el fentanilo**: parches baratísimos con riesgo de sobredosis en cada dosis; el
+    caballo puede venir cortado sin avisar; los bots que se meten opiáceos caen (delante de ti
+    se les puede salvar con naloxona o llamando al 112, que llega tarde a menudo) y cada día
+    aparece alguno muerto en un portal; las educadoras reparten naloxona, que te salva a ti.
+  - **Redadas fuertes**: el triple de Urbana y Mossos (y más de paisano), la mayoría de los
+    camellos se esconden y la droga sale un 60 % más cara.
+  - **Fiesta Mayor del Raval** (17 de julio, cuatro días): más turistas, vecinos, niños,
+    músicos, despedidas y roseros, y la gente de fiesta da más.
+  - **Obras**: un tramo de una calle vallado unos días (casillas que no se pueden pisar,
+    `CityMap.bloquear`, y vallas rojas y blancas).
+  - [ ] Pendiente: manifestaciones; que la Fiesta Mayor tenga gigantes, conciertos y mesas en la
+    calle de verdad (ahora es más gente); que cada suceso cambie más cosas (precios por zona,
+    sitios cerrados); comprobar la fecha real de la Fiesta Mayor del Raval y buscar fuentes
+    sobre el fentanilo en Barcelona; capturas de las vallas en el PC; jugarlo y ajustar.
 - [x] **Empezar más enganchados** (4 de noviembre): todos los perfiles empiezan con más
   enganche y algo más de lo de siempre (tabaco, ansiolíticos; en `Defs.PROFILES`, `knows`).
 - El tono: **denuncia de situaciones reales con humor**, que sale de mostrar las cosas como son

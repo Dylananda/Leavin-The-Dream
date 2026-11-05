@@ -968,13 +968,22 @@ func _process(delta: float) -> void:
 	super._process(delta)
 	if not GameState.alive:
 		return
+	if has_meta("sobredosis"):
+		# caído de sobredosis (Sucesos.cae): si nadie le pone naloxona a tiempo, muere
+		if _clock() >= get_meta("sobredosis") and world != null:
+			world.sucesos.muere(self)
+		return
 	_think -= delta
 	_chatter -= delta
 	if _chatter <= 0.0:
 		_chatter = randf_range(15.0, 45.0)
 		if player and distance_to_cell(player.cell) < 20:
 			var f := Consumo.frase(consumo)
-			say(f if f != "" and randf() < 0.6 else lines().pick_random())
+			var rumor := Sucesos.frase() if randf() < 0.3 else ""  # lo que pasa estos días en el barrio
+			if rumor != "" and not is_police():
+				say(rumor)
+			else:
+				say(f if f != "" and randf() < 0.6 else lines().pick_random())
 	if player and _think <= 0.0:
 		_think = THINK_TIME
 		pasa_consumo()
@@ -1148,6 +1157,9 @@ func pasa_consumo() -> void:
 			consumo["pillado"] = 0
 		if veces > 0 and on_screen and player and distance_to_cell(player.cell) < 20:
 			say(["*se mete algo*", "Ahhh...", "Ahora sí."].pick_random(), 2.5)
+		# con el fentanilo en el barrio, los opiáceos matan (Sucesos)
+		if veces > 0 and world != null and GameState.sucesos.has("fentanilo") and consumo["id"] in Defs.OPIACEOS 				and randf() < 1.0 - pow(1.0 - Defs.FENTA_BOT_OD, veces):
+			world.sucesos.cae(self)
 	var m := Consumo.manejo(consumo)
 	slow_factor = m.x
 	wobble = m.y

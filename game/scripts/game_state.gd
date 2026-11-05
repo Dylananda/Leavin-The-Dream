@@ -91,6 +91,10 @@ var destino := ""
 var historia: Array = []
 ## Lo que quiere conseguir este yonki y cómo va (ver Proposito y Defs.PROPOSITOS); {} si nada.
 var proposito: Dictionary = {}
+## Sucesos del barrio en marcha ({id: {"hasta": now(), ...}}) y cuándo acabó cada uno
+## ({id: now()}); ver Sucesos y Defs.SUCESOS. Son del barrio: sobreviven a un relevo.
+var sucesos: Dictionary = {}
+var sucesos_fin: Dictionary = {}
 var dia_inicio := 1  ## día en que empezó el yonki de ahora
 var papa_cut := false
 var sleeping := false
@@ -177,6 +181,8 @@ func new_game(profile_id: String) -> void:
 	_clock_lie_left = 0.0
 	_clock_blank = false
 	proposito = _nuevo_proposito()
+	sucesos = {}
+	sucesos_fin = {}
 	changed.emit()
 
 
@@ -193,7 +199,7 @@ func _nuevo_proposito() -> Dictionary:
 ## (los clubs precintados, los personajes detenidos por una misión).
 func relevo(profile_id: String, dias: int) -> void:
 	var keep := {"historia": historia, "partida_id": partida_id, "clubs_cerrados": clubs_cerrados,
-		"apartados": apartados}
+		"apartados": apartados, "sucesos": sucesos, "sucesos_fin": sucesos_fin}
 	var hoy := day + dias
 	new_game(profile_id)
 	for k in keep:
@@ -203,6 +209,43 @@ func relevo(profile_id: String, dias: int) -> void:
 	if profile["income"]:
 		_next_income_day = day + int(profile["income"].get("every_days", 0))
 	changed.emit()
+
+
+## La fecha del día de ahora: [mes, día] (Defs.CALENDARIO_INICIO es el día 1).
+func fecha() -> Array:
+	var mes: int = Defs.CALENDARIO_INICIO[0]
+	var dia: int = Defs.CALENDARIO_INICIO[1] + day - 1
+	while dia > Defs.DIAS_MES[mes - 1]:
+		dia -= Defs.DIAS_MES[mes - 1]
+		mes = mes % 12 + 1
+	return [mes, dia]
+
+
+## «17 de julio».
+func fecha_texto() -> String:
+	var f := fecha()
+	return "%d de %s" % [f[1], Defs.MESES[f[0] - 1]]
+
+
+## Lo que multiplica el precio de la droga por los sucesos en marcha (las redadas la encarecen).
+func factor_precio() -> float:
+	var f := 1.0
+	for id in sucesos:
+		f *= Defs.SUCESOS[id].get("precio", 1.0)
+	return f
+
+
+## Lo que cuesta ahora una dosis de `id` al camello (con los sucesos en marcha).
+func precio(id: String) -> int:
+	return maxi(1, roundi(Defs.SUBSTANCES[id]["price"] * factor_precio()))
+
+
+## Lo que suma a lo que te dan pidiendo la gente de fiesta (sucesos con `pedir`).
+func extra_pedir() -> float:
+	var f := 0.0
+	for id in sucesos:
+		f += Defs.SUCESOS[id].get("pedir", 0.0)
+	return f
 
 
 func hour() -> int:
@@ -742,13 +785,32 @@ func consume(id: String, safe := false) -> void:
 	var od_chance: float = (high - 100.0) * 0.02 * d["od"] + 0.05 * d["od"] if high > 100.0 else 0.0
 	if mezcla:
 		od_chance += Defs.MEZCLA_OD * d["od"]
+	# el fentanilo tiene riesgo en cada dosis; y, mientras está en el barrio, el caballo puede venir cortado
+	od_chance += d.get("od_base", 0.0)
+	var cortado: bool = id == "caballo" and sucesos.has("fentanilo") and randf() < Defs.FENTA_CORTE
+	if cortado:
+		od_chance += Defs.FENTA_CORTE_OD
 	if not safe and od_chance > 0.0 and randf() < od_chance:
+		if id in Defs.OPIACEOS and has_item("naloxona"):
+			# la naloxona que llevas: alguien te la pone y vuelves de golpe, con un mono brutal
+			remove_item("naloxona")
+			log_msg("Sobredosis. Alguien encuentra la naloxona en tu bolsillo y te la clava. Vuelves de golpe, temblando.", C_BAD)
+			change_health(-Defs.NALOXONA_SALUD, "Sobredosis en un portal")
+			s["high"] = 0.0
+			s["mono"] = 90.0
+			milestone("naloxona")
+			if alive:
+				milestone("sobredosis")
+				advance(30.0)
+			return
 		log_msg("Sobredosis. Te despiertas en el suelo con un desconocido encima.", C_BAD)
 		change_health(-45.0, "Sobredosis en un portal")
 		if alive:
 			milestone("sobredosis")
 			advance(120.0)
 			return
+	if cortado:
+		log_msg("Este caballo pega distinto. Más fuerte. Más raro.", C_BAD)
 	change_health(d["health"], "Tu cuerpo dijo basta")
 
 

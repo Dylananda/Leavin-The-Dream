@@ -29,6 +29,7 @@ var astar := AStarGrid2D.new()
 
 var _data: Dictionary
 var _walkable_cells: Array[Vector2i] = []
+var _bloqueadas := {}  ## casillas de calle cortadas (obras: ver Sucesos)
 
 
 func _ready() -> void:
@@ -151,7 +152,22 @@ func cell_type(cell: Vector2i) -> int:
 
 
 func is_walkable(cell: Vector2i) -> bool:
-	return cell_type(cell) in WALKABLE
+	return cell_type(cell) in WALKABLE and not _bloqueadas.has(cell)
+
+
+## Corta las casillas `cells` (obras): no se pueden pisar ni atravesar hasta desbloquear().
+func bloquear(cells: Array[Vector2i]) -> void:
+	for c in cells:
+		if cell_type(c) in WALKABLE:
+			_bloqueadas[c] = true
+			astar.set_point_solid(c, true)
+
+
+func desbloquear(cells: Array[Vector2i]) -> void:
+	for c in cells:
+		if _bloqueadas.has(c):
+			_bloqueadas.erase(c)
+			astar.set_point_solid(c, false)
 
 
 func cell_to_world(cell: Vector2i) -> Vector3:
@@ -217,6 +233,10 @@ func clear_distance(from: Vector3, dir: Vector3, max_m: float) -> float:
 
 
 func random_walkable() -> Vector2i:
+	for i in 10:
+		var c: Vector2i = _walkable_cells.pick_random()
+		if not _bloqueadas.has(c):
+			return c
 	return _walkable_cells.pick_random()
 
 

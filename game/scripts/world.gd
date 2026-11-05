@@ -93,6 +93,7 @@ var errands: Errands  ## Encargos con plazo y libreta
 var misiones: Misiones  ## Misiones de los personajes del editor
 var relaciones: Relaciones  ## Lo que le haces a un personaje lo saben los suyos
 var proposito: Proposito  ## Lo que quiere conseguir el yonki de ahora
+var sucesos: Sucesos  ## Lo que le pasa al barrio unos días (fentanilo, redadas, fiesta, obras)
 var street_items: StreetItems  ## Objetos tirados por la calle
 var trade: Trade  ## Trapicheo: revender y cambiar cosas con otros yonkis
 var conversation: Conversation  ## Conversación libre con IA (scripts/ai/)
@@ -168,6 +169,7 @@ func _ready() -> void:
 	misiones = Misiones.new(self)
 	relaciones = Relaciones.new(self)
 	proposito = Proposito.new(self)
+	sucesos = Sucesos.new(self)
 	street_items = StreetItems.new(self)
 	trade = Trade.new(self)
 	street_items.populate()
@@ -217,12 +219,14 @@ func _ready() -> void:
 	GameState.game_over.connect(_on_game_over)
 	GameState.relocated.connect(_on_relocated)
 	GameState.new_day.connect(proposito.nuevo_dia)
+	GameState.new_day.connect(sucesos.nuevo_dia)
 	GameState.new_day.connect(_autoguardar)
 	GameState.new_day.connect(_contagio_diario)
 	hud.save_requested.connect(guardar_partida)
 
 	if not Partida.pendiente.is_empty():
 		Partida.aplicar_mundo(self)
+		sucesos.reaplicar()
 		GameState.log_msg("Partida cargada: día %d, %s. Sigues donde lo dejaste." % [GameState.day, Partida.hora()])
 	else:
 		_intro()
@@ -305,7 +309,17 @@ func _target_count(kind: String) -> int:
 		base *= city.crime_factor(category)
 	if kind == "yonki":
 		base *= 1.0 + Defs.RELEVO_YONKIS * GameState.historia.size()  # cada vez hay más
+	# los sucesos del barrio (más policía en las redadas, más gente en la Fiesta Mayor...)
+	for id in GameState.sucesos:
+		base *= Defs.SUCESOS[id].get("gente", {}).get(kind, 1.0)
 	return roundi(base)
+
+
+## Vuelve a calcular cuántos tiene que haber de cada tipo (al empezar o acabar un suceso): los
+## que faltan los repone el repaso de cada hora; los que sobran se van al acabar su horario.
+func recalcular_gente() -> void:
+	for kind in _npc_targets:
+		_npc_targets[kind] = _target_count(kind)
 
 
 func _place_markers() -> void:

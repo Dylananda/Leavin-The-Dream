@@ -388,6 +388,14 @@ static var SUBSTANCES := Equilibrio.aplicar("sustancias", {
 	"tabaco": {"name": "Tabaco", "price": 1, "high": 8, "addiction": 2, "health": -1, "dignity": 0, "sanity": 1, "od": 0.0,
 		"decay": 0.15, "hunger_rate": 0.8, "visible": 0.0, "color": Color("b0b0a0"),
 		"fx": {"shake": -0.25}, "fx_text": "las manos dejan de temblar un rato"},
+	# solo mientras dura el suceso «Llega el fentanilo» (`suceso`): parches baratísimos; cada
+	# dosis tiene su riesgo de sobredosis aunque no vayas colocado (`od_base`)
+	"fentanilo": {"name": "Fentanilo", "price": 3, "high": 60, "addiction": 10, "health": -8, "dignity": -5, "sanity": 3, "od": 1.5,
+		"od_base": 0.12, "suceso": "fentanilo",
+		"decay": 0.08, "hunger_rate": 0.6, "fatigue_rate": 2.5, "visible": 0.3, "color": Color("c06060"),
+		"relieves": "caballo", "mono": -60, "relief_addiction": 0,
+		"mezcla": ["litrona", "caballo", "ansioliticos", "tramadol", "ketamina"],
+		"fx": {"speed": -0.5, "sway": 1.2, "drowsy": 0.6}, "fx_text": "un peso enorme: todo se apaga, también tú"},
 })
 ## Mal viaje (las que tienen `malviaje`: con la salud mental por debajo de `cordura`, o a veces
 ## sin más, el viaje se tuerce): sus efectos durante sus `minutes`.
@@ -435,7 +443,7 @@ const BODY_FX := {
 }
 
 ## Lo que vende cada camello (el resto se consigue por otras vías).
-const DEALER_STOCK := ["porro", "pastillas", "setas", "lsd", "speed", "mdma", "ketamina", "farlopa", "base", "caballo"]
+const DEALER_STOCK := ["porro", "pastillas", "setas", "lsd", "speed", "mdma", "ketamina", "farlopa", "base", "caballo", "fentanilo"]
 
 ## Precios de lo que se compra o se cobra en las acciones (scripts/interactions.gd), en euros:
 ## `precio` y, si va por unidades, `cantidad`; `que` lo explica en el diseñador de sustancias.
@@ -478,7 +486,8 @@ static var ITEMS := Equilibrio.aplicar("objetos", {
 	"paquete": {"name": "Paquete del camello", "sell": 0},
 	"cartera_caliente": {"name": "Cartera caliente", "sell": 0},
 	"papeles_albergue": {"name": "Papeles del albergue", "sell": 0},  # de la cita en el CAS
-	"receta": {"name": "Receta del médico de cabecera", "sell": 0},  # del CAP: ansiolíticos, antidepresivos o tramadol en la farmacia
+	"receta": {"name": "Receta del médico de cabecera", "sell": 0},
+	"naloxona": {"name": "Naloxona (para una sobredosis)", "sell": 0},  # la reparten las educadoras cuando llega el fentanilo  # del CAP: ansiolíticos, antidepresivos o tramadol en la farmacia
 	# de las misiones de los personajes (scripts/misiones.gd)
 	"pasaporte": {"name": "Pasaporte de Grzegorz", "sell": 0},
 	"acordeon": {"name": "Acordeón", "sell": 25},  # el compraventa también lo quiere
@@ -745,6 +754,9 @@ const MILESTONES := {
 	"probar_antidepresivos": ["Empezar con los antidepresivos", 2],
 	"probar_tramadol": ["Probar el tramadol", 6],
 	"probar_tabaco": ["Volver a fumar", 1],
+	"probar_fentanilo": ["Probar el fentanilo", 15],
+	"naloxona": ["Que te salve la naloxona", 10],
+	"salvar_vida": ["Salvarle la vida a alguien con naloxona", 5],
 	"malviaje": ["Un mal viaje", 8],
 	"mezcla": ["Mezclar depresores", 8],
 }
@@ -911,3 +923,61 @@ const PROPOSITO_LIMPIO := 0.4  ## colocón (0..1) de una sustancia que rompe un 
 const PROPOSITO_PASO_CAIDA := 10.0  ## lo que baja la caída cada paso: acercarte a lo tuyo te aleja del fondo
 const PROPOSITO_PASO_DIGNIDAD := 5.0  ## ... y lo que sube la dignidad
 const PROPOSITO_PASO_MENTE := 5.0  ## ... y la salud mental
+
+
+# ------------------------------------------------------------------ sucesos del barrio
+
+## Calendario: el día 1 de la partida es esta fecha [mes, día] (el resto se cuenta desde aquí).
+const CALENDARIO_INICIO := [7, 10]
+const MESES := ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto",
+	"septiembre", "octubre", "noviembre", "diciembre"]
+const DIAS_MES := [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+## Cosas que le pasan al Raval durante unos días y lo cambian para todos (scripts/sucesos.gd).
+## Empiezan en una `fecha` [mes, día] o, cada día, con probabilidad `prob_dia` (no antes del
+## día `desde_dia` ni otra vez hasta `pausa` días después de acabar) y duran `dias` [mín, máx].
+## `anuncio` sale en el registro al empezar, `fin` al acabar, `rumor` en la libreta y `frases`
+## lo dice la gente al pasar mientras dura. `gente` multiplica cuántos hay de cada tipo de bot;
+## `precio` multiplica lo que cuesta la droga; `pedir` suma a lo que te dan pidiendo.
+const SUCESOS := {
+	"fentanilo": {"titulo": "Llega el fentanilo", "prob_dia": 0.05, "desde_dia": 4, "pausa": 10, "dias": [3, 5],
+		"anuncio": "Ha llegado al barrio una cosa nueva: parches de fentanilo, baratísimos. Y dicen que hay caballo cortado con lo mismo.",
+		"rumor": "Ojo con el caballo de estos días: viene cortado con fentanilo. Las educadoras reparten naloxona.",
+		"fin": "Ya no se ven parches de fentanilo por el barrio. Los que quedan, quedan.",
+		"frases": ["¿Has visto lo de los parches?", "Ayer encontraron a otro en un portal.", "Con el caballo de ahora, cuidado."]},
+	"redadas": {"titulo": "Redadas fuertes", "prob_dia": 0.07, "desde_dia": 3, "pausa": 6, "dias": [2, 3],
+		"gente": {"urbano": 3.0, "mosso": 3.0, "urbano_secreta": 2.0, "mosso_secreta": 2.0}, "precio": 1.6,
+		"anuncio": "Furgones de los Mossos en cada esquina y la Urbana pidiendo papeles: hay operación en el barrio. Los camellos se esconden y lo poco que hay, sale caro.",
+		"rumor": "Hay redadas: los camellos no salen y lo que hay está carísimo. Mejor no llevar nada encima.",
+		"fin": "Se van los furgones. Los camellos vuelven a sus esquinas como si nada.",
+		"frases": ["Hoy está la calle llena de lecheras.", "Ni se te ocurra pillar hoy.", "Me han pedido los papeles tres veces."]},
+	"fiesta_mayor": {"titulo": "Fiesta Mayor del Raval", "fecha": [7, 17], "dias": [4, 4],
+		"gente": {"turista": 1.6, "vecino": 1.6, "nino": 1.6, "anciano": 1.3, "musico": 2.5, "fiestero": 1.5, "rosero": 1.5},
+		"pedir": 0.15,
+		"anuncio": "Empieza la Fiesta Mayor del Raval: gigantes, cuerpos de baile, conciertos en la Rambla del Raval y mesas largas por la calle. Hay gente por todas partes, y de buen humor.",
+		"rumor": "Es la Fiesta Mayor: hay gente por todas partes, y la gente de fiesta da más.",
+		"fin": "Se acaba la Fiesta Mayor. Las barrenderas recogen los vasos y el barrio vuelve a lo suyo.",
+		"frases": ["¡Visca la Festa Major!", "¿Vas a los gigantes?", "Esta noche hay concierto en la Rambla del Raval."]},
+	"obras": {"titulo": "Obras en la calle", "prob_dia": 0.1, "desde_dia": 2, "pausa": 3, "dias": [2, 4],
+		"anuncio": "Han vallado un tramo de %s por obras. Hay que dar la vuelta.",
+		"rumor": "%s está cortada por obras unos días.",
+		"fin": "Quitan las vallas de %s. Huele a asfalto nuevo.",
+		"frases": ["Otra vez obras, y en verano.", "Por ahí no se puede pasar, están las vallas."]},
+}
+## Obras: el tramo cortado (casillas alrededor de un punto de la calle) y lo lejos que tiene que
+## quedar de ti al empezar (para no encerrarte).
+const REDADA_ESCONDIDOS := 0.7  ## parte de los camellos que se esconden durante las redadas
+const OBRAS_RADIO := 3
+const OBRAS_LEJOS := 30
+## Fentanilo (suceso): lo que vale y lo arriesgado que es (ver SUBSTANCES["fentanilo"]); la
+## parte del caballo que viene cortada sin avisar (y su riesgo de sobredosis en cada dosis), la
+## de los bots que se meten algo de eso y caen, los latentes que mueren cada día y los segundos
+## que aguanta uno caído delante de ti hasta que llega la naloxona... o no.
+const FENTA_CORTE := 0.3
+const FENTA_CORTE_OD := 0.12
+const FENTA_BOT_OD := 0.12
+const FENTA_MUERTOS_DIA := Vector2i(1, 3)
+const FENTA_CAIDO_SEGUNDOS := 45.0
+const AMBULANCIA_A_TIEMPO := 0.4  ## sin naloxona, que la ambulancia llegue a tiempo
+const NALOXONA_SALUD := 15.0  ## la salud que te quita una sobredosis si llevas naloxona (sin ella, 45)
+## Opiáceos: lo que la naloxona revierte.
+const OPIACEOS := ["caballo", "fentanilo", "tramadol", "metadona"]

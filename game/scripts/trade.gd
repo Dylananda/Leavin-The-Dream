@@ -62,7 +62,7 @@ func wants(npc: Npc) -> Array:
 func price_for(npc: Npc, id: String) -> int:
 	var c: Dictionary = Defs.CLIENTS.get(client_kind(npc), Defs.CLIENTS["yonki"])
 	var regular := mini(npc.remembers("cliente"), Defs.REGULAR_MAX)
-	var base: float = Defs.SUBSTANCES[id]["price"] * c["markup"] * Consumo.ansia(npc.consumo, id)
+	var base: float = GameState.precio(id) * c["markup"] * Consumo.ansia(npc.consumo, id)
 	return maxi(1, roundi(base * (1.0 + Defs.REGULAR_BONUS * regular)))
 
 

@@ -305,6 +305,7 @@ func system_prompt(npc: Npc) -> String:
 		"QUÉ NO SABES: " + f["no_sabe"],
 		"AHORA: son las %s y estás en %s. Llevas %d € encima." % [GameState.clock_text().get_slice(" ", 2), world.city.street_name_near(npc.cell), npc.money],
 		"EL JUGADOR: " + _player_text(),
+		"ESTOS DÍAS EN EL BARRIO: " + (Sucesos.resumen() if Sucesos.resumen() != "" else "nada especial") + ".",
 		"LO QUE HA PASADO ENTRE VOSOTROS (nada más; si él dice otra cosa, no te acuerdas o no es verdad):",
 		"
 ".join(facts.map(func(x): return "- " + x)) if not facts.is_empty() else "- (nada, no le conoces de antes)",

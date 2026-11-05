@@ -6,6 +6,7 @@ extends SceneTree
 func _initialize() -> void:
 	var gs = root.get_node("GameState")
 	load("res://scripts/partida.gd").automatico = false  # que no se guarde sola en user:// durante la prueba
+	load("res://scripts/sucesos.gd").azar = false  # ni empiecen sucesos al azar (se prueban aparte)
 	for profile in Defs.PROFILES:
 		gs.new_game(profile["id"])
 		gs.money = 500
@@ -115,6 +116,7 @@ func _initialize() -> void:
 	await _test_relevo()
 	await _test_partida()
 	await _test_proposito()
+	await _test_sucesos()
 	await _test_editor()
 	await _test_sustancias()
 	print("FALLOS: %d" % _failures if _failures > 0 else "OK")
@@ -804,6 +806,102 @@ func _test_misiones(gs, world) -> void:
 	gs.wanted_until = -1.0
 	gs.inventory.erase("papeles_albergue")
 	print("  misiones: OK")
+
+
+## Sucesos del barrio: la Fiesta Mayor empieza por fecha y trae más gente; las redadas, más
+## policía, camellos escondidos y droga más cara; el fentanilo se vende, los bots caen (y se
+## les salva con naloxona) y te salva a ti; las obras cortan casillas. Todos acaban y se guardan.
+func _test_sucesos() -> void:
+	var gs = root.get_node("GameState")
+	var Su = load("res://scripts/sucesos.gd")
+	gs.new_game("sin_papeles")
+	change_scene_to_file("res://scenes/world.tscn")
+	await process_frame
+	await process_frame
+	var world = current_scene
+	world.censo.pausado = true
+	var su = world.sucesos
+	_steady(gs)
+	# la Fiesta Mayor, por fecha (el 17 de julio es el día 8)
+	gs.day = 8
+	_check(gs.fecha() == [7, 17] and gs.fecha_texto() == "17 de julio", "sucesos: el calendario no cuadra (%s)" % [gs.fecha()])
+	var turistas: int = world._npc_targets["turista"]
+	var pedir: float = world.interactions._beg_bonus()
+	su.nuevo_dia()
+	_check(Su.activo("fiesta_mayor"), "sucesos: la Fiesta Mayor no empieza en su fecha")
+	_check(world._npc_targets["turista"] > turistas and world.interactions._beg_bonus() > pedir, "sucesos: en la fiesta no hay más gente ni te dan más")
+	_check(gs.pistas.any(func(p): return p["text"].contains("Fiesta Mayor")), "sucesos: la fiesta no corre como rumor")
+	_check(Su.frase() != "" and Su.resumen().contains("fiesta"), "sucesos: la gente no lo comenta")
+	gs.sucesos["fiesta_mayor"]["hasta"] = gs.now() - 1.0
+	gs.day = 20
+	su.nuevo_dia()
+	_check(not Su.activo("fiesta_mayor") and world._npc_targets["turista"] == turistas, "sucesos: la fiesta no se acaba")
+	for id in gs.sucesos.keys():
+		su.terminar(id)  # (lo que haya empezado al azar)
+	# redadas: más policía, camellos escondidos, droga más cara
+	var mossos: int = world._npc_targets["mosso"]
+	var precio: int = gs.precio("farlopa")
+	su.empezar("redadas", 2)
+	_check(world._npc_targets["mosso"] > mossos and gs.precio("farlopa") > precio, "sucesos: en las redadas no hay más Mossos ni la droga sube")
+	var camellos: Array = world.censo.registros.filter(func(r): return r["kind"] == "camello")
+	_check(camellos.any(func(r): return not world.censo.activo(r, gs.hour())), "sucesos: en las redadas no se esconde ningún camello")
+	var dealer = _npc_of(world, "camello")
+	dealer.debt = 0
+	gs.money = 500
+	_check(world.interactions.for_npc(dealer).any(func(a): return a["label"] == "Comprar Farlopa (%d €)" % gs.precio("farlopa")), "sucesos: el camello no vende al precio de las redadas")
+	_check(load("res://scripts/partida.gd")._estado(world)["sucesos"].has("redadas"), "sucesos: no se guardan en la partida")
+	su.terminar("redadas")
+	_check(gs.precio("farlopa") == precio and world._npc_targets["mosso"] == mossos, "sucesos: las redadas no se acaban")
+	# el fentanilo
+	_check(not world.interactions.for_npc(dealer).any(func(a): return a["label"].begins_with("Comprar Fentanilo")), "sucesos: se vende fentanilo sin haber llegado")
+	su.empezar("fentanilo", 3)
+	_check(world.interactions.for_npc(dealer).any(func(a): return a["label"].begins_with("Comprar Fentanilo")), "sucesos: el camello no vende fentanilo")
+	var edu = _npc_of(world, "educador")
+	_do(world, edu, "Pedirle naloxona")
+	_check(gs.has_item("naloxona"), "sucesos: la educadora no da naloxona")
+	var y = _fresh(world, "yonki")
+	y.setup(world.city, world.player.cell)
+	y.on_screen = true
+	su.cae(y)
+	_check(y.has_meta("sobredosis") and world.interactions.for_npc(y).any(func(a): return a["label"] == "Ponerle la naloxona"), "sucesos: un bot caído no se puede salvar")
+	_do(world, y, "Ponerle la naloxona")
+	_check(not y.has_meta("sobredosis") and "salvar_vida" in gs.milestones and not gs.has_item("naloxona"), "sucesos: la naloxona no le salva")
+	var z = _fresh(world, "yonki")
+	z.setup(world.city, world.player.cell)
+	z.on_screen = true
+	su.cae(z)
+	z.set_meta("sobredosis", 0.0)
+	z._process(0.1)
+	_check(not z in world.npcs and world.censo.de(z).is_empty(), "sucesos: sin naloxona no se muere")
+	var r: Dictionary = world.censo.nuevo("yonki")
+	r["estado"] = {"consumo": {"id": "caballo", "enganche": 50.0, "colocon": 0.0, "mono": 0.0, "dosis": 0, "t": gs.now()}}
+	var antes: int = world.censo.registros.size()
+	su._muertes_latentes()
+	_check(world.censo.registros.size() < antes, "sucesos: no muere nadie en los portales")
+	# a ti te salva la naloxona que llevas
+	var salvado := false
+	for i in 80:
+		_steady(gs)
+		gs.add_item("naloxona")
+		gs.add_item("fentanilo")
+		world.use_item("fentanilo")
+		gs.subs["fentanilo"]["high"] = 0.0
+		if "naloxona" in gs.milestones:
+			salvado = true
+			break
+	_check(salvado and gs.alive, "sucesos: la naloxona no te salva de una sobredosis de fentanilo")
+	su.terminar("fentanilo")
+	_steady(gs)
+	# obras: se corta un tramo y se vuelve a abrir
+	su.empezar("obras", 2)
+	_check(Su.activo("obras"), "sucesos: no empiezan las obras")
+	if Su.activo("obras"):
+		var centro: Vector2i = gs.sucesos["obras"]["centro"]
+		var cortadas: Array = su._celdas(gs.sucesos["obras"])
+		_check(not cortadas.is_empty() and not world.city.is_walkable(cortadas[0]) and su._vallas.has("obras"), "sucesos: las obras no cortan la calle")
+		su.terminar("obras")
+		_check(world.city.is_walkable(cortadas[0]) and not su._vallas.has("obras"), "sucesos: al acabar las obras no se abre la calle (%s)" % centro)
+	print("  sucesos del barrio: OK")
 
 
 ## Un propósito para cada yonki: el de Paco (recuperar a Laia), paso a paso hasta el final
