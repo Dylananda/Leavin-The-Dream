@@ -10,8 +10,10 @@ Abre `game/project.godot` con Godot 4.7 y pulsa F5.
 - WASD o flechas: andar (Shift: correr)
 - Clic: ir a un sitio, o hablar con un bot / entrar en un lugar
 - I: inventario · L: libreta · M: mapa del barrio · P: pausa (también con los botones de arriba a la derecha)
-- La partida se guarda sola al dormir y al empezar cada día, y a mano desde la pausa; «Continuar»
-  en el menú de inicio sigue la última
+- La partida se guarda sola al dormir y al empezar cada día, y a mano desde la pausa; en el menú
+  de inicio salen las partidas guardadas, para seguir una o borrarla
+- Al acabar con un yonki sigues con otro (el relevo); cuando ya han salido los seis, con otro
+  como ellos. El de antes te deja algo: un escondite, un amigo que te ayuda... o su deuda
 - R: rebuscar en la basura · Z: dormir donde estés · B: montar en la bici (si llevas una)
 - V: ver los conos de visión de todos los que tienes cerca
 - Q/E: girar la cámara · Rueda: zoom
@@ -139,6 +141,32 @@ despedidas pagan el doble, los guiris un dineral por un porro (cuidado: alguno e
 los yonkis poco. Los clientes que repiten pagan más y te buscan; si se la vendes cortada, sacas
 más pero no se les olvida. Que no te vea un agente, ni un camello: vender en su esquina se paga.
 Con los otros yonkis también se hace trueque: te cambian lo que llevan encima por tus objetos.
+
+### Amigos, enemigos y fama
+
+Los bots se conocen entre ellos: los que se pelean, se roban o se dan el tirón quedan
+enemigos (y discuten o se pegan al cruzarse) y los que se pasan una dosis, amigos. Tú tienes
+fama por zonas: lo que haces a la vista se cuenta. Con mala fama, quien no te conoce se aparta
+y los camellos no te venden; con buena, los de la calle te piden y alguien te avisa cuando
+viene la policía. La libreta dice qué se dice de ti por donde estás.
+
+### Lo que le pasa al barrio
+
+A veces pasan cosas que cambian el Raval unos días (se anuncian en el registro y la gente lo
+comenta): llega el fentanilo (parches baratísimos, caballo cortado, gente que cae en los
+portales; las educadoras reparten naloxona), hay redadas fuertes (policía por todas partes,
+camellos escondidos, droga cara), la Fiesta Mayor (a mediados de julio: el barrio lleno de
+gente) u obras que cortan una calle.
+
+### Lo que de verdad quieres
+
+Cada yonki tiene un propósito, además de pasar un día más: Youssef, mandar dinero a casa y
+conseguir los papeles; Paco, recuperar a su hija; Don Ramón, que los nietos vuelvan a llamar;
+Jordi, volver a ver a su perro; Mari Loli, que callen las voces; Borja, demostrarle algo a
+papá. Va por pasos (en la libreta, arriba): mandar dinero desde el cajero, ir a una cita a
+cierta hora (a veces sin ir colocado), aguantar unos días sin beber o con la cabeza en su sitio.
+Cada paso te aleja del fondo, que es justo lo contrario del objetivo; cumplirlo es un final
+(«CUMPLIDO») y perderlo para siempre, un hito de la caída.
 
 ### Encargos y libreta
 
@@ -280,6 +308,12 @@ python tools/make_textures.py
   ido mientras estaban latentes (equilibrio en `Defs.NPC_HABITS` y `Defs.NPC_*`)
 - `game/scripts/errands.gd` — encargos con plazo (ofrecer, cumplir, fallar) y la libreta que
   se apunta y se lee peor cuanto más ido vas (equilibrio en `Defs.ERRANDS`)
+- `game/scripts/vinculos.gd` — amistades y enemistades entre los bots (en el censo) y lo que
+  hacen al cruzarse; `game/scripts/fama.gd` — tu fama por zonas del barrio (`Defs.FAMA_*`)
+- `game/scripts/sucesos.gd` — sucesos del barrio (fentanilo, redadas, Fiesta Mayor, obras), con
+  su calendario y lo que cambian (`Defs.SUCESOS`)
+- `game/scripts/proposito.gd` — el propósito de cada yonki: pasos, avisos, la libreta y el
+  final «CUMPLIDO» (los propósitos están en `Defs.PROPOSITOS`)
 - `game/scripts/partida.gd` — partidas guardadas: un JSON por partida en `user://partidas/` con
   `GameState`, el censo, la memoria de la IA y dónde estás (`Partida.CAMPOS`, `Partida.VERSION`)
 - `game/scripts/relaciones.gd` — relaciones entre personajes y cómo se corre la voz de lo que les haces

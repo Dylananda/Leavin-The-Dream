@@ -25,7 +25,7 @@ const CAMPOS := ["money", "bank", "health", "hunger", "fatigue", "starving", "vi
 	"inventory", "fakes", "milestones", "arrests", "fines", "admissions", "subs", "resacas", "errands", "notes",
 	"pistas", "misiones", "favores", "debe_a", "apartados", "clock_skew", "_clock_lie_left",
 	"_clock_blank", "day", "minute_of_day", "alive", "ending_title", "papa_cut",
-	"_next_income_day", "_last_meds_day", "_last_methadone_day", "_next_receta_day",
+	"_next_income_day", "_last_meds_day", "_last_methadone_day", "_next_receta_day", "proposito", "sucesos", "sucesos_fin", "fama", "variante", "legado",
 	"clubs_conocidos", "clubs_socio", "clubs_cerrados", "club_compras", "destino", "historia", "dia_inicio"]
 ## Claves del registro del censo que no se guardan tal cual (se rehacen al cargar).
 const REGISTRO_APARTE := ["npc", "personaje", "zona", "perros", "_d"]
@@ -67,6 +67,11 @@ static func ultima() -> Dictionary:
 	return {}
 
 
+## Borra el archivo de una partida guardada.
+static func borrar(path: String) -> void:
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+
+
 ## La cabecera de un archivo de partida (todo menos los datos), o {} si no se puede leer.
 static func cabecera(path: String) -> Dictionary:
 	var data = JSON.parse_string(FileAccess.get_file_as_string(path))
@@ -106,6 +111,7 @@ static func guardar(world: World, path := "") -> Error:
 		"hora": hora(),
 		"caida": roundi(gs.caida),
 		"vivo": gs.alive,
+		"historia": gs.historia.map(func(h): return {"nombre": h["nombre"], "destino": h["destino"]}),
 		"guardada": Time.get_datetime_string_from_system(false, true),
 		"datos": JSON.from_native(datos),
 	}
@@ -206,6 +212,7 @@ static func cargar(path: String) -> bool:
 			n["errand"] = gs.errands[i]
 			notes.append(n)
 	gs.notes = notes
+	gs.aplicar_variante()  # (si es otro del mismo perfil, su nombre y su aspecto)
 	gs.changed.emit()
 	pendiente = datos
 	return true
@@ -251,6 +258,7 @@ static func aplicar_mundo(world: World) -> void:
 		registros.append(r)
 		indices[i] = r
 	censo.registros = registros
+	censo._seq = -1  # (los números de registro vienen de la partida)
 	var jugador: Dictionary = datos.get("jugador", {})
 	if jugador.has("cell"):
 		world.player.setup(world.city, world.city.nearest_walkable(jugador["cell"]))

@@ -6,6 +6,7 @@ extends SceneTree
 func _initialize() -> void:
 	var gs = root.get_node("GameState")
 	load("res://scripts/partida.gd").automatico = false  # que no se guarde sola en user:// durante la prueba
+	load("res://scripts/sucesos.gd").azar = false  # ni empiecen sucesos al azar (se prueban aparte)
 	for profile in Defs.PROFILES:
 		gs.new_game(profile["id"])
 		gs.money = 500
@@ -114,6 +115,10 @@ func _initialize() -> void:
 	await _test_finales()
 	await _test_relevo()
 	await _test_partida()
+	await _test_proposito()
+	await _test_sucesos()
+	await _test_fama()
+	await _test_partidas()
 	await _test_editor()
 	await _test_sustancias()
 	print("FALLOS: %d" % _failures if _failures > 0 else "OK")
@@ -203,7 +208,7 @@ func _test_peticiones(world) -> void:
 	gs.add_pista("Toni", "dos agentes en la Rambla")
 	_check(errands.notebook_entries().size() == before + 1, "pistas: no salen en la libreta")
 	gs.advance((Defs.PISTA_HOURS + 1.0) * 60.0)
-	_check(errands.notebook_entries().size() <= before, "pistas: no caducan")
+	_check(not errands.notebook_entries().any(func(x): return x["text"].contains("Toni")), "pistas: no caducan")
 	world.player.setup(world.city, world.city.street_cells("La Rambla")[0])
 	var count_lies := func() -> int:
 		var lies := 0
@@ -742,7 +747,7 @@ func _test_misiones(gs, world) -> void:
 	_check(gs.has_item("paquete") and misiones.activas().size() == 1, "aceptar la misión no te da el paquete")
 	_check(world.errands.marker_for(quique) == "★" and world.errands.marker_for(txell) == "★", "la misión en marcha no marca a Quique y a Txell")
 	_check(world.censo.anclado(quique), "Quique se duerme con la misión en marcha")
-	_check(world.errands.notebook_entries()[0]["text"].contains("Txell"), "la misión no se apunta en la libreta")
+	_check(world.errands.notebook_entries().any(func(x): return x["text"].contains("Txell")), "la misión no se apunta en la libreta")
 	print("  misiones: %s" % world.errands.note_text(gs.notes[-1]))
 	var dar = world.interactions.for_npc(txell).filter(func(a): return a["label"].begins_with("Darle: paquete"))
 	_check(dar.size() == 1, "no se le puede dar el paquete a Txell")
@@ -803,6 +808,346 @@ func _test_misiones(gs, world) -> void:
 	gs.wanted_until = -1.0
 	gs.inventory.erase("papeles_albergue")
 	print("  misiones: OK")
+
+
+## Partidas: guardar dos, listarlas (también en el menú de inicio) y borrar una; el legado del
+## relevo (escondite, contacto y deuda); agotar los seis perfiles y seguir con otro «Paco».
+func _test_partidas() -> void:
+	var gs = root.get_node("GameState")
+	var Pa = load("res://scripts/partida.gd")
+	gs.new_game("parado")
+	change_scene_to_file("res://scenes/world.tscn")
+	await process_frame
+	await process_frame
+	var world = current_scene
+	world.censo.pausado = true
+	_steady(gs)
+	var p1 := "user://partidas/prueba_humo_1.json"
+	var p2 := "user://partidas/prueba_humo_2.json"
+	_check(Pa.guardar(world, p1) == OK, "partidas: no se guarda la primera")
+	gs.day = 3
+	_check(Pa.guardar(world, p2) == OK, "partidas: no se guarda la segunda")
+	var rutas: Array = Pa.lista().map(func(x): return x["ruta"])
+	_check(p1 in rutas and p2 in rutas and Pa.cabecera(p1).has("historia"), "partidas: no salen las dos en la lista")
+	Pa.borrar(p2)
+	_check(not p2 in Pa.lista().map(func(x): return x["ruta"]), "partidas: borrar no la quita de la lista")
+	change_scene_to_file("res://scenes/main_menu.tscn")
+	await process_frame
+	await process_frame
+	_check(current_scene._partidas.get_child_count() >= 2, "partidas: el menú de inicio no las lista")
+	Pa.borrar(p1)
+	gs.new_game("parado")
+	change_scene_to_file("res://scenes/world.tscn")
+	await process_frame
+	await process_frame
+	world = current_scene
+	world.censo.pausado = true
+	_steady(gs)
+	var me: Vector2i = world.player.cell
+	# legado: Paco acaba preso con dinero, un móvil, una deuda y un amigo
+	var dealer = _npc_of(world, "camello")
+	dealer.debt = 0
+	dealer.add_debt(40, 12.0)
+	gs.debt = 40
+	var amigo = _fresh(world, "vecino")
+	amigo.remember("ayudado")
+	amigo.remember("ayudado")
+	var r_dealer: Dictionary = dealer.reg
+	var r_amigo: Dictionary = amigo.reg
+	gs.money = 50
+	gs.add_item("movil")
+	gs.finish("Prueba del legado.", "", "preso")
+	world.relevo("jubilado")
+	_check(gs.legado.size() == 3, "legado: no se hereda escondite, contacto y deuda (%s)" % [gs.legado])
+	var esc: Array = world.city.pois.filter(func(x): return x["kind"] == "escondite" and x["name"] == "Paco")
+	_check(esc.size() == 1, "legado: no hay escondite")
+	if not esc.is_empty():
+		var money: int = gs.money
+		var sacar = world.interactions.for_poi(esc[0]).filter(func(a): return a["label"].begins_with("Sacar lo que escondía"))
+		_check(sacar.size() == 1, "legado: el escondite no se puede vaciar")
+		if not sacar.is_empty():
+			sacar[0]["do"].call()
+		_check(gs.money == money + 30 and gs.has_item("movil"), "legado: el escondite no tiene lo de Paco")
+	_check(r_dealer["estado"].get("debt", 0) == 20 and gs.debt == 20, "legado: el camello no te reclama la deuda de Paco")
+	var c = world.censo.despertar(r_amigo, me)
+	_check(world.interactions.for_npc(c).any(func(a): return a["label"] == "Decirle que vienes de parte de Paco"), "legado: el amigo de Paco no te echa una mano")
+	_check(world.errands.notebook_entries().any(func(x): return x["text"].contains("Lo que te dejó el de antes")), "legado: no sale en la libreta")
+	# agotar los seis perfiles y seguir con otro del mismo perfil
+	for p in Defs.PROFILES:
+		if not gs.historia.any(func(h): return h["perfil"] == p["id"]) and p["id"] != gs.profile["id"]:
+			gs.historia.append({"perfil": p["id"], "nombre": p["name"], "destino": "preso", "celda": me, "look": p["look"],
+				"desde": 1, "dia": 1, "caida": 0})
+	gs.finish("Prueba de repetir perfil.", "", "preso")
+	var libres: Array = world.perfiles_libres()
+	_check(libres.size() == Defs.PROFILES.size() and libres.all(func(x): return not x.get("variante", {}).is_empty()), "repetir perfil: sin perfiles libres no hay otros como ellos")
+	var v: Dictionary = libres.filter(func(x): return x["id"] == "parado")[0]
+	_check(v["name"] != "Paco", "repetir perfil: el otro Paco se llama Paco")
+	world.relevo("parado", v["variante"])
+	_check(gs.alive and gs.profile["name"] == v["name"] and world.player.display_name == v["name"], "repetir perfil: no sigue con el otro")
+	var pr := "user://partidas/prueba_humo_3.json"
+	Pa.guardar(world, pr)
+	Pa.cargar(pr)
+	_check(gs.profile["name"] == v["name"], "repetir perfil: al cargar vuelve a ser el de siempre")
+	Pa.pendiente = {}
+	Pa.borrar(pr)
+	print("  partidas, legado y repetir perfil: OK")
+
+
+## Amistades y enemistades entre bots, y tu fama por zonas: dos bots que se pelean quedan
+## enemigos (y los amigos del agredido se enteran); pasarse una dosis los hace amigos; se
+## olvida con el tiempo. Robar a la vista sube la mala fama de la zona y otro bot de allí, que
+## no te conoce, se aparta; con buena fama te piden y te avisan de la policía. Al relevo, la
+## gente de esa zona se acuerda del de antes de oídas.
+func _test_fama() -> void:
+	var gs = root.get_node("GameState")
+	var V = load("res://scripts/vinculos.gd")
+	var F = load("res://scripts/fama.gd")
+	gs.new_game("parado")
+	change_scene_to_file("res://scenes/world.tscn")
+	await process_frame
+	await process_frame
+	var world = current_scene
+	world.censo.pausado = true
+	_steady(gs)
+	var me: Vector2i = world.player.cell
+	# bots: pelea, amigos que se enteran, dosis, tope y olvido
+	var a = _fresh(world, "yonki")
+	var b = _fresh(world, "yonki")
+	var c = _fresh(world, "yonki")
+	V.cambiar(world.censo, c.reg, a.reg, 40.0)
+	world.vinculos.pelea(a, b)
+	_check(V.valor(a.reg, b.reg) <= Defs.VINCULO_ENEMIGO and V.valor(b.reg, a.reg) <= Defs.VINCULO_ENEMIGO, "vínculos: dos que se pelean no quedan enemigos")
+	_check(V.valor(c.reg, b.reg) < 0.0, "vínculos: el amigo del agredido no se entera")
+	var d = _fresh(world, "yonki")
+	var e = _fresh(world, "yonki")
+	d.consumo = {"id": "caballo", "enganche": 50.0, "colocon": 0.0, "mono": 0.0, "dosis": 2, "t": gs.now()}
+	e.consumo = {"id": "caballo", "enganche": 80.0, "colocon": 0.0, "mono": 90.0, "dosis": 0, "t": gs.now()}
+	world.vinculos.dosis(d, e)
+	_check(V.valor(e.reg, d.reg) >= Defs.VINCULO_AMIGO and e.consumo["colocon"] > 0.0, "vínculos: pasarse una dosis no les hace amigos")
+	for i in 10:
+		V.cambiar(world.censo, a.reg, _fresh(world, "vecino").reg, -30.0 - i, false, false)
+	_check(a.reg["vinculos"].size() <= Defs.VINCULOS_MAX, "vínculos: no tienen tope")
+	e.reg["vinculos_t"] -= 30.0 * 1440.0
+	_check(V.valor(e.reg, d.reg) == 0.0, "vínculos: no se olvidan con el tiempo")
+	# robar a la vista: mala fama en la zona; otro de la zona, que no te conoce, se aparta
+	var testigo = _fresh(world, "vecino")
+	_place(testigo, me + Vector2i(2, 0), me)
+	var victima = _fresh(world, "turista")
+	for i in 4:
+		victima.remember("robado")
+	_check(F.de(me, "mala") >= Defs.FAMA_EVITA, "fama: robar a la vista no da mala fama (%s)" % F.de(me, "mala"))
+	var otro = _fresh(world, "vecino")
+	otro.known = false  # (no te conoce: te trata por tu fama)
+	otro.setup(world.city, me)
+	_check(otro.grudge() == "aparta", "fama: con mala fama, quien no te conoce no se aparta (%s)" % otro.grudge())
+	_check(world.errands.notebook_entries().any(func(x): return x["text"].contains("Lo que se dice de ti")), "fama: no sale en la libreta")
+	F.sumar(me, "mala", 30.0)
+	var dealer = _fresh(world, "camello")
+	dealer.setup(world.city, me)
+	gs.money = 200
+	_check(not world.interactions.for_npc(dealer).any(func(x): return x["label"].begins_with("Comprar")), "fama: con muy mala fama el camello te vende")
+	# buena fama: te piden y te avisan de la policía
+	gs.fama = {}
+	F.sumar(me, "buena", 60.0)
+	var pedigueno = _fresh(world, "yonki")
+	pedigueno.known = false
+	pedigueno.setup(world.city, me)
+	pedigueno.consumo = {"id": "litrona", "enganche": 20.0, "colocon": 0.0, "mono": 0.0, "dosis": 1, "t": gs.now()}
+	_check(pedigueno.grudge() == "pide", "fama: con buena fama los de la calle no vienen a pedirte (%s)" % pedigueno.grudge())
+	gs.mark_wanted("prueba de la fama", "hurto")
+	var poli = _fresh(world, "urbano")
+	poli.setup(world.city, me + Vector2i(6, 0))
+	var vecina = _fresh(world, "vecino")
+	vecina.setup(world.city, me + Vector2i(1, 0))
+	world.vinculos._aviso = -INF
+	world.vinculos._aviso_policia()
+	_check(world.vinculos._aviso > -INF, "fama: con buena fama nadie te avisa de la policía")
+	gs.wanted_until = -1.0
+	_check(load("res://scripts/partida.gd")._estado(world).has("fama"), "fama: no se guarda en la partida")
+	# al relevo, quien vive donde tenías fama se acuerda de ti de oídas
+	var r: Dictionary = {}
+	for x in world.censo.registros:
+		if x["npc"] == null and x["estado"].is_empty() and x["personaje"].is_empty():
+			r = x
+			break
+	gs.fama = {}
+	F.sumar(r["home"], "mala", 80.0)
+	gs.finish("Prueba de la fama.", "", "preso")
+	world.relevo("jubilado")
+	_check(r["estado"].get("metas", {}).get("recuerda_a", {}).get("trato", "") == "fama_mala", "fama: al relevo nadie se acuerda del de antes de oídas")
+	var oyente = world.censo.despertar(r, world.player.cell)
+	_check(world.conversation.system_prompt(oyente).contains("EL YONKI DE ANTES: antes que él hubo otro, Paco"), "fama: la IA no sabe nada del de antes")
+	_check(gs.fama.is_empty() and gs.historia[-1].has("fama"), "fama: el nuevo no empieza sin fama o el de antes no se la lleva")
+	print("  amistades entre bots y fama: OK")
+
+
+## Sucesos del barrio: la Fiesta Mayor empieza por fecha y trae más gente; las redadas, más
+## policía, camellos escondidos y droga más cara; el fentanilo se vende, los bots caen (y se
+## les salva con naloxona) y te salva a ti; las obras cortan casillas. Todos acaban y se guardan.
+func _test_sucesos() -> void:
+	var gs = root.get_node("GameState")
+	var Su = load("res://scripts/sucesos.gd")
+	gs.new_game("sin_papeles")
+	change_scene_to_file("res://scenes/world.tscn")
+	await process_frame
+	await process_frame
+	var world = current_scene
+	world.censo.pausado = true
+	var su = world.sucesos
+	_steady(gs)
+	# la Fiesta Mayor, por fecha (el 17 de julio es el día 8)
+	gs.day = 8
+	_check(gs.fecha() == [7, 17] and gs.fecha_texto() == "17 de julio", "sucesos: el calendario no cuadra (%s)" % [gs.fecha()])
+	var turistas: int = world._npc_targets["turista"]
+	var pedir: float = world.interactions._beg_bonus()
+	su.nuevo_dia()
+	_check(Su.activo("fiesta_mayor"), "sucesos: la Fiesta Mayor no empieza en su fecha")
+	_check(world._npc_targets["turista"] > turistas and world.interactions._beg_bonus() > pedir, "sucesos: en la fiesta no hay más gente ni te dan más")
+	_check(gs.pistas.any(func(p): return p["text"].contains("Fiesta Mayor")), "sucesos: la fiesta no corre como rumor")
+	_check(Su.frase() != "" and Su.resumen().contains("fiesta"), "sucesos: la gente no lo comenta")
+	gs.sucesos["fiesta_mayor"]["hasta"] = gs.now() - 1.0
+	gs.day = 20
+	su.nuevo_dia()
+	_check(not Su.activo("fiesta_mayor") and world._npc_targets["turista"] == turistas, "sucesos: la fiesta no se acaba")
+	for id in gs.sucesos.keys():
+		su.terminar(id)  # (lo que haya empezado al azar)
+	# redadas: más policía, camellos escondidos, droga más cara
+	var mossos: int = world._npc_targets["mosso"]
+	var precio: int = gs.precio("farlopa")
+	su.empezar("redadas", 2)
+	_check(world._npc_targets["mosso"] > mossos and gs.precio("farlopa") > precio, "sucesos: en las redadas no hay más Mossos ni la droga sube")
+	var camellos: Array = world.censo.registros.filter(func(r): return r["kind"] == "camello")
+	_check(camellos.any(func(r): return not world.censo.activo(r, gs.hour())), "sucesos: en las redadas no se esconde ningún camello")
+	var dealer = _npc_of(world, "camello")
+	dealer.debt = 0
+	gs.money = 500
+	_check(world.interactions.for_npc(dealer).any(func(a): return a["label"] == "Comprar Farlopa (%d €)" % gs.precio("farlopa")), "sucesos: el camello no vende al precio de las redadas")
+	_check(load("res://scripts/partida.gd")._estado(world)["sucesos"].has("redadas"), "sucesos: no se guardan en la partida")
+	su.terminar("redadas")
+	_check(gs.precio("farlopa") == precio and world._npc_targets["mosso"] == mossos, "sucesos: las redadas no se acaban")
+	# el fentanilo
+	_check(not world.interactions.for_npc(dealer).any(func(a): return a["label"].begins_with("Comprar Fentanilo")), "sucesos: se vende fentanilo sin haber llegado")
+	su.empezar("fentanilo", 3)
+	_check(world.interactions.for_npc(dealer).any(func(a): return a["label"].begins_with("Comprar Fentanilo")), "sucesos: el camello no vende fentanilo")
+	var edu = _npc_of(world, "educador")
+	_do(world, edu, "Pedirle naloxona")
+	_check(gs.has_item("naloxona"), "sucesos: la educadora no da naloxona")
+	var y = _fresh(world, "yonki")
+	y.setup(world.city, world.player.cell)
+	y.on_screen = true
+	su.cae(y)
+	_check(y.has_meta("sobredosis") and world.interactions.for_npc(y).any(func(a): return a["label"] == "Ponerle la naloxona"), "sucesos: un bot caído no se puede salvar")
+	_do(world, y, "Ponerle la naloxona")
+	_check(not y.has_meta("sobredosis") and "salvar_vida" in gs.milestones and not gs.has_item("naloxona"), "sucesos: la naloxona no le salva")
+	var z = _fresh(world, "yonki")
+	z.setup(world.city, world.player.cell)
+	z.on_screen = true
+	su.cae(z)
+	z.set_meta("sobredosis", 0.0)
+	z._process(0.1)
+	_check(not z in world.npcs and world.censo.de(z).is_empty(), "sucesos: sin naloxona no se muere")
+	var r: Dictionary = world.censo.nuevo("yonki")
+	r["estado"] = {"consumo": {"id": "caballo", "enganche": 50.0, "colocon": 0.0, "mono": 0.0, "dosis": 0, "t": gs.now()}}
+	var antes: int = world.censo.registros.size()
+	su._muertes_latentes()
+	_check(world.censo.registros.size() < antes, "sucesos: no muere nadie en los portales")
+	# a ti te salva la naloxona que llevas
+	var salvado := false
+	for i in 80:
+		_steady(gs)
+		gs.add_item("naloxona")
+		gs.add_item("fentanilo")
+		world.use_item("fentanilo")
+		gs.subs["fentanilo"]["high"] = 0.0
+		if "naloxona" in gs.milestones:
+			salvado = true
+			break
+	_check(salvado and gs.alive, "sucesos: la naloxona no te salva de una sobredosis de fentanilo")
+	su.terminar("fentanilo")
+	_steady(gs)
+	# manifestación: más vecinos y más policía un día
+	var vecinos: int = world._npc_targets["vecino"]
+	su.empezar("manifestacion", 1)
+	_check(world._npc_targets["vecino"] > vecinos and Su.frase() != "", "sucesos: en la manifestación no hay más vecinos")
+	su.terminar("manifestacion")
+	# obras: se corta un tramo y se vuelve a abrir
+	su.empezar("obras", 2)
+	_check(Su.activo("obras"), "sucesos: no empiezan las obras")
+	if Su.activo("obras"):
+		var centro: Vector2i = gs.sucesos["obras"]["centro"]
+		var cortadas: Array = su._celdas(gs.sucesos["obras"])
+		_check(not cortadas.is_empty() and not world.city.is_walkable(cortadas[0]) and su._vallas.has("obras"), "sucesos: las obras no cortan la calle")
+		su.terminar("obras")
+		_check(world.city.is_walkable(cortadas[0]) and not su._vallas.has("obras"), "sucesos: al acabar las obras no se abre la calle (%s)" % centro)
+	print("  sucesos del barrio: OK")
+
+
+## Un propósito para cada yonki: el de Paco (recuperar a Laia), paso a paso hasta el final
+## «CUMPLIDO», que deja relevo y queda en la historia; luego el de Don Ramón, perdido para siempre.
+func _test_proposito() -> void:
+	var gs = root.get_node("GameState")
+	gs.new_game("parado")
+	change_scene_to_file("res://scenes/world.tscn")
+	await process_frame
+	await process_frame
+	var world = current_scene
+	world.censo.pausado = true
+	var prop = world.proposito
+	_check(gs.proposito.get("estado", "") == "activo" and gs.proposito["paso"] == 0, "propósito: Paco no empieza con el suyo")
+	_check(world.errands.notebook_entries()[0]["text"].contains("Tu propósito"), "propósito: no sale en la libreta")
+	# paso 1: tres días sin emborracharse (un día con litrona no cuenta)
+	_steady(gs)
+	gs.dignity = 80.0
+	for id in gs.subs:
+		gs.subs[id]["high"] = 0.0
+	gs.subs["litrona"]["high"] = 50.0
+	prop.update()
+	_check(not gs.proposito["hoy_ok"], "propósito: emborracharse no rompe el día")
+	prop.nuevo_dia()
+	_check(gs.proposito["racha"] == 0, "propósito: un día borracho cuenta")
+	gs.subs["litrona"]["high"] = 0.0
+	for i in 3:
+		prop.update()
+		prop.nuevo_dia()
+	_check(gs.proposito["paso"] == 1, "propósito: tres días limpio no pasan al siguiente paso (%s)" % gs.proposito)
+	# paso 2: ingresar 100 € en el cajero, en dos veces
+	var cajero: Dictionary = world.city.pois_of_kind("cajero")[0]
+	gs.caida = 50.0  # (empezando de cero no puede bajar)
+	var caida: float = gs.caida
+	gs.money = 30
+	var ingresar = world.interactions.for_poi(cajero).filter(func(a): return a["label"].begins_with("Ingresar para la pensión de Laia: 30"))
+	_check(ingresar.size() == 1, "propósito: no se puede ingresar en el cajero")
+	if not ingresar.is_empty():
+		ingresar[0]["do"].call()
+	_check(gs.proposito["progreso"] == 30 and gs.money == 0, "propósito: ingresar no cuenta o no cuesta")
+	gs.money = 200
+	world.interactions.for_poi(cajero).filter(func(a): return a["label"].begins_with("Ingresar para la pensión"))[0]["do"].call()
+	_check(gs.proposito["paso"] == 2 and gs.money == 130, "propósito: los 100 € no pasan al siguiente paso")
+	# paso 3: comer con Laia, sereno, de 13 a 15
+	var kebab: Dictionary = world.city.pois_of_kind("kebab")[0]
+	gs.minute_of_day = 10.0 * 60.0
+	_check(world.interactions.for_poi(kebab).any(func(a): return a["label"].begins_with("Comer con Laia (de 13")), "propósito: la cita no dice la hora")
+	gs.minute_of_day = 13.0 * 60.0 + 30.0
+	for id in gs.subs:
+		gs.subs[id]["high"] = 0.0
+	var comer = world.interactions.for_poi(kebab).filter(func(a): return a["label"] == "Comer con Laia")
+	_check(comer.size() == 1, "propósito: no se puede comer con Laia a su hora")
+	if not comer.is_empty():
+		comer[0]["do"].call()
+	_check(not gs.alive and gs.ending_title == "CUMPLIDO" and gs.destino == "cumplido", "propósito: cumplirlo no es un final")
+	_check(gs.caida < caida, "propósito: avanzar no baja la caída")
+	_check(not gs.historia.is_empty() and gs.historia[-1]["proposito_estado"] == "hecho", "propósito: no queda en la historia")
+	# relevo: Don Ramón, con el suyo; Paco se queda de vecino
+	world.relevo("jubilado")
+	_check(gs.alive and gs.proposito.get("estado", "") == "activo" and gs.proposito["paso"] == 0, "propósito: el relevo no empieza el suyo")
+	_check(world.censo.registros.any(func(r): return r["kind"] == "vecino" and r["name"] == "Paco"), "propósito: Paco no se queda en el barrio de vecino")
+	# el de Don Ramón: con la dignidad por los suelos, los nietos dejan de llamar para siempre
+	gs.dignity = 20.0
+	prop.update()
+	_check(gs.proposito["estado"] == "perdido" and "proposito_perdido" in gs.milestones, "propósito: perderlo no es un hito")
+	_check(world.errands.notebook_entries()[0]["text"].contains("Ya no puede ser"), "propósito: la libreta no dice que se ha perdido")
+	_check(load("res://scripts/partida.gd")._estado(world).has("proposito"), "propósito: no se guarda en la partida")
+	print("  propósitos: OK")
 
 
 ## Partidas guardadas: se guarda a media partida (con un encargo en marcha, un vecino que te
@@ -1431,16 +1776,22 @@ func _test_clubs(gs, world) -> void:
 	I._hacer_socio(nombre)
 	_check(nombre in gs.clubs_socio and "socio_club" in gs.milestones, "clubs: hacerse socio no cuenta")
 	gs.inventory.erase("porro")
-	for i in Defs.CLUB_LIMITE_DIA + 1:
+	var redadas := 0
+	for i in Defs.CLUB_LIMITE_DIA * 4:
+		if I._club_hoy() >= Defs.CLUB_LIMITE_DIA:
+			break
+		gs.clubs_cerrados = {}  # (si una redada al azar lo ha precintado, se reabre para seguir probando)
 		var comprar = I.for_poi(club).filter(func(a): return a["label"].begins_with("Comprar un porro"))
-		if i < Defs.CLUB_LIMITE_DIA:
-			_check(comprar.size() == 1, "clubs: no vende el porro %d" % (i + 1))
-			if not comprar.is_empty():
-				gs.clubs_cerrados = {}
-				comprar[0]["do"].call()
-		else:
-			_check(comprar.is_empty(), "clubs: vende por encima del tope del día")
-	if not gs.clubs_cerrados.has(nombre):  # (si una redada se los llevó, no hay que contarlos)
+		_check(comprar.size() == 1, "clubs: no vende el porro %d" % (I._club_hoy() + 1))
+		if comprar.is_empty():
+			break
+		comprar[0]["do"].call()
+		if gs.clubs_cerrados.has(nombre):
+			redadas += 1
+	gs.clubs_cerrados = {}
+	_check(I._club_hoy() == Defs.CLUB_LIMITE_DIA and not I.for_poi(club).any(func(a): return a["label"].begins_with("Comprar un porro")),
+		"clubs: vende por encima del tope del día")
+	if redadas == 0:  # (si una redada se los llevó, no hay que contarlos)
 		_check(gs.inventory.get("porro", 0) == Defs.CLUB_LIMITE_DIA, "clubs: no da los porros comprados")
 	gs.day += 1
 	_check(I._club_hoy() == 0, "clubs: el tope no vuelve a empezar al día siguiente")
@@ -1791,6 +2142,7 @@ func _test_street_items(gs, world) -> void:
 func _test_trade(gs, world) -> void:
 	var trade = world.trade
 	_steady(gs)
+	gs.fama = {}  # (con la mala fama de robar antes, quien no te conoce no trata contigo: Fama)
 	gs.alive = true
 	var client = _npc_of(world, "fiestero")
 	client.memory = {}

@@ -92,6 +92,9 @@ var interactions: Interactions
 var errands: Errands  ## Encargos con plazo y libreta
 var misiones: Misiones  ## Misiones de los personajes del editor
 var relaciones: Relaciones  ## Lo que le haces a un personaje lo saben los suyos
+var proposito: Proposito  ## Lo que quiere conseguir el yonki de ahora
+var sucesos: Sucesos  ## Lo que le pasa al barrio unos días (fentanilo, redadas, fiesta, obras)
+var vinculos: Vinculos  ## Amistades y enemistades entre los bots
 var street_items: StreetItems  ## Objetos tirados por la calle
 var trade: Trade  ## Trapicheo: revender y cambiar cosas con otros yonkis
 var conversation: Conversation  ## Conversación libre con IA (scripts/ai/)
@@ -166,6 +169,9 @@ func _ready() -> void:
 	errands = Errands.new(self)
 	misiones = Misiones.new(self)
 	relaciones = Relaciones.new(self)
+	proposito = Proposito.new(self)
+	sucesos = Sucesos.new(self)
+	vinculos = Vinculos.new(self)
 	street_items = StreetItems.new(self)
 	trade = Trade.new(self)
 	street_items.populate()
@@ -176,6 +182,8 @@ func _ready() -> void:
 	for i in GameState.historia.size():
 		if Defs.DESTINOS.get(GameState.historia[i]["destino"], {}).get("queda", "") == "altar":
 			_altar(i)
+		if GameState.historia[i].has("escondite"):
+			_escondite(i)  # lo que dejó escondido (legado)
 	_personajes = Personajes.cargar_todos()
 	if Partida.pendiente.is_empty():
 		misiones.preparar()  # (una partida cargada ya trae lo que debes)
@@ -207,19 +215,23 @@ func _ready() -> void:
 	hud.restart_requested.connect(func():
 		get_tree().paused = false
 		get_tree().change_scene_to_file("res://scenes/main_menu.tscn"))
-	hud.relevo_requested.connect(func(id: String):
+	hud.relevo_requested.connect(func(id: String, variante: Dictionary):
 		get_tree().paused = false
-		relevo(id))
+		relevo(id, variante))
 	hud.use_item_requested.connect(use_item)
 	hud.find_place_requested.connect(highlight_poi)
 	GameState.game_over.connect(_on_game_over)
 	GameState.relocated.connect(_on_relocated)
+	GameState.new_day.connect(proposito.nuevo_dia)
+	GameState.new_day.connect(sucesos.nuevo_dia)
+	GameState.new_day.connect(Fama.nuevo_dia)
 	GameState.new_day.connect(_autoguardar)
 	GameState.new_day.connect(_contagio_diario)
 	hud.save_requested.connect(guardar_partida)
 
 	if not Partida.pendiente.is_empty():
 		Partida.aplicar_mundo(self)
+		sucesos.reaplicar()
 		GameState.log_msg("Partida cargada: día %d, %s. Sigues donde lo dejaste." % [GameState.day, Partida.hora()])
 	else:
 		_intro()
@@ -273,6 +285,15 @@ func _intro() -> void:
 			c["rank"], c["barrios"], _thousands(c["total_incidents"]), c["year"]], Color("e0c080"))
 	GameState.log_msg("Objetivo: caer lo más bajo posible... sin morirte antes de tiempo.", GameState.C_FALL)
 	GameState.log_msg(GameState.profile["perk"])
+	_anunciar_proposito()
+
+
+## Lo que quiere conseguir el yonki de ahora (Proposito), en el registro.
+func _anunciar_proposito() -> void:
+	var d := Proposito.def()
+	if not d.is_empty():
+		GameState.log_msg("Lo que de verdad quieres: %s. Empieza por %s (lo tienes en la libreta, L)." % [
+			d["titulo"].to_lower(), d["pasos"][0]["texto"]], Color("f0c060"))
 
 
 func _thousands(n: int) -> String:
@@ -293,7 +314,17 @@ func _target_count(kind: String) -> int:
 		base *= city.crime_factor(category)
 	if kind == "yonki":
 		base *= 1.0 + Defs.RELEVO_YONKIS * GameState.historia.size()  # cada vez hay más
+	# los sucesos del barrio (más policía en las redadas, más gente en la Fiesta Mayor...)
+	for id in GameState.sucesos:
+		base *= Defs.SUCESOS[id].get("gente", {}).get(kind, 1.0)
 	return roundi(base)
+
+
+## Vuelve a calcular cuántos tiene que haber de cada tipo (al empezar o acabar un suceso): los
+## que faltan los repone el repaso de cada hora; los que sobran se van al acabar su horario.
+func recalcular_gente() -> void:
+	for kind in _npc_targets:
+		_npc_targets[kind] = _target_count(kind)
 
 
 func _place_markers() -> void:
@@ -478,6 +509,8 @@ func _process(delta: float) -> void:
 		GameState.advance(delta * Defs.GAME_MINUTES_PER_SECOND)
 		errands.update()
 		misiones.update()
+		proposito.update()
+		vinculos.tick(delta)
 		street_items.update()
 	_fx = GameState.effects()
 	hud.show_effects(_fx)
@@ -1485,6 +1518,8 @@ func _random_event() -> void:
 		return
 	if randf() < Defs.URBANA_SWEEP + Defs.MOSSOS_SWEEP and police_event():
 		return
+	if randf() < 0.3 and vinculos.suceso():
+		return  # entre bots: el tirón, o alguien que le pasa una dosis a otro (Vinculos)
 	var yonkis := npcs.filter(func(n): return n.kind == "yonki")
 	if yonkis.is_empty():
 		return
@@ -1499,11 +1534,7 @@ func _random_event() -> void:
 			closest = b
 			break
 	if closest:
-		closest.walk_to(a.cell)
-		a.say(["¡Me has robado la base!", "¡Esa esquina es mía!", "¡Devuélveme el mechero!"].pick_random(), 4.0)
-		closest.say("¡Ven aquí si tienes huevos!", 4.0)
-		if a.distance_to_cell(player.cell) < 40:
-			GameState.log_msg("Pelea de yonkis cerca de %s." % city.street_name_near(a.cell))
+		vinculos.pelea(a, closest)  # quedan enemigos
 		# una pelea es cosa de los Mossos
 		var mosso := _nearest_of(["mosso"], a.cell)
 		if mosso and mosso.distance_to_cell(a.cell) < 80:
@@ -1551,6 +1582,8 @@ func pickpocket_event() -> bool:
 				victim.robbed = true
 				thief.money += victim.money
 				victim.money = 0
+				if randf() < 0.5:  # se ha dado cuenta: no se lo perdona
+					Vinculos.cambiar(censo, victim.reg, thief.reg, Defs.VINCULO_ROBO, false)
 				thief.walk_to(victim.cell)
 				if victim.distance_to_cell(player.cell) < 20:
 					victim.say(["My wallet!", "¿Y mi móvil?", "Where is my bag?!"].pick_random(), 4.0)
@@ -1570,7 +1603,10 @@ func _on_game_over(reason: String) -> void:
 	gs.historia.append({"perfil": gs.profile["id"], "nombre": gs.profile["name"],
 		"destino": gs.destino, "titulo": gs.ending_title, "motivo": reason, "desde": gs.dia_inicio,
 		"dia": gs.day, "caida": roundi(gs.caida), "celda": player.cell, "look": gs.profile["look"].duplicate(),
-		"calle": city.street_name_near(player.cell), "rebuscado": false})
+		"calle": city.street_name_near(player.cell), "rebuscado": false,
+		"proposito": Defs.PROPOSITOS.get(gs.profile["id"], {}).get("titulo", ""), "fama": gs.fama.duplicate(true),
+		"dinero": gs.money, "objetos": gs.inventory.duplicate(),
+		"proposito_estado": gs.proposito.get("estado", "")})
 	# la partida guardada queda como terminada: «Continuar» ya no la ofrece (hasta un relevo)
 	if Partida.automatico and gs.partida_id != "":
 		Partida.guardar(self)
@@ -1583,18 +1619,55 @@ func _on_game_over(reason: String) -> void:
 
 ## Los perfiles con los que se puede tomar el relevo: los que aún no han salido en esta
 ## partida (ni el de ahora).
+## Cuando ya han salido los seis, otro de cada perfil con otro nombre y otra ropa y pelo (con
+## "variante": {"name", "look"}, que es lo que hay que pasarle a relevo).
 static func perfiles_libres() -> Array:
 	var usados := GameState.historia.map(func(h): return h["perfil"]) + [GameState.profile.get("id", "")]
-	return Defs.PROFILES.filter(func(p): return not p["id"] in usados)
+	var libres := Defs.PROFILES.filter(func(p): return not p["id"] in usados)
+	if not libres.is_empty():
+		return libres
+	var nombres := GameState.historia.map(func(h): return h["nombre"]) + [GameState.profile.get("name", "")]
+	var out := []
+	for p in Defs.PROFILES:
+		var posibles: Array = Defs.PERFIL_NOMBRES.get(p["id"], []).filter(func(n): return not n in nombres)
+		if posibles.is_empty():
+			continue
+		var nombre: String = posibles[0]
+		var v: Dictionary = p.duplicate(true)
+		v["name"] = nombre
+		v["variante"] = {"name": nombre, "look": _otro_aspecto(p["look"], nombre)}
+		out.append(v)
+	return out
+
+
+## El aspecto de un perfil con otra ropa y otro pelo (siempre igual para el mismo nombre).
+static func _otro_aspecto(look: Dictionary, nombre: String) -> Dictionary:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("variante|" + nombre)
+	var out: Dictionary = look.duplicate(true)
+	out["shirt"] = Color.from_hsv(rng.randf(), rng.randf_range(0.2, 0.6), rng.randf_range(0.3, 0.75))
+	out["pants"] = Color.from_hsv(rng.randf(), 0.2, rng.randf_range(0.2, 0.45))
+	var canas: bool = look.get("hair", Color.BLACK).get_luminance() > 0.7
+	if not canas:
+		out["hair"] = Npc.HAIR_COLORS[rng.randi_range(0, Npc.HAIR_COLORS.size() - 1)]
+	out["skin"] = Npc.SKINS[rng.randi_range(0, Npc.SKINS.size() - 1)]
+	var styles: Array = Actor.HAIR_STYLES[look.get("gender", "m")]
+	out["hair_style"] = styles[rng.randi_range(0, styles.size() - 1)]
+	if look.get("gender", "m") == "m":
+		out["facial"] = ["", "barba", "bigote"][rng.randi_range(0, 2)]
+	if out.has("jacket"):
+		out["jacket"] = Color.from_hsv(rng.randf(), rng.randf_range(0.1, 0.5), rng.randf_range(0.15, 0.45))
+	return out
 
 
 ## Sigues con otro yonki (`profile_id`) en este mismo barrio unos días después
 ## (Defs.RELEVO_DIAS). El de antes se queda según cómo acabó (Defs.DESTINOS: un altar donde
 ## murió, o en el censo); quien le conocía se acuerda de él, pero a ti no te conoce; y en
 ## esos días algunos se han enganchado.
-func relevo(profile_id: String) -> void:
+func relevo(profile_id: String, variante := {}) -> void:
 	var gs := GameState
 	var antes: Dictionary = gs.historia.back()
+	var herencia := _legado(antes)  # (antes de que el barrio le olvide)
 	var dias := randi_range(Defs.RELEVO_DIAS.x, Defs.RELEVO_DIAS.y)
 	# todos a dormir: así el censo guarda lo que les ha pasado y nadie sigue persiguiendo al de antes
 	for r in censo.registros:
@@ -1603,8 +1676,9 @@ func relevo(profile_id: String) -> void:
 		npcs.erase(n)
 		n.queue_free()
 	_olvidan(antes)
-	gs.relevo(profile_id, dias)
+	gs.relevo(profile_id, dias, variante)
 	gs.minute_of_day = 9.0 * 60.0
+	_heredar(antes, herencia)
 	var contagiados := _contagio()
 	_queda_en_el_barrio(antes)
 	_npc_targets["yonki"] = _target_count("yonki")
@@ -1627,18 +1701,106 @@ func relevo(profile_id: String) -> void:
 		gs.log_msg("En estos días, %s se ha enganchado: ahora va con los yonkis." % _quien(r), gs.C_INFO)
 	gs.log_msg("Ahora eres %s, %s." % [gs.profile["name"], gs.profile["title"].to_lower()])
 	gs.log_msg(gs.profile["perk"])
+	_anunciar_proposito()
 	gs.milestone("relevo")
 	gs.changed.emit()
 	if Partida.automatico:
 		Partida.guardar(self)
 
 
+## Lo que deja el de antes al siguiente, según cómo acabó y cómo le fue (Defs.LEGADO_*):
+## el camello al que más debía (que te lo vendrá a cobrar a ti), alguien a quien ayudó (que te
+## echará una mano) y sus cosas, si no se las pudo llevar (escondite). Se mira antes del relevo,
+## mientras el barrio aún le recuerda: {"deuda": [registro, €], "contacto": registro, "escondite": {}}.
+func _legado(antes: Dictionary) -> Dictionary:
+	var out := {}
+	var destino: String = antes.get("destino", "")
+	if not destino in Defs.LEGADO_DEUDA_PERDONA:
+		var peor: Dictionary = {}
+		var cuanto := 0
+		for r in censo.registros:
+			var d: int = r["npc"].debt if r["npc"] != null and is_instance_valid(r["npc"]) else int(r["estado"].get("debt", 0))
+			if d > cuanto:
+				cuanto = d
+				peor = r
+		if cuanto > 0:
+			out["deuda"] = [peor, maxi(1, roundi(cuanto * Defs.LEGADO_DEUDA))]
+	var amigos := censo.amigos(Defs.LEGADO_CONTACTO_AYUDAS).filter(func(r): return r["kind"] != "perro")
+	if not amigos.is_empty():
+		out["contacto"] = amigos.pick_random()
+	if not destino in Defs.LEGADO_SIN_ESCONDITE:
+		var dinero := roundi(int(antes.get("dinero", 0)) * Defs.LEGADO_ESCONDITE)
+		var objetos: Dictionary = {}
+		for id in antes.get("objetos", {}):
+			if Defs.ITEMS.has(id) or Defs.SUBSTANCES.has(id):
+				objetos[id] = antes["objetos"][id]
+		if dinero >= Defs.LEGADO_ESCONDITE_MIN or not objetos.is_empty():
+			out["escondite"] = {"dinero": dinero, "objetos": objetos, "recogido": false}
+	return out
+
+
+## Después del relevo: el nuevo hereda lo de `herencia` (ver _legado) y se apunta en la libreta.
+func _heredar(antes: Dictionary, herencia: Dictionary) -> void:
+	var gs := GameState
+	var n: String = antes["nombre"]
+	if herencia.has("deuda"):
+		var r: Dictionary = herencia["deuda"][0]
+		var euros: int = herencia["deuda"][1]
+		r["estado"]["debt"] = euros
+		r["estado"]["debt_due"] = gs.now()  # ya va tarde: viene a buscarte (Censo.despertadores)
+		gs.debt += euros
+		var quien: String = r["estado"].get("display_name", r["name"])
+		gs.legado.append({"texto": "%s te reclama %d € que le debía %s." % [quien, euros, n], "poi": {}})
+		gs.log_msg("Corre la voz: %s dice que %s le debía dinero, y que ahora te toca a ti: %d €." % [quien, n, euros], gs.C_BAD)
+	if herencia.has("contacto"):
+		var r: Dictionary = herencia["contacto"]
+		var e: Dictionary = r["estado"]
+		e["memory"] = {"ayudado": 1}
+		e["known"] = true
+		if not e.has("metas"):
+			e["metas"] = {}
+		e["metas"]["contacto_de"] = n
+		var quien: String = e.get("display_name", r["name"])
+		gs.legado.append({"texto": "%s era amigo de %s: te echará una mano." % [quien, n], "poi": {}})
+		gs.log_msg("%s le debía favores a %s. Dicen que te los devolverá a ti." % [quien, n], gs.C_GOOD)
+	if herencia.has("escondite"):
+		var i := gs.historia.size() - 1
+		gs.historia[i]["escondite"] = herencia["escondite"]
+		var p := _escondite(i)
+		gs.legado.append({"texto": "%s escondía sus cosas en un hueco de %s." % [n, city.street_name_near(Vector2i(p["x"], p["y"]))], "poi": p})
+		gs.log_msg("Alguien te cuenta que %s tenía un escondite cerca de %s. Lo tienes en la libreta." % [n, city.street_name_near(Vector2i(p["x"], p["y"]))], gs.C_INFO)
+
+
+## El escondite del yonki `i` de la historia (legado): un sitio más del mapa (kind
+## "escondite"), cerca de donde acabó. Lo rehace World._ready al cargar una partida.
+func _escondite(i: int) -> Dictionary:
+	var h: Dictionary = GameState.historia[i]
+	var cell := city.random_walkable_near(city.nearest_walkable(h["celda"]), 6)
+	var p := {"kind": "escondite", "name": h["nombre"], "x": cell.x, "y": cell.y, "historia": i}
+	city.pois.append(p)
+	var m := PoiMarker.new()
+	m.setup(p, city.cell_to_world(cell))
+	city.entities.add_child(m)
+	markers.append(m)
+	return p
+
+
 ## Quien conocía al de antes se acuerda de él (meta «recuerda_a»: su nombre y cómo le
 ## trataba), pero al nuevo no le conoce: sin memoria, sin deudas, sin rencor.
 func _olvidan(antes: Dictionary) -> void:
+	var fama: Dictionary = antes.get("fama", {})
 	for r in censo.registros:
 		var e: Dictionary = r["estado"]
+		# quien no le conoció pero vive donde tenía fama, se acuerda de él de oídas (Fama)
+		var home: Vector2i = r.get("home", Vector2i.ZERO)
+		var oidas := ""
+		if Fama.de(home, "mala", fama) >= Defs.FAMA_RECUERDO:
+			oidas = "fama_mala"
+		elif Fama.de(home, "buena", fama) >= Defs.FAMA_RECUERDO:
+			oidas = "fama_buena"
 		if e.is_empty():
+			if oidas != "":
+				r["estado"] = {"metas": {"recuerda_a": {"nombre": antes["nombre"], "trato": oidas, "destino": antes["destino"]}}}
 			continue  # nunca ha tenido cuerpo: no conoció a nadie
 		var mem: Dictionary = e.get("memory", {})
 		if not mem.is_empty() or e.get("known", false):
@@ -1650,6 +1812,10 @@ func _olvidan(antes: Dictionary) -> void:
 			if not e.has("metas"):
 				e["metas"] = {}
 			e["metas"]["recuerda_a"] = {"nombre": antes["nombre"], "trato": trato, "destino": antes["destino"]}
+		elif oidas != "":
+			if not e.has("metas"):
+				e["metas"] = {}
+			e["metas"]["recuerda_a"] = {"nombre": antes["nombre"], "trato": oidas, "destino": antes["destino"]}
 		e["memory"] = {}
 		e["known"] = false
 		e["debt"] = 0

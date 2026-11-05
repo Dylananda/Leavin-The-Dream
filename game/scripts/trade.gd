@@ -30,6 +30,9 @@ func offers_for(npc: Npc) -> Array:
 		if Defs.CLIENTS.has(client_kind(npc)):
 			npc.say("A ti no te compro nada más. Aquello era yeso")
 		return acts
+	# con mala fama en la zona, quien no te conoce no te compra (Fama)
+	if npc.memory.is_empty() and Fama.de(npc.cell, "mala") >= Defs.FAMA_NO_VENDE:
+		return acts
 	acts.append_array(_sales(npc))
 	acts.append_array(_gift(npc))
 	acts.append_array(_purchases(npc))
@@ -62,7 +65,7 @@ func wants(npc: Npc) -> Array:
 func price_for(npc: Npc, id: String) -> int:
 	var c: Dictionary = Defs.CLIENTS.get(client_kind(npc), Defs.CLIENTS["yonki"])
 	var regular := mini(npc.remembers("cliente"), Defs.REGULAR_MAX)
-	var base: float = Defs.SUBSTANCES[id]["price"] * c["markup"] * Consumo.ansia(npc.consumo, id)
+	var base: float = GameState.precio(id) * c["markup"] * Consumo.ansia(npc.consumo, id)
 	return maxi(1, roundi(base * (1.0 + Defs.REGULAR_BONUS * regular)))
 
 

@@ -524,6 +524,17 @@ func notebook_entries() -> Array:
 	var mono_share := clampf(maxf(0.0, (gs.mono - 50.0) / 100.0) / maxf(b, 0.01), 0.0, 1.0)
 	var hour_seed := int(gs.now() / 60.0)  # la misma lectura durante una hora
 	var entries := []
+	# arriba del todo, lo que quieres conseguir (Proposito)
+	var prop := Proposito.texto_libreta()
+	if prop != "":
+		entries.append({"text": "[color=#f0c060][b]%s[/b][/color]" % garble(prop, amount, mono_share, hash([hour_seed, "proposito"])), "poi": {}})
+	# lo que te dejó el de antes (legado: World._heredar)
+	for l in gs.legado:
+		entries.append({"text": "[color=#c0b0e0]Lo que te dejó el de antes: %s[/color]" % l["texto"], "poi": l.get("poi", {})})
+	# y lo que se dice de ti por aquí (Fama)
+	var fama := Fama.texto(world.player.cell)
+	if fama != "":
+		entries.append({"text": "[color=#d0a0d0]%s[/color]" % fama, "poi": {}})
 	for i in range(gs.notes.size() - 1, -1, -1):
 		var note: Dictionary = gs.notes[i]
 		var state: String = note["errand"]["state"]

@@ -33,7 +33,8 @@ func _chance(p: float) -> bool:
 
 
 func _beg_bonus() -> float:
-	return 0.25 if GameState.profile.get("id") == "jubilado" else 0.0
+	# (y la gente de fiesta da más: sucesos con `pedir`, como la Fiesta Mayor)
+	return (0.25 if GameState.profile.get("id") == "jubilado" else 0.0) + GameState.extra_pedir()
 
 
 ## Sube la búsqueda policial (al jubilado le cuesta más parecer sospechoso).
@@ -75,6 +76,8 @@ func _caught_stealing(victim: Npc, text: String) -> void:
 
 func for_npc(npc: Npc) -> Array:
 	var acts: Array = []
+	if npc.has_meta("sobredosis"):
+		return _caido(npc)
 	match npc.kind:
 		"turista": acts = _turista(npc)
 		"camello": acts = _camello(npc)
@@ -110,6 +113,16 @@ func for_npc(npc: Npc) -> Array:
 	acts.append_array(world.trade.offers_for(npc))
 	acts.append_array(world.errands.offers_for(npc))
 	acts.append_array(world.misiones.for_npc(npc))
+	# el amigo del de antes te echa una mano, una vez (legado: World._heredar)
+	if npc.has_meta("contacto_de") and not npc.has_meta("contacto_dado"):
+		var de: String = npc.get_meta("contacto_de")
+		acts.insert(0, _act("Decirle que vienes de parte de %s" % de, func():
+			npc.set_meta("contacto_dado", true)
+			GameState.advance(10)
+			GameState.add_money(Defs.LEGADO_CONTACTO_DINERO)
+			GameState.add_item("bocadillo")
+			npc.say("%s me sacó de más de una. Toma, y lo que necesites, aquí estoy." % de, 5.0)
+			GameState.log_msg("%s te da %d € y un bocadillo, por lo que hizo %s por él." % [npc.display_name, Defs.LEGADO_CONTACTO_DINERO, de], G.C_GOOD)))
 	if npc.has_meta("recuerda_a"):
 		var r: Dictionary = npc.get_meta("recuerda_a")
 		acts.append(_act("Preguntarle por %s" % r["nombre"], func():
@@ -123,6 +136,28 @@ func for_npc(npc: Npc) -> Array:
 			GameState.change_sanity(1)))
 	if Conversation.can_talk(npc):
 		acts.insert(0, _act("Hablar", func(): world.open_chat(npc)))
+	return acts
+
+
+## Uno que se ha caído de sobredosis delante de ti (Sucesos.cae): ponerle tu naloxona o llamar
+## al 112 y esperar (llega tarde a menudo).
+func _caido(npc: Npc) -> Array:
+	var gs := GameState
+	var acts := []
+	if gs.has_item("naloxona"):
+		acts.append(_act("Ponerle la naloxona", func(): world.sucesos.salvar(npc)))
+	acts.append(_act("Llamar al 112 y esperar con él", func():
+		gs.advance(15)
+		if randf() < Defs.AMBULANCIA_A_TIEMPO:
+			npc.remove_meta("sobredosis")
+			npc.calm_down()
+			npc.remember("ayudado")
+			gs.log_msg("Llega la ambulancia y se llevan a %s respirando. Por los pelos." % npc.display_name, G.C_GOOD)
+			gs.change_dignity(3, "No dejar a nadie tirado")
+		else:
+			gs.log_msg("La ambulancia llega tarde.", G.C_BAD)
+			world.sucesos.muere(npc)
+			gs.change_sanity(-8, "Ver morir a alguien")))
 	return acts
 
 
@@ -240,6 +275,10 @@ func _rob_tourist(npc: Npc) -> void:
 func _camello(npc: Npc) -> Array:
 	var gs := GameState
 	var acts := []
+	# con mala fama en su zona, quien no te conoce no te vende (Fama)
+	if npc.memory.is_empty() and npc.debt <= 0 and Fama.de(npc.cell, "mala") >= Defs.FAMA_NO_VENDE:
+		npc.say("Contigo no hago tratos. Ya sé quién eres.", 3.0)
+		return acts
 	if npc.debt > 0:
 		npc.say("Primero me pagas lo que me debes")
 		if gs.money > 0:
@@ -265,7 +304,9 @@ func _camello(npc: Npc) -> Array:
 		return acts
 	for id in Defs.DEALER_STOCK:
 		var s: Dictionary = Defs.SUBSTANCES[id]
-		var price: int = s["price"]
+		if s.has("suceso") and not gs.sucesos.has(s["suceso"]):
+			continue  # (el fentanilo, solo cuando llega)
+		var price: int = gs.precio(id)
 		if gs.money >= price:
 			acts.append(_act("Comprar %s (%d €)" % [s["name"], price], func():
 				gs.add_money(-price)
@@ -471,6 +512,13 @@ func _educador(npc: Npc) -> Array:
 				npc.say("En el Baluard, cerca de %s" % world.city.street_name_near(Vector2i(c["x"], c["y"])), 5.0)
 				world.highlight_poi(c)),
 	]
+	# con el fentanilo en el barrio, las educadoras reparten naloxona (Sucesos)
+	if gs.sucesos.has("fentanilo") and npc.get_meta("naloxona_dia", -1) != gs.day:
+		acts.insert(0, _act("Pedirle naloxona", func():
+			npc.set_meta("naloxona_dia", gs.day)
+			gs.add_item("naloxona")
+			npc.say("Llévala siempre encima. Si alguien se queda sin respirar, al muslo, aunque sea por encima del pantalón.", 6.0)
+			gs.log_msg("Te da una naloxona y te explica cómo se pone. Si te pasas, alguien te la puede poner a ti.", G.C_GOOD)))
 	if npc.last_interaction_day != gs.day:
 		acts.insert(0, _act("Pedirle un bocadillo", func():
 			npc.last_interaction_day = gs.day
@@ -1260,6 +1308,7 @@ const POI_LABELS := {
 	"albergue": "Servicio social", "cap": "Centro de salud", "cas": "CAS Baluard",
 	"comisaria": "Comisaría", "compraventa": "Compraventa", "club": "Asociación cannábica",
 	"altar": "Altar de la calle",
+	"escondite": "Escondite",
 }
 
 
@@ -1278,11 +1327,37 @@ static func _recuerdo(r: Dictionary) -> String:
 			return "¿%s? Me echó una mano cuando nadie lo hacía. %s" % [n, fue]
 		"enemigo":
 			return "%s me la jugó. %s Tú tienes la misma cara, ¿sabes?" % [n, fue]
+		"fama_mala":
+			return "¿%s? No le conocí, pero por aquí todo el mundo sabe que robaba a quien podía. %s" % [n, fue]
+		"fama_buena":
+			return "¿%s? Dicen que ayudaba a la gente de esta calle cuando nadie lo hacía. %s" % [n, fue]
 	return "¿%s? Le veía por aquí. %s" % [n, fue]
 
 
 ## El altar de un yonki de antes (World._altar): una vela por él (te sube la mente), leer lo
 ## que le han escrito o coger las monedas que le ha dejado la gente (una vez, y está feo).
+## El escondite de un yonki de antes (legado): lo que no se pudo llevar, para el siguiente.
+func _escondite(poi: Dictionary) -> Array:
+	var gs := GameState
+	var i: int = poi.get("historia", -1)
+	if i < 0 or i >= gs.historia.size() or not gs.historia[i].has("escondite"):
+		return []
+	var e: Dictionary = gs.historia[i]["escondite"]
+	if e.get("recogido", false):
+		return [_act("Mirar el hueco vacío", func(): gs.log_msg("Ya no queda nada de lo de %s." % poi["name"]))]
+	return [_act("Sacar lo que escondía %s" % poi["name"], func():
+		gs.advance(10)
+		e["recogido"] = true
+		gs.add_money(e.get("dinero", 0))
+		var cosas := []
+		for id in e.get("objetos", {}):
+			gs.add_item(id, e["objetos"][id])
+			cosas.append(Defs.item_name(id).to_lower())
+		gs.log_msg("Detrás de un ladrillo suelto: %d €%s. Gracias, %s." % [e.get("dinero", 0),
+			(" y " + ", ".join(cosas)) if not cosas.is_empty() else "", poi["name"]], G.C_GOOD)
+		gs.milestone("legado"))]
+
+
 func _altar(poi: Dictionary) -> Array:
 	var gs := GameState
 	var h: Dictionary = gs.historia[poi["historia"]]
@@ -1324,6 +1399,7 @@ static func poi_title(p: Dictionary, sep := " · ") -> String:
 func for_poi(poi: Dictionary) -> Array:
 	var gs := GameState
 	var acts := world.errands.actions_for_poi(poi)
+	acts.append_array(world.proposito.actions_for_poi(poi))
 	match poi["kind"]:
 		"super":
 			acts.append(_buy("Comprar una litrona", Defs.precio("super_litrona"), "litrona"))
@@ -1483,6 +1559,8 @@ func for_poi(poi: Dictionary) -> Array:
 				gs.change_dignity(-1)))
 		"altar":
 			acts.append_array(_altar(poi))
+		"escondite":
+			acts.append_array(_escondite(poi))
 		"club":
 			acts.append_array(_club(poi))
 		"compraventa":

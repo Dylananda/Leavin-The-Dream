@@ -172,6 +172,7 @@ const DESTINOS := {
 	"deportado": {"texto": "fue expulsado del país", "queda": ""},
 	"psiquiatrico": {"texto": "se quedó en el psiquiátrico", "queda": ""},
 	"fuera": {"texto": "volvió con su familia", "queda": ""},
+	"cumplido": {"texto": "consiguió lo que buscaba", "queda": "vecino"},
 }
 ## Lo que dice de sí mismo el que se queda en el barrio («Escuchar su historia»).
 const DESTINO_BIO := {
@@ -387,6 +388,14 @@ static var SUBSTANCES := Equilibrio.aplicar("sustancias", {
 	"tabaco": {"name": "Tabaco", "price": 1, "high": 8, "addiction": 2, "health": -1, "dignity": 0, "sanity": 1, "od": 0.0,
 		"decay": 0.15, "hunger_rate": 0.8, "visible": 0.0, "color": Color("b0b0a0"),
 		"fx": {"shake": -0.25}, "fx_text": "las manos dejan de temblar un rato"},
+	# solo mientras dura el suceso «Llega el fentanilo» (`suceso`): parches baratísimos; cada
+	# dosis tiene su riesgo de sobredosis aunque no vayas colocado (`od_base`)
+	"fentanilo": {"name": "Fentanilo", "price": 3, "high": 60, "addiction": 10, "health": -8, "dignity": -5, "sanity": 3, "od": 1.5,
+		"od_base": 0.12, "suceso": "fentanilo",
+		"decay": 0.08, "hunger_rate": 0.6, "fatigue_rate": 2.5, "visible": 0.3, "color": Color("c06060"),
+		"relieves": "caballo", "mono": -60, "relief_addiction": 0,
+		"mezcla": ["litrona", "caballo", "ansioliticos", "tramadol", "ketamina"],
+		"fx": {"speed": -0.5, "sway": 1.2, "drowsy": 0.6}, "fx_text": "un peso enorme: todo se apaga, también tú"},
 })
 ## Mal viaje (las que tienen `malviaje`: con la salud mental por debajo de `cordura`, o a veces
 ## sin más, el viaje se tuerce): sus efectos durante sus `minutes`.
@@ -434,7 +443,7 @@ const BODY_FX := {
 }
 
 ## Lo que vende cada camello (el resto se consigue por otras vías).
-const DEALER_STOCK := ["porro", "pastillas", "setas", "lsd", "speed", "mdma", "ketamina", "farlopa", "base", "caballo"]
+const DEALER_STOCK := ["porro", "pastillas", "setas", "lsd", "speed", "mdma", "ketamina", "farlopa", "base", "caballo", "fentanilo"]
 
 ## Precios de lo que se compra o se cobra en las acciones (scripts/interactions.gd), en euros:
 ## `precio` y, si va por unidades, `cantidad`; `que` lo explica en el diseñador de sustancias.
@@ -477,7 +486,8 @@ static var ITEMS := Equilibrio.aplicar("objetos", {
 	"paquete": {"name": "Paquete del camello", "sell": 0},
 	"cartera_caliente": {"name": "Cartera caliente", "sell": 0},
 	"papeles_albergue": {"name": "Papeles del albergue", "sell": 0},  # de la cita en el CAS
-	"receta": {"name": "Receta del médico de cabecera", "sell": 0},  # del CAP: ansiolíticos, antidepresivos o tramadol en la farmacia
+	"receta": {"name": "Receta del médico de cabecera", "sell": 0},
+	"naloxona": {"name": "Naloxona (para una sobredosis)", "sell": 0},  # la reparten las educadoras cuando llega el fentanilo  # del CAP: ansiolíticos, antidepresivos o tramadol en la farmacia
 	# de las misiones de los personajes (scripts/misiones.gd)
 	"pasaporte": {"name": "Pasaporte de Grzegorz", "sell": 0},
 	"acordeon": {"name": "Acordeón", "sell": 25},  # el compraventa también lo quiere
@@ -725,6 +735,8 @@ const MILESTONES := {
 	"socio_club": ["Hacerte socio de un club cannábico", 3],
 	"redada_club": ["Caer en una redada de un club cannábico", 6],
 	"relevo": ["Tomar el relevo de otro yonki", 5],
+	"proposito_perdido": ["Perder para siempre lo que buscabas", 20],
+	"legado": ["Vivir de lo que dejó el de antes", 3],
 	"altar_monedas": ["Coger las monedas del altar de un compañero", 12],
 	# conocer una sustancia nueva (las que ya conoce el perfil no cuentan)
 	"probar_litrona": ["Empezar a beber en la calle", 3],
@@ -743,6 +755,9 @@ const MILESTONES := {
 	"probar_antidepresivos": ["Empezar con los antidepresivos", 2],
 	"probar_tramadol": ["Probar el tramadol", 6],
 	"probar_tabaco": ["Volver a fumar", 1],
+	"probar_fentanilo": ["Probar el fentanilo", 15],
+	"naloxona": ["Que te salve la naloxona", 10],
+	"salvar_vida": ["Salvarle la vida a alguien con naloxona", 5],
 	"malviaje": ["Un mal viaje", 8],
 	"mezcla": ["Mezclar depresores", 8],
 }
@@ -795,3 +810,250 @@ static func title_for(caida: float) -> String:
 ## Convierte un índice de criminalidad (1.0 = barrio mediano) en un multiplicador suave.
 static func crime_factor(index: float) -> float:
 	return clampf(1.0 + 0.3 * log(maxf(index, 0.01)) / log(2.0), 0.5, 3.5)
+
+
+# ------------------------------------------------------------------ propósitos
+
+## Lo que quiere conseguir cada perfil, además de pasar un día más (scripts/proposito.gd).
+## Por pasos, en orden; cada paso es de un tipo:
+##   "enviar": mandar `total` € (de `minimo` en `minimo` como poco) desde un sitio de `lugar`
+##     (tipos de Interactions.POI_LABELS), con la acción `accion`.
+##   "ir": ir a un sitio de `lugar` entre las `desde` y las `hasta` h, `veces` días distintos,
+##     con la acción `accion` (dura `minutos`). Con `sobrio`, no cuenta si vas colocado (por
+##     encima de PROPOSITO_SOBRIO) y, si además `estricto`, lo pierdes para siempre. `efecto`:
+##     algo que pasa al hacerlo ("sin_paga": papá deja de ingresarte).
+##   "tener": tener el objeto `objeto` en el inventario.
+##   "barra": aguantar `dias` días seguidos (empezando por el de hoy) sin que falle ninguna
+##     condición de `cond`: {"stat": campo de GameState, "min"/"max"}, {"limpio": sustancia}
+##     (sin pasar de PROPOSITO_LIMPIO de colocón) o {"no_fichado": true}.
+## `falla` = lo que lo pierde para siempre (es un hito): "detenido" (otra detención desde que
+## empezó), "ingreso" (otro ingreso en el psiquiátrico) o {"dignidad": mínimo}. `final` = el
+## texto del final «CUMPLIDO»; `perdido` = lo que dice al perderlo.
+const PROPOSITOS := {
+	"sin_papeles": {
+		"titulo": "Mandar dinero a casa y conseguir los papeles",
+		"pasos": [
+			{"tipo": "enviar", "texto": "mandar 150 € a casa", "lugar": ["cajero"], "total": 150, "minimo": 20,
+				"accion": "Mandar dinero a casa (envío)"},
+			{"tipo": "ir", "texto": "ir dos días a la asesoría de extranjería del servicio social (9 a 14 h) a por el informe de arraigo",
+				"lugar": ["albergue"], "desde": 9, "hasta": 14, "veces": 2, "minutos": 90,
+				"accion": "Pedir el informe de arraigo"},
+			{"tipo": "barra", "texto": "pasar tres días seguidos sin que te fichen, mientras resuelven",
+				"dias": 3, "cond": [{"no_fichado": true}]},
+		],
+		"falla": "detenido",
+		"perdido": "Con una detención más en el expediente, el arraigo se ha ido a la basura. Los papeles ya no llegarán.",
+		"final": "Una carta certificada: permiso de residencia y trabajo. Llamas a tu madre desde el locutorio y no sabes qué decir; ella llora por las dos. El lunes empiezas en una obra en Badalona. El Raval te ha visto llegar y te ve irte.",
+	},
+	"parado": {
+		"titulo": "Recuperar a su hija, Laia",
+		"pasos": [
+			{"tipo": "barra", "texto": "tres días seguidos sin emborracharte y con la dignidad por encima de 40",
+				"dias": 3, "cond": [{"limpio": "litrona"}, {"stat": "dignity", "min": 40.0}]},
+			{"tipo": "enviar", "texto": "ingresar 100 € de la pensión de Laia que debes", "lugar": ["cajero"], "total": 100, "minimo": 10,
+				"accion": "Ingresar para la pensión de Laia"},
+			{"tipo": "ir", "texto": "comer con Laia en un kebab (13 a 15 h), sereno", "lugar": ["kebab"],
+				"desde": 13, "hasta": 15, "veces": 1, "minutos": 90, "sobrio": true, "estricto": true,
+				"accion": "Comer con Laia"},
+		],
+		"falla": {"dignidad": 15.0},
+		"perdido": "Laia te ha visto en la calle, tirado. Su madre te llama esa noche: que no vuelvas a acercarte.",
+		"final": "Laia se pide un dürüm sin cebolla, como cuando tenía ocho años. Hablan de todo menos de lo importante, y al despedirse te dice «hasta el sábado». Dejas la litrona en el portal. Ya no caes: subes, despacio.",
+	},
+	"jubilado": {
+		"titulo": "Que los nietos vuelvan a llamar",
+		"pasos": [
+			{"tipo": "tener", "texto": "conseguir un móvil que funcione", "objeto": "movil"},
+			{"tipo": "enviar", "texto": "mandarle 60 € a Marc por su cumpleaños", "lugar": ["cajero"], "total": 60, "minimo": 10,
+				"accion": "Mandar el regalo de cumpleaños de Marc"},
+			{"tipo": "barra", "texto": "dos días seguidos con la dignidad por encima de 70, que cuando llamen no te noten nada",
+				"dias": 2, "cond": [{"stat": "dignity", "min": 70.0}]},
+		],
+		"falla": {"dignidad": 30.0},
+		"perdido": "Tu hija ha hablado con alguien del barrio. Los nietos ya no van a llamar.",
+		"final": "Suena el móvil un domingo: es Marc, que quiere enseñarte el patinete que le compró con tu dinero. Luego se pone Anna. Te invitan a comer a Sabadell. Te pones la americana de los domingos y coges el tren.",
+	},
+	"divorciado": {
+		"titulo": "Ver otra vez a Kira, el perro",
+		"pasos": [
+			{"tipo": "enviar", "texto": "pagar 160 € de la pensión atrasada", "lugar": ["cajero"], "total": 160, "minimo": 20,
+				"accion": "Pagar la pensión atrasada"},
+			{"tipo": "barra", "texto": "tres días seguidos con la dignidad por encima de 60 y sin que te fichen",
+				"dias": 3, "cond": [{"stat": "dignity", "min": 60.0}, {"no_fichado": true}]},
+			{"tipo": "ir", "texto": "quedar con ella y con Kira en la terraza de un bar (18 a 20 h), sereno", "lugar": ["bar"],
+				"desde": 18, "hasta": 20, "veces": 1, "minutos": 60, "sobrio": true,
+				"accion": "Esperar a Kira en la terraza"},
+		],
+		"falla": "detenido",
+		"perdido": "Se ha enterado de lo de la comisaría. Te ha bloqueado en todo. A Kira no la vas a volver a ver.",
+		"final": "Kira te reconoce desde la otra punta de la plaza y casi tira a tu ex al suelo. Ella se sienta, pide un café y te deja pasear al perro cada domingo. No es volver. Pero es algo.",
+	},
+	"psiquiatrico": {
+		"titulo": "Que callen las voces",
+		"pasos": [
+			{"tipo": "ir", "texto": "ir a la cita con la psiquiatra del CAP (9 a 13 h)", "lugar": ["cap"],
+				"desde": 9, "hasta": 13, "veces": 1, "minutos": 60, "accion": "Ir a la cita con la psiquiatra"},
+			{"tipo": "barra", "texto": "tres días seguidos con la salud mental por encima de 60",
+				"dias": 3, "cond": [{"stat": "sanity", "min": 60.0}]},
+			{"tipo": "ir", "texto": "ir dos tardes al grupo de apoyo del servicio social (17 a 19 h)", "lugar": ["albergue"],
+				"desde": 17, "hasta": 19, "veces": 2, "minutos": 90, "accion": "Ir al grupo de apoyo"},
+		],
+		"falla": "ingreso",
+		"perdido": "Otra vez dentro. Cuando sales, las voces han ganado: ya no intentas que se callen.",
+		"final": "Una mañana te das cuenta de que llevas días sin oírlas. La psiquiatra lo apunta sin levantar la vista. En el grupo te piden que cuentes cómo lo has hecho y no sabes qué decir. Te dan un piso tutelado en Sants.",
+	},
+	"nino_bien": {
+		"titulo": "Demostrarle a papá que es alguien",
+		"pasos": [
+			{"tipo": "ir", "texto": "llamar a papá desde un cajero y decirle que no te ingrese más la paga", "lugar": ["cajero"],
+				"desde": 0, "hasta": 0, "veces": 1, "minutos": 10, "efecto": "sin_paga",
+				"accion": "Llamar a papá: que no te pase más la paga"},
+			{"tipo": "barra", "texto": "cuatro días seguidos por tu cuenta: con 30 € encima al menos y la dignidad por encima de 60",
+				"dias": 4, "cond": [{"stat": "money", "min": 30.0}, {"stat": "dignity", "min": 60.0}]},
+			{"tipo": "ir", "texto": "cenar con papá en un bar (20 a 22 h), sereno", "lugar": ["bar"],
+				"desde": 20, "hasta": 22, "veces": 1, "minutos": 90, "sobrio": true, "estricto": true,
+				"accion": "Cenar con papá"},
+		],
+		"falla": {"dignidad": 30.0},
+		"perdido": "Alguien le ha enseñado a papá una foto tuya en la Rambla del Raval. Ya no hay nada que demostrar.",
+		"final": "Papá pide la cuenta y, por primera vez, te deja pagar a ti. No dice nada, pero en el coche le cuenta a mamá que has «madurado». Vuelves a Pedralbes con una historia que nadie te va a creer.",
+	},
+}
+const PROPOSITO_SOBRIO := 30.0  ## colocón por encima del cual vas «colocado» a una cita del propósito
+const PROPOSITO_LIMPIO := 0.4  ## colocón (0..1) de una sustancia que rompe un «limpio de»
+const PROPOSITO_PASO_CAIDA := 10.0  ## lo que baja la caída cada paso: acercarte a lo tuyo te aleja del fondo
+const PROPOSITO_PASO_DIGNIDAD := 5.0  ## ... y lo que sube la dignidad
+const PROPOSITO_PASO_MENTE := 5.0  ## ... y la salud mental
+
+
+# ------------------------------------------------------------------ sucesos del barrio
+
+## Calendario: el día 1 de la partida es esta fecha [mes, día] (el resto se cuenta desde aquí).
+const CALENDARIO_INICIO := [7, 10]
+const MESES := ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto",
+	"septiembre", "octubre", "noviembre", "diciembre"]
+const DIAS_MES := [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+## Cosas que le pasan al Raval durante unos días y lo cambian para todos (scripts/sucesos.gd).
+## Empiezan en una `fecha` [mes, día] o, cada día, con probabilidad `prob_dia` (no antes del
+## día `desde_dia` ni otra vez hasta `pausa` días después de acabar) y duran `dias` [mín, máx].
+## `anuncio` sale en el registro al empezar, `fin` al acabar, `rumor` en la libreta y `frases`
+## lo dice la gente al pasar mientras dura. `gente` multiplica cuántos hay de cada tipo de bot;
+## `precio` multiplica lo que cuesta la droga; `pedir` suma a lo que te dan pidiendo.
+const SUCESOS := {
+	"fentanilo": {"titulo": "Llega el fentanilo", "prob_dia": 0.05, "desde_dia": 4, "pausa": 10, "dias": [3, 5],
+		"anuncio": "Ha llegado al barrio una cosa nueva: parches de fentanilo, baratísimos. Y dicen que hay caballo cortado con lo mismo.",
+		"rumor": "Ojo con el caballo de estos días: viene cortado con fentanilo. Las educadoras reparten naloxona.",
+		"fin": "Ya no se ven parches de fentanilo por el barrio. Los que quedan, quedan.",
+		"frases": ["¿Has visto lo de los parches?", "Ayer encontraron a otro en un portal.", "Con el caballo de ahora, cuidado."]},
+	"redadas": {"titulo": "Redadas fuertes", "prob_dia": 0.07, "desde_dia": 3, "pausa": 6, "dias": [2, 3],
+		"gente": {"urbano": 3.0, "mosso": 3.0, "urbano_secreta": 2.0, "mosso_secreta": 2.0}, "precio": 1.6,
+		"anuncio": "Furgones de los Mossos en cada esquina y la Urbana pidiendo papeles: hay operación en el barrio. Los camellos se esconden y lo poco que hay, sale caro.",
+		"rumor": "Hay redadas: los camellos no salen y lo que hay está carísimo. Mejor no llevar nada encima.",
+		"fin": "Se van los furgones. Los camellos vuelven a sus esquinas como si nada.",
+		"frases": ["Hoy está la calle llena de lecheras.", "Ni se te ocurra pillar hoy.", "Me han pedido los papeles tres veces."]},
+	"fiesta_mayor": {"titulo": "Fiesta Mayor del Raval", "fecha": [7, 17], "dias": [4, 4],
+		"gente": {"turista": 1.6, "vecino": 1.6, "nino": 1.6, "anciano": 1.3, "musico": 2.5, "fiestero": 1.5, "rosero": 1.5},
+		"pedir": 0.15,
+		"anuncio": "Empieza la Fiesta Mayor del Raval: gigantes, cuerpos de baile, conciertos en la Rambla del Raval y mesas largas por la calle. Hay gente por todas partes, y de buen humor.",
+		"rumor": "Es la Fiesta Mayor: hay gente por todas partes, y la gente de fiesta da más.",
+		"fin": "Se acaba la Fiesta Mayor. Las barrenderas recogen los vasos y el barrio vuelve a lo suyo.",
+		"frases": ["¡Visca la Festa Major!", "¿Vas a los gigantes?", "Esta noche hay concierto en la Rambla del Raval."]},
+	# el vecindario organizado contra los narcopisos y por la vivienda (el Raval tiene una larga
+	# historia de movilizaciones vecinales; fuente concreta pendiente: ver docs/ideas.md)
+	"manifestacion": {"titulo": "Manifestación vecinal", "prob_dia": 0.04, "desde_dia": 3, "pausa": 7, "dias": [1, 1],
+		"gente": {"vecino": 1.8, "anciano": 1.4, "urbano": 2.0, "mosso": 1.5},
+		"anuncio": "Cacerolada en la Rambla del Raval: los vecinos se manifiestan contra los narcopisos y los desahucios. Pancartas en los balcones y la policía mirando.",
+		"rumor": "Hoy hay manifestación de vecinos: está todo lleno de gente y de policía.",
+		"fin": "Se recogen las pancartas. Los balcones siguen diciendo «Raval digne».",
+		"frases": ["¡Fuera narcopisos del Raval!", "¡El barrio no se vende!", "¿Vienes a la cacerolada?"]},
+	"obras": {"titulo": "Obras en la calle", "prob_dia": 0.1, "desde_dia": 2, "pausa": 3, "dias": [2, 4],
+		"anuncio": "Han vallado un tramo de %s por obras. Hay que dar la vuelta.",
+		"rumor": "%s está cortada por obras unos días.",
+		"fin": "Quitan las vallas de %s. Huele a asfalto nuevo.",
+		"frases": ["Otra vez obras, y en verano.", "Por ahí no se puede pasar, están las vallas."]},
+}
+## Obras: el tramo cortado (casillas alrededor de un punto de la calle) y lo lejos que tiene que
+## quedar de ti al empezar (para no encerrarte).
+const REDADA_ESCONDIDOS := 0.7  ## parte de los camellos que se esconden durante las redadas
+const OBRAS_RADIO := 3
+const OBRAS_LEJOS := 30
+## Fentanilo (suceso): lo que vale y lo arriesgado que es (ver SUBSTANCES["fentanilo"]); la
+## parte del caballo que viene cortada sin avisar (y su riesgo de sobredosis en cada dosis), la
+## de los bots que se meten algo de eso y caen, los latentes que mueren cada día y los segundos
+## que aguanta uno caído delante de ti hasta que llega la naloxona... o no.
+const FENTA_CORTE := 0.3
+const FENTA_CORTE_OD := 0.12
+const FENTA_BOT_OD := 0.12
+const FENTA_MUERTOS_DIA := Vector2i(1, 3)
+const FENTA_CAIDO_SEGUNDOS := 45.0
+const AMBULANCIA_A_TIEMPO := 0.4  ## sin naloxona, que la ambulancia llegue a tiempo
+const NALOXONA_SALUD := 15.0  ## la salud que te quita una sobredosis si llevas naloxona (sin ella, 45)
+## Opiáceos: lo que la naloxona revierte.
+const OPIACEOS := ["caballo", "fentanilo", "tramadol", "metadona"]
+
+
+# ------------------------------------------------------------------ amistades y fama
+
+## Amistades y enemistades entre bots (scripts/vinculos.gd): de -100 (enemigo a muerte) a 100
+## (uña y carne). Lo que suma o resta cada cosa que pasa entre ellos; desde VINCULO_AMIGO son
+## amigos y hasta VINCULO_ENEMIGO enemigos. Cada uno recuerda como mucho VINCULOS_MAX y se va
+## olvidando VINCULO_OLVIDO por día; los amigos del agredido se enteran (VINCULO_SE_CUENTA).
+const VINCULO_PELEA := -45.0
+const VINCULO_ROBO := -35.0
+const VINCULO_TIRON := -35.0
+const VINCULO_DOSIS := 35.0
+const VINCULO_AMIGO := 25.0
+const VINCULO_ENEMIGO := -25.0
+const VINCULOS_MAX := 6
+const VINCULO_OLVIDO := 8.0
+const VINCULO_SE_CUENTA := 0.5
+const VINCULO_CRUCE := 7  ## casillas a las que dos que se conocen se ven y reaccionan al cruzarse
+const VINCULO_CRUCE_PAUSA := 60.0  ## segundos antes de que vuelvan a reaccionar
+const VINCULO_BRONCA := 0.35  ## probabilidad de que dos enemigos que se cruzan acaben a golpes
+## Tu fama por zonas del barrio (scripts/fama.gd): cuadrados de FAMA_ZONA casillas, con fama
+## «buena» y «mala» de 0 a 100. Lo que suma cada cosa que haces (`FAMA_HECHOS`, por lo que
+## recuerda la víctima: Npc.remember), multiplicado por cada testigo que te ve
+## (FAMA_TESTIGO); cada día se olvida FAMA_OLVIDO y corre a las zonas de al lado (FAMA_CORRE).
+const FAMA_ZONA := 40
+const FAMA_HECHOS := {"ayudado": ["buena", 6.0], "robado": ["mala", 8.0], "pegado": ["mala", 8.0], "timado": ["mala", 6.0]}
+const FAMA_TESTIGO := 0.5
+const FAMA_SOLO := 0.5  ## sin testigos, solo lo cuenta la víctima: esta parte
+const FAMA_OLVIDO := 4.0
+const FAMA_CORRE := 0.25
+## Cómo te trata quien no te conoce según tu fama en su zona: te evita (mala), no te vende ni
+## te compra (mala), viene a pedirte (buena, los de la calle) o te avisa de la policía (buena).
+const FAMA_EVITA := 40.0
+const FAMA_NO_VENDE := 55.0
+const FAMA_PIDEN := 40.0
+const FAMA_PEDIGUENOS := ["yonki", "mendigo", "punki", "chaval"]
+const FAMA_AVISA := 30.0
+const FAMA_AVISO_PAUSA := 90.0  ## segundos entre dos avisos de la policía
+## Al relevo, quien vivía donde el de antes tenía fama (por encima de esto) se acuerda de él
+## de oídas («recuerda_a»).
+const FAMA_RECUERDO := 30.0
+
+
+# ------------------------------------------------------------------ partidas y legado
+
+## Repetir perfil: cuando ya han salido los seis, el relevo ofrece otro de cada perfil con otro
+## nombre (de estos, sin repetir los de la historia) y otra ropa y pelo (World.perfiles_libres).
+const PERFIL_NOMBRES := {
+	"sin_papeles": ["Karim", "Ibrahim", "Omar", "Samir", "Bilal", "Hamza"],
+	"parado": ["Manolo", "Toni", "Juanjo", "Ramiro", "Fermín", "Quique"],
+	"jubilado": ["Don Julián", "Don Ernesto", "Don Àngel", "Don Vicente", "Don Pere"],
+	"divorciado": ["Marc", "Sergi", "Óscar", "David", "Xavi"],
+	"psiquiatrico": ["Pili", "Encarni", "Rosa Mari", "Montse", "Conchi"],
+	"nino_bien": ["Pelayo", "Íñigo", "Gonzalo", "Álvaro", "Jacobo"],
+}
+## Legado del relevo (World._legado): lo que hereda el siguiente según cómo acabó el de antes.
+## Escondite: lo que le quedaba (esta parte del dinero, y sus cosas), si no se lo pudo llevar
+## (no los de LEGADO_SIN_ESCONDITE) y había al menos LEGADO_ESCONDITE_MIN €, o algún objeto.
+const LEGADO_ESCONDITE := 0.6
+const LEGADO_ESCONDITE_MIN := 5
+const LEGADO_SIN_ESCONDITE := ["redimido", "cumplido", "fuera", "leyenda"]
+## Deuda: el camello al que más debía te viene a cobrar a ti esta parte (salvo si pagó antes de irse).
+const LEGADO_DEUDA := 0.5
+const LEGADO_DEUDA_PERDONA := ["redimido", "cumplido"]
+## Contacto: alguien a quien ayudó al menos tantas veces te echa una mano (y te da esto, una vez).
+const LEGADO_CONTACTO_AYUDAS := 2
+const LEGADO_CONTACTO_DINERO := 15

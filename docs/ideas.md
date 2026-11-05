@@ -208,25 +208,105 @@ sí y una memoria poco fiable**, que puede ir creciendo hacia misiones de rol en
   - Quien le conocía se acuerda de él (amigo, enemigo o conocido) y se le puede preguntar
     («Preguntarle por Paco»), pero a ti no te conoce: sin memoria, sin deudas, sin rencor.
   - La pantalla final lista a los de antes.
-  - [ ] Pendiente: visitas a la cárcel y al psiquiátrico; que se pueda repetir perfil cuando
-    se acaben (otro «Paco» distinto); legado (contactos, escondites, deudas que heredas);
-    que el de antes salga en las conversaciones con IA; jugarlo y ajustar.
+  - [x] **Repetir perfil**: cuando ya han salido los seis, el relevo ofrece otro de cada perfil
+    con otro nombre (`Defs.PERFIL_NOMBRES`) y otra ropa y pelo, siempre igual para el mismo
+    nombre (`GameState.variante`, que se guarda en la partida).
+  - [x] **Legado** (`World._legado` y `_heredar`, `Defs.LEGADO_*`), según cómo acabó y cómo le
+    fue: un **escondite** con parte de su dinero y sus cosas, si no se las pudo llevar (un sitio
+    más del mapa, «Sacar lo que escondía Paco»); un **contacto**, alguien a quien ayudó, que te
+    echa una mano («Decirle que vienes de parte de Paco»); y su **deuda**, que el camello te
+    viene a cobrar a ti (la mitad), salvo si se redimió o cumplió su propósito. Sale en la libreta.
+  - [x] **Partidas**: en el menú de inicio, la lista de las guardadas (quién va, qué día, la
+    caída, quiénes vinieron antes, si está terminada), con «Seguir» y «Borrar» (con confirmación).
+  - [x] El de antes sale en las conversaciones con IA (quien le conoció o sabe de él de oídas), y
+    también lo que se dice de ti en la zona (tu fama).
+  - [ ] Pendiente: visitas a la cárcel y al psiquiátrico; más legados (un enemigo que te toma por él, un perro que te sigue);
+    jugarlo y ajustar.
 - [x] **La ciudad se vuelve más yonki con el tiempo**: en cada relevo, unos cuantos de la gente
   corriente se han enganchado (pasan a ser yonkis con su aspecto de siempre, y lo cuentan),
   hay un 15 % más de yonkis por la calle y todos los bots tienen algo más de enganche.
   - [x] También día a día: cada día, a veces, alguien más se engancha y corre el rumor
     (`Defs.CONTAGIO_DIARIO`, más probable con cada relevo).
   - [ ] Pendiente: que se note quién engancha a quién (ver «Contagio»), y el camino de vuelta.
-- [ ] **Un propósito para cada yonki**, más allá de pasar un día más. Ideas por valorar:
+- [x] **Un propósito para cada yonki**, más allá de pasar un día más. Ideas por valorar:
   Youssef, mandar dinero a casa y conseguir los papeles; Paco, recuperar a su hija o
   pagar una deuda vieja; Don Ramón, que los nietos vuelvan a llamar o dejar algo en herencia;
   Jordi, ver al perro o volver con ella (o vengarse); Mari Loli, que las voces callen o
   encontrar a alguien del psiquiátrico; Borja, demostrar a papá que es alguien (o lo contrario).
   Cumplirlo podría ser otro final, o lo que se lleva el siguiente.
-- [ ] **Amistades y enemistades entre los NPC**, por lo que se hacen, lo que ven y lo que les
+  Hecho, primer paso (`scripts/proposito.gd`, `Defs.PROPOSITOS` y `Defs.PROPOSITO_*`): uno por
+  perfil, en tres pasos de cuatro tipos (mandar dinero desde un sitio, ir a un sitio a ciertas
+  horas, a veces sereno; tener algo; aguantar unos días seguidos con una barra o sin colocarte
+  de algo o sin que te fichen):
+  - Youssef: mandar 150 € a casa (el Western Union o un cajero), ir dos días a la asesoría de
+    extranjería a por el informe de arraigo y pasar tres días sin que te fichen. Se pierde con
+    otra detención.
+  - Paco: tres días sin emborracharse, ingresar 100 € de la pensión de Laia y comer con ella en
+    un kebab, sereno (si llega colocado, se acabó). Se pierde si la dignidad toca fondo.
+  - Don Ramón: un móvil que funcione, 60 € para el cumpleaños de su nieto y dos días con la
+    dignidad alta. Si baja mucho, los nietos dejan de llamar.
+  - Jordi: la pensión atrasada, tres días dignos y sin fichar, y ver a Kira en una terraza. Se
+    pierde con otra detención.
+  - Mari Loli: la psiquiatra del CAP, tres días con la mente bien y dos tardes en el grupo de
+    apoyo. Se pierde con otro ingreso.
+  - Borja: decirle a papá que no le pase más la paga, cuatro días por su cuenta (con algo de
+    dinero y dignidad) y cenar con papá, sereno.
+  Sale en la libreta (arriba, con su progreso), en el registro al avanzar y al empezar. Cada
+  paso baja la caída y sube la dignidad y la mente: lo que te acerca a lo tuyo te aleja del
+  fondo. Cumplirlo es un final («CUMPLIDO», destino `cumplido`: se queda de vecino y deja
+  relevo) y queda en `GameState.historia`; perderlo para siempre es un hito.
+  - [ ] Pendiente: que los pasos tengan más que ver con la gente del barrio (personajes del
+    editor, misiones); que el siguiente yonki herede algo del propósito del de antes; un segundo
+    propósito «oscuro» por perfil (vengarse, hundirse a propósito); jugarlo y ajustar.
+- [x] **Amistades y enemistades entre los NPC**, por lo que se hacen, lo que ven y lo que les
   cuentan, con **niveles de fama**; de ahí pueden salir **bandas**.
-- [ ] **Sucesos de la historia del barrio**: llega el fentanilo, redadas fuertes de la
+  Hecho, primer paso:
+  - **Entre bots** (`scripts/vinculos.gd`, `Defs.VINCULO*`): cada registro del censo tiene un
+    número fijo (`uid`) y sus amistades y enemistades (de -100 a 100, como mucho seis, que se
+    olvidan con los días). Se hacen enemigos al pelearse (las peleas de yonkis), al robarse (el
+    carterista al que pilla el guiri) o al darse el tirón (un yonki con mono y sin dinero a otro
+    que lleva algo); amigos, al pasarse una dosis cuando el otro está fatal. Lo que le hacen a
+    uno lo saben sus amigos. Al cruzarse, los enemigos discuten (y a veces se pegan) y los
+    amigos se saludan y van juntos un rato. Se guardan en el censo y siguen tras un relevo.
+  - **Tu fama por zonas** (`scripts/fama.gd`, `Defs.FAMA_*`): cuadrados de 80 m con fama buena
+    (ayudar) y mala (robar, pegar, timar), más cuanta más gente te ve; cada día corre a las
+    zonas de al lado y se va olvidando. Quien no te conoce te trata según tu fama: con mala te
+    evita y, con muy mala, los camellos no te venden ni los clientes te compran; con buena, los
+    de la calle vienen a pedirte y alguien te avisa cuando viene la policía. Sale en la libreta.
+  - **El de antes**: al relevo, su fama se va con él (a la historia) y quien vive donde la tenía
+    se acuerda de él de oídas («Preguntarle por Paco»: «dicen que robaba a quien podía»).
+  - [ ] Pendiente: que se vean las amistades (grupos que andan juntos), venganzas entre bots que
+    duran, que los amigos de un bot que has ayudado te defiendan; jugarlo y ajustar.
+  - **Bandas** (por hacer, ideas): con las amistades ya hay grupos; una banda sería un grupo de
+    tres o más que son amigos entre sí (sobre todo yonkis, carteristas, camellos) con un
+    cabecilla (el de más fama o más fuerza) y una zona (donde duermen o venden). Se defenderían
+    entre ellos (al pegar a uno van todos), tendrían enemistades con otras bandas por las
+    esquinas y la mercancía, harían cosas juntos (robos con pantalla, vigilar al camello) y
+    podrías entrar en una (te piden algo para fiarse: una misión) o enfrentarte a ella. Con el
+    tiempo, una banda de yonkis organizada es el camino hacia el final de la revolución.
+- [x] **Sucesos de la historia del barrio**: llega el fentanilo, redadas fuertes de la
   policía, fiestas de barrio, manifestaciones, obras que cortan calles.
+  Hecho, primer paso (`scripts/sucesos.gd`, `Defs.SUCESOS` y lo que le sigue): cada día se
+  mira si acaba alguno y si empieza otro, por fecha (hay calendario: el día 1 es el 10 de julio,
+  `Defs.CALENDARIO_INICIO`) o al azar; duran días. Se anuncian en el registro, corren como
+  rumor en la libreta y en lo que dice la gente al pasar, y la IA de las conversaciones lo sabe.
+  Se guardan en la partida y sobreviven al relevo (son del barrio).
+  - **Llega el fentanilo**: parches baratísimos con riesgo de sobredosis en cada dosis; el
+    caballo puede venir cortado sin avisar; los bots que se meten opiáceos caen (delante de ti
+    se les puede salvar con naloxona o llamando al 112, que llega tarde a menudo) y cada día
+    aparece alguno muerto en un portal; las educadoras reparten naloxona, que te salva a ti.
+  - **Redadas fuertes**: el triple de Urbana y Mossos (y más de paisano), la mayoría de los
+    camellos se esconden y la droga sale un 60 % más cara.
+  - **Fiesta Mayor del Raval** (17 de julio, cuatro días): más turistas, vecinos, niños,
+    músicos, despedidas y roseros, y la gente de fiesta da más.
+  - **Obras**: un tramo de una calle vallado unos días (casillas que no se pueden pisar,
+    `CityMap.bloquear`, y vallas rojas y blancas).
+  - **Manifestación vecinal** (un día, al azar): cacerolada contra los narcopisos y los
+    desahucios, con más vecinos, abuelos y policía.
+  - [ ] Pendiente: buscar la fuente de las manifestaciones vecinales del Raval; que la Fiesta Mayor tenga gigantes, conciertos y mesas en la
+    calle de verdad (ahora es más gente); que cada suceso cambie más cosas (precios por zona,
+    sitios cerrados); comprobar la fecha real de la Fiesta Mayor del Raval y buscar fuentes
+    sobre el fentanilo en Barcelona; capturas de las vallas en el PC; jugarlo y ajustar.
 - [x] **Empezar más enganchados** (4 de noviembre): todos los perfiles empiezan con más
   enganche y algo más de lo de siempre (tabaco, ansiolíticos; en `Defs.PROFILES`, `knows`).
 - El tono: **denuncia de situaciones reales con humor**, que sale de mostrar las cosas como son

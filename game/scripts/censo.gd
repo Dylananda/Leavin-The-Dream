@@ -36,6 +36,7 @@ var pausado := false  ## sin repasos automáticos (lo usa el test de humo)
 var _timer := 0.0
 var _cursor := 0  ## por dónde va el repaso por tandas
 var _ultima := Vector2i(-9999, -9999)  ## casilla del jugador en el repaso anterior
+var _seq := -1  ## último número de registro dado (uid; -1: hay que mirarlo en los registros)
 var _alarmas := 0.0  ## segundos hasta mirar los despertadores
 
 
@@ -66,14 +67,37 @@ func nuevo(kind: String) -> Dictionary:
 	if randf() < Defs.KIDS_WITH.get(kind, 0.0):
 		for i in randi_range(Defs.KIDS_GROUP.x, Defs.KIDS_GROUP.y):
 			r["seguidores"].append("nino")
+	uid(r)
 	registros.append(r)
 	return r
+
+
+## El número fijo de un registro (para las amistades entre bots: Vinculos). Se le da uno si no
+## tiene (los de partidas viejas).
+func uid(r: Dictionary) -> int:
+	if r.has("uid"):
+		return r["uid"]
+	if _seq < 0:
+		for o in registros:
+			_seq = maxi(_seq, o.get("uid", -1))
+	_seq += 1
+	r["uid"] = _seq
+	return _seq
+
+
+## El registro con el número `id`, o {}.
+func por_uid(id: int) -> Dictionary:
+	for r in registros:
+		if r.get("uid", -2) == id:
+			return r
+	return {}
 
 
 ## Registro de un personaje del editor (ver Personajes).
 func de_personaje(d: Dictionary) -> Dictionary:
 	var r := {"kind": d["tipo"], "name": d["nombre"], "personaje": d, "home": Vector2i(-1, -1),
 		"bed": Vector2i(-1, -1), "zona": [], "seguidores": [], "estado": {}, "visto": GameState.now(), "npc": null}
+	uid(r)
 	if d["zona"]["tipo"] == "poligono":
 		r["zona"] = world._cells_in_polygon(d["zona"]["poligono"])
 	registros.append(r)
@@ -92,6 +116,8 @@ func con_amo(d: Dictionary) -> bool:
 
 ## Si anda por la calle a la hora `h`.
 func activo(r: Dictionary, h: int) -> bool:
+	if Sucesos.escondido(r):
+		return false  # un camello escondido por las redadas
 	if not r["personaje"].is_empty():
 		# los detenidos por una misión (Misiones.apartar) no andan por el barrio
 		return Personajes.activo(r["personaje"], h) and not Misiones.apartado(r["personaje"].get("id", ""))
@@ -294,6 +320,8 @@ func despertar(r: Dictionary, junto_a := Vector2i(-1, -1)) -> Npc:
 	for d in r.get("perros", []):
 		world._spawn_follower("perro", npc, d)
 	r["npc"] = npc
+	npc.reg = r
+	uid(r)
 	return npc
 
 

@@ -255,6 +255,18 @@ func _tourist_data(npc: Npc) -> Array:
 	return out
 
 
+## Lo que recuerda del yonki de antes (World._olvidan: «recuerda_a»), para la IA; "" si nada.
+func _antes(npc: Npc) -> String:
+	if not npc.has_meta("recuerda_a"):
+		return "EL YONKI DE ANTES: no conociste a ningún otro como él."
+	var r: Dictionary = npc.get_meta("recuerda_a")
+	var trato: String = {"amigo": "te echó una mano y le apreciabas", "enemigo": "te la jugó y no le perdonas",
+		"conocido": "le veías por aquí", "fama_mala": "no le conociste, pero se decía que robaba a quien podía",
+		"fama_buena": "no le conociste, pero se decía que ayudaba a la gente"}.get(r["trato"], "le veías por aquí")
+	return "EL YONKI DE ANTES: antes que él hubo otro, %s, que %s. De él: %s. El jugador no es él, aunque se le parece (si le preguntan, puedes contarlo)." % [
+		r["nombre"], Defs.DESTINOS.get(r["destino"], {}).get("texto", "se fue"), trato]
+
+
 ## Cómo ve el personaje al jugador (no sabe sus cifras, solo lo que se nota).
 func _player_text() -> String:
 	var gs := GameState
@@ -305,6 +317,9 @@ func system_prompt(npc: Npc) -> String:
 		"QUÉ NO SABES: " + f["no_sabe"],
 		"AHORA: son las %s y estás en %s. Llevas %d € encima." % [GameState.clock_text().get_slice(" ", 2), world.city.street_name_near(npc.cell), npc.money],
 		"EL JUGADOR: " + _player_text(),
+		"ESTOS DÍAS EN EL BARRIO: " + (Sucesos.resumen() if Sucesos.resumen() != "" else "nada especial") + ".",
+		"LO QUE SE DICE DEL JUGADOR POR AQUÍ: " + (Fama.texto(npc.cell).trim_prefix("Lo que se dice de ti en esta zona: ") if Fama.texto(npc.cell) != "" else "nada, nadie le conoce.") ,
+		_antes(npc),
 		"LO QUE HA PASADO ENTRE VOSOTROS (nada más; si él dice otra cosa, no te acuerdas o no es verdad):",
 		"
 ".join(facts.map(func(x): return "- " + x)) if not facts.is_empty() else "- (nada, no le conoces de antes)",

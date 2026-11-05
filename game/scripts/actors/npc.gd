@@ -455,6 +455,9 @@ var _denounce_to: Npc  ## el agente al que va a contarle lo que le hiciste
 ## Lo que consume (ver Consumo): {} si nada; si no, su sustancia, enganche, colocón, mono y lo
 ## que lleva encima. El censo lo guarda al dormirlo y lo pone al día al despertarlo.
 var consumo := {}
+## Su registro del censo (lo pone Censo.despertar; {} los que van detrás de otro): ahí están
+## sus amistades y enemistades con los demás (Vinculos).
+var reg := {}
 var _nod_until := 0.0  ## (segundos de reloj) hasta entonces cabecea, dormido en un portal
 var _acerca_why := ""  ## (mode "acerca") a qué viene: "" saludar o comprarte, "pide" con mono
 
@@ -738,6 +741,9 @@ static func active_at(p_kind: String, h: int) -> bool:
 ## Apunta algo que ha pasado contigo ("pedido", "robado", "ayudado", "pegado").
 func remember(what: String) -> void:
 	memory[what] = memory.get(what, 0) + 1
+	# se corre por la zona: tu fama (Fama), más cuantos más te han visto
+	if world != null and player != null and Defs.FAMA_HECHOS.has(what):
+		Fama.hecho(player.cell, what, world.watching([], self).size())
 	# los suyos se enteran (personajes del editor con relaciones; ver Relaciones)
 	if world != null and world.relaciones != null and not personaje.is_empty():
 		world.relaciones.propagar(personaje.get("id", ""), what)
@@ -785,6 +791,12 @@ func grudge() -> String:
 	# lo que le has hecho a los suyos (Relaciones)
 	if remembers("oido_mal") > remembers("oido_bien"):
 		return "venganza" if stat("agresividad") >= Defs.STAT_HOTHEAD else "aparta"
+	# quien no te conoce te trata según tu fama en su zona (Fama)
+	if memory.is_empty() and not known and player != null:
+		if Fama.de(cell, "mala") >= Defs.FAMA_EVITA:
+			return "aparta"
+		if kind in Defs.FAMA_PEDIGUENOS and Fama.de(cell, "buena") >= Defs.FAMA_PIDEN and not consumo.is_empty():
+			return "pide"
 	if Consumo.acelerado(consumo) and _trait("bronca") < Defs.NPC_BRONCA_TRAIT + (stat("agresividad") - 5) * 0.05:
 		return "bronca"
 	if Consumo.necesita(consumo):
@@ -968,13 +980,22 @@ func _process(delta: float) -> void:
 	super._process(delta)
 	if not GameState.alive:
 		return
+	if has_meta("sobredosis"):
+		# caído de sobredosis (Sucesos.cae): si nadie le pone naloxona a tiempo, muere
+		if _clock() >= get_meta("sobredosis") and world != null:
+			world.sucesos.muere(self)
+		return
 	_think -= delta
 	_chatter -= delta
 	if _chatter <= 0.0:
 		_chatter = randf_range(15.0, 45.0)
 		if player and distance_to_cell(player.cell) < 20:
 			var f := Consumo.frase(consumo)
-			say(f if f != "" and randf() < 0.6 else lines().pick_random())
+			var rumor := Sucesos.frase() if randf() < 0.3 else ""  # lo que pasa estos días en el barrio
+			if rumor != "" and not is_police():
+				say(rumor)
+			else:
+				say(f if f != "" and randf() < 0.6 else lines().pick_random())
 	if player and _think <= 0.0:
 		_think = THINK_TIME
 		pasa_consumo()
@@ -1148,6 +1169,9 @@ func pasa_consumo() -> void:
 			consumo["pillado"] = 0
 		if veces > 0 and on_screen and player and distance_to_cell(player.cell) < 20:
 			say(["*se mete algo*", "Ahhh...", "Ahora sí."].pick_random(), 2.5)
+		# con el fentanilo en el barrio, los opiáceos matan (Sucesos)
+		if veces > 0 and world != null and GameState.sucesos.has("fentanilo") and consumo["id"] in Defs.OPIACEOS 				and randf() < 1.0 - pow(1.0 - Defs.FENTA_BOT_OD, veces):
+			world.sucesos.cae(self)
 	var m := Consumo.manejo(consumo)
 	slow_factor = m.x
 	wobble = m.y

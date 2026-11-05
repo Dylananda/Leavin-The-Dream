@@ -4,6 +4,9 @@ extends Control
 var _selected := 0
 var _detail: RichTextLabel
 var _buttons: Array[Button] = []
+var _partidas: VBoxContainer  ## una fila por partida guardada
+var _borrar: ConfirmationDialog
+var _por_borrar := ""  ## ruta de la partida que se va a borrar si se confirma
 
 
 func _ready() -> void:
@@ -31,18 +34,23 @@ func _ready() -> void:
 	sub.text = "El Raval, Barcelona. El objetivo: caer lo más bajo posible.  Elige quién eres."
 	sub.add_theme_color_override("font_color", Color(0.8, 0.75, 0.7))
 	root.add_child(sub)
-	# la última partida guardada que sigue viva (ver Partida)
-	var ultima := Partida.ultima()
-	if not ultima.is_empty():
-		var cont := Button.new()
-		cont.text = "Continuar: %s, día %d, %s (guardada el %s)" % [ultima.get("nombre", "?"), int(ultima.get("dia", 1)),
-			ultima.get("hora", ""), str(ultima.get("guardada", "")).replace("T", " a las ").left(-3)]
-		cont.custom_minimum_size = Vector2(0, 48)
-		cont.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-		cont.pressed.connect(func():
-			if Partida.cargar(ultima["ruta"]):
-				get_tree().change_scene_to_file("res://scenes/world.tscn"))
-		root.add_child(cont)
+	# las partidas guardadas (ver Partida): seguir una o borrarla
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size.y = 170
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	root.add_child(scroll)
+	_partidas = VBoxContainer.new()
+	_partidas.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(_partidas)
+	_borrar = ConfirmationDialog.new()
+	_borrar.ok_button_text = "Borrar"
+	_borrar.cancel_button_text = "No"
+	_borrar.confirmed.connect(func():
+		Partida.borrar(_por_borrar)
+		_rehacer_partidas())
+	add_child(_borrar)
+	_rehacer_partidas()
+	scroll.visible = _partidas.get_child_count() > 0
 
 	var cols := HBoxContainer.new()
 	cols.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -85,6 +93,61 @@ func _ready() -> void:
 	root.add_child(credits)
 
 	_select(0)
+
+
+## Una fila por partida guardada, de la más reciente a la más vieja: quién va, qué día, la
+## caída, quiénes vinieron antes, y los botones de seguir (si sigue viva) y borrar.
+func _rehacer_partidas() -> void:
+	for c in _partidas.get_children():
+		c.queue_free()
+	var lista := Partida.lista()
+	if lista.is_empty():
+		return
+	var t := Label.new()
+	t.text = "Partidas guardadas"
+	t.add_theme_color_override("font_color", Color("e0a070"))
+	_partidas.add_child(t)
+	for p in lista:
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 10)
+		var info := Label.new()
+		info.text = _texto_partida(p)
+		info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		if not p.get("vivo", false):
+			info.add_theme_color_override("font_color", Color(1, 1, 1, 0.5))
+		row.add_child(info)
+		if p.get("vivo", false) and int(p.get("version", 0)) <= Partida.VERSION:
+			var seguir := Button.new()
+			seguir.text = "Seguir"
+			var ruta: String = p["ruta"]
+			seguir.pressed.connect(func():
+				if Partida.cargar(ruta):
+					get_tree().change_scene_to_file("res://scenes/world.tscn"))
+			row.add_child(seguir)
+		var borrar := Button.new()
+		borrar.text = "Borrar"
+		var r: String = p["ruta"]
+		var quien: String = p.get("nombre", "?")
+		borrar.pressed.connect(func():
+			_por_borrar = r
+			_borrar.dialog_text = "¿Borrar la partida de %s? No se puede deshacer." % quien
+			_borrar.popup_centered())
+		row.add_child(borrar)
+		_partidas.add_child(row)
+
+
+## «Paco, día 5, 14:20 · caída 230 · antes: Youssef (murió en la calle) · guardada el ...».
+static func _texto_partida(p: Dictionary) -> String:
+	var t := "%s, día %d, %s · caída %d" % [p.get("nombre", "?"), int(p.get("dia", 1)), p.get("hora", ""), int(p.get("caida", 0))]
+	var antes: Array = p.get("historia", [])
+	if not p.get("vivo", false) and not antes.is_empty():
+		antes = antes.slice(0, -1)  # (el último es el que acaba de terminar)
+	if not antes.is_empty():
+		t += " · antes: " + ", ".join(antes.map(func(h): return "%s (%s)" % [h["nombre"], Defs.DESTINOS.get(h["destino"], {}).get("texto", "")]))
+	if not p.get("vivo", false):
+		t += " · terminada"
+	return t + " · guardada el %s" % str(p.get("guardada", "")).left(16)
 
 
 func _select(i: int) -> void:
