@@ -10,8 +10,10 @@ Abre `game/project.godot` con Godot 4.7 y pulsa F5.
 - WASD o flechas: andar (Shift: correr)
 - Clic: ir a un sitio, o hablar con un bot / entrar en un lugar
 - I: inventario · L: libreta · M: mapa del barrio · P: pausa (también con los botones de arriba a la derecha)
-- La partida se guarda sola al dormir y al empezar cada día, y a mano desde la pausa; «Continuar»
-  en el menú de inicio sigue la última
+- La partida se guarda sola al dormir y al empezar cada día, y a mano desde la pausa; en el menú
+  de inicio salen las partidas guardadas, para seguir una o borrarla
+- Al acabar con un yonki sigues con otro (el relevo); cuando ya han salido los seis, con otro
+  como ellos. El de antes te deja algo: un escondite, un amigo que te ayuda... o su deuda
 - R: rebuscar en la basura · Z: dormir donde estés · B: montar en la bici (si llevas una)
 - V: ver los conos de visión de todos los que tienes cerca
 - Q/E: girar la cámara · Rueda: zoom

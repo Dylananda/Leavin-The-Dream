@@ -113,6 +113,16 @@ func for_npc(npc: Npc) -> Array:
 	acts.append_array(world.trade.offers_for(npc))
 	acts.append_array(world.errands.offers_for(npc))
 	acts.append_array(world.misiones.for_npc(npc))
+	# el amigo del de antes te echa una mano, una vez (legado: World._heredar)
+	if npc.has_meta("contacto_de") and not npc.has_meta("contacto_dado"):
+		var de: String = npc.get_meta("contacto_de")
+		acts.insert(0, _act("Decirle que vienes de parte de %s" % de, func():
+			npc.set_meta("contacto_dado", true)
+			GameState.advance(10)
+			GameState.add_money(Defs.LEGADO_CONTACTO_DINERO)
+			GameState.add_item("bocadillo")
+			npc.say("%s me sacó de más de una. Toma, y lo que necesites, aquí estoy." % de, 5.0)
+			GameState.log_msg("%s te da %d € y un bocadillo, por lo que hizo %s por él." % [npc.display_name, Defs.LEGADO_CONTACTO_DINERO, de], G.C_GOOD)))
 	if npc.has_meta("recuerda_a"):
 		var r: Dictionary = npc.get_meta("recuerda_a")
 		acts.append(_act("Preguntarle por %s" % r["nombre"], func():
@@ -1298,6 +1308,7 @@ const POI_LABELS := {
 	"albergue": "Servicio social", "cap": "Centro de salud", "cas": "CAS Baluard",
 	"comisaria": "Comisaría", "compraventa": "Compraventa", "club": "Asociación cannábica",
 	"altar": "Altar de la calle",
+	"escondite": "Escondite",
 }
 
 
@@ -1325,6 +1336,28 @@ static func _recuerdo(r: Dictionary) -> String:
 
 ## El altar de un yonki de antes (World._altar): una vela por él (te sube la mente), leer lo
 ## que le han escrito o coger las monedas que le ha dejado la gente (una vez, y está feo).
+## El escondite de un yonki de antes (legado): lo que no se pudo llevar, para el siguiente.
+func _escondite(poi: Dictionary) -> Array:
+	var gs := GameState
+	var i: int = poi.get("historia", -1)
+	if i < 0 or i >= gs.historia.size() or not gs.historia[i].has("escondite"):
+		return []
+	var e: Dictionary = gs.historia[i]["escondite"]
+	if e.get("recogido", false):
+		return [_act("Mirar el hueco vacío", func(): gs.log_msg("Ya no queda nada de lo de %s." % poi["name"]))]
+	return [_act("Sacar lo que escondía %s" % poi["name"], func():
+		gs.advance(10)
+		e["recogido"] = true
+		gs.add_money(e.get("dinero", 0))
+		var cosas := []
+		for id in e.get("objetos", {}):
+			gs.add_item(id, e["objetos"][id])
+			cosas.append(Defs.item_name(id).to_lower())
+		gs.log_msg("Detrás de un ladrillo suelto: %d €%s. Gracias, %s." % [e.get("dinero", 0),
+			(" y " + ", ".join(cosas)) if not cosas.is_empty() else "", poi["name"]], G.C_GOOD)
+		gs.milestone("legado"))]
+
+
 func _altar(poi: Dictionary) -> Array:
 	var gs := GameState
 	var h: Dictionary = gs.historia[poi["historia"]]
@@ -1526,6 +1559,8 @@ func for_poi(poi: Dictionary) -> Array:
 				gs.change_dignity(-1)))
 		"altar":
 			acts.append_array(_altar(poi))
+		"escondite":
+			acts.append_array(_escondite(poi))
 		"club":
 			acts.append_array(_club(poi))
 		"compraventa":

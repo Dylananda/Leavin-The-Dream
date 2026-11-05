@@ -98,6 +98,10 @@ var sucesos_fin: Dictionary = {}
 ## Tu fama por zonas del barrio ({"x,y": {"buena", "mala"}}; ver Fama). Es tuya: al relevo
 ## pasa a la historia del de antes y el nuevo empieza sin.
 var fama: Dictionary = {}
+## (repetir perfil) otro nombre y aspecto para el perfil de ahora: {"name", "look"}; {} si es el de siempre.
+var variante: Dictionary = {}
+## Lo que te dejó el de antes (World._legado): [{"texto", "poi"}], para la libreta.
+var legado: Array = []
 var dia_inicio := 1  ## día en que empezó el yonki de ahora
 var papa_cut := false
 var sleeping := false
@@ -187,7 +191,18 @@ func new_game(profile_id: String) -> void:
 	sucesos = {}
 	sucesos_fin = {}
 	fama = {}
+	variante = {}
+	legado = []
 	changed.emit()
+
+
+## Si eres otro del mismo perfil (repetir perfil), su nombre y su aspecto.
+func aplicar_variante() -> void:
+	if variante.is_empty():
+		return
+	profile = profile.duplicate(true)
+	profile["name"] = variante.get("name", profile["name"])
+	profile["look"] = variante.get("look", profile["look"])
 
 
 ## El propósito del perfil de ahora, por empezar (ver Proposito): {} si no tiene.
@@ -201,7 +216,7 @@ func _nuevo_proposito() -> Dictionary:
 ## Sigues con otro yonki (`profile_id`) en el mismo barrio, `dias` después: todo lo tuyo
 ## empieza de cero, pero se quedan la historia, la partida guardada y lo que es del barrio
 ## (los clubs precintados, los personajes detenidos por una misión).
-func relevo(profile_id: String, dias: int) -> void:
+func relevo(profile_id: String, dias: int, p_variante := {}) -> void:
 	var keep := {"historia": historia, "partida_id": partida_id, "clubs_cerrados": clubs_cerrados,
 		"apartados": apartados, "sucesos": sucesos, "sucesos_fin": sucesos_fin}
 	var hoy := day + dias
@@ -210,6 +225,8 @@ func relevo(profile_id: String, dias: int) -> void:
 		set(k, keep[k])
 	day = hoy
 	dia_inicio = hoy
+	variante = p_variante
+	aplicar_variante()
 	if profile["income"]:
 		_next_income_day = day + int(profile["income"].get("every_days", 0))
 	changed.emit()

@@ -736,6 +736,7 @@ const MILESTONES := {
 	"redada_club": ["Caer en una redada de un club cannábico", 6],
 	"relevo": ["Tomar el relevo de otro yonki", 5],
 	"proposito_perdido": ["Perder para siempre lo que buscabas", 20],
+	"legado": ["Vivir de lo que dejó el de antes", 3],
 	"altar_monedas": ["Coger las monedas del altar de un compañero", 12],
 	# conocer una sustancia nueva (las que ya conoce el perfil no cuentan)
 	"probar_litrona": ["Empezar a beber en la calle", 3],
@@ -1022,3 +1023,29 @@ const FAMA_AVISO_PAUSA := 90.0  ## segundos entre dos avisos de la policía
 ## Al relevo, quien vivía donde el de antes tenía fama (por encima de esto) se acuerda de él
 ## de oídas («recuerda_a»).
 const FAMA_RECUERDO := 30.0
+
+
+# ------------------------------------------------------------------ partidas y legado
+
+## Repetir perfil: cuando ya han salido los seis, el relevo ofrece otro de cada perfil con otro
+## nombre (de estos, sin repetir los de la historia) y otra ropa y pelo (World.perfiles_libres).
+const PERFIL_NOMBRES := {
+	"sin_papeles": ["Karim", "Ibrahim", "Omar", "Samir", "Bilal", "Hamza"],
+	"parado": ["Manolo", "Toni", "Juanjo", "Ramiro", "Fermín", "Quique"],
+	"jubilado": ["Don Julián", "Don Ernesto", "Don Àngel", "Don Vicente", "Don Pere"],
+	"divorciado": ["Marc", "Sergi", "Óscar", "David", "Xavi"],
+	"psiquiatrico": ["Pili", "Encarni", "Rosa Mari", "Montse", "Conchi"],
+	"nino_bien": ["Pelayo", "Íñigo", "Gonzalo", "Álvaro", "Jacobo"],
+}
+## Legado del relevo (World._legado): lo que hereda el siguiente según cómo acabó el de antes.
+## Escondite: lo que le quedaba (esta parte del dinero, y sus cosas), si no se lo pudo llevar
+## (no los de LEGADO_SIN_ESCONDITE) y había al menos LEGADO_ESCONDITE_MIN €, o algún objeto.
+const LEGADO_ESCONDITE := 0.6
+const LEGADO_ESCONDITE_MIN := 5
+const LEGADO_SIN_ESCONDITE := ["redimido", "cumplido", "fuera", "leyenda"]
+## Deuda: el camello al que más debía te viene a cobrar a ti esta parte (salvo si pagó antes de irse).
+const LEGADO_DEUDA := 0.5
+const LEGADO_DEUDA_PERDONA := ["redimido", "cumplido"]
+## Contacto: alguien a quien ayudó al menos tantas veces te echa una mano (y te da esto, una vez).
+const LEGADO_CONTACTO_AYUDAS := 2
+const LEGADO_CONTACTO_DINERO := 15

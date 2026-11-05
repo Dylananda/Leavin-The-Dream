@@ -6,7 +6,7 @@ extends CanvasLayer
 
 signal menu_closed
 signal restart_requested
-signal relevo_requested(profile_id: String)  ## seguir con otro yonki (World.relevo)
+signal relevo_requested(profile_id: String, variante: Dictionary)  ## seguir con otro yonki (World.relevo)
 signal use_item_requested(id: String)
 signal find_place_requested(poi: Dictionary)
 signal save_requested  ## «Guardar» en la pausa (World.guardar_partida)
@@ -951,7 +951,10 @@ func show_game_over(reason: String) -> void:
 			rb.text = "%s — %s" % [p["name"], p["title"]]
 			rb.alignment = HORIZONTAL_ALIGNMENT_LEFT
 			var id: String = p["id"]
-			rb.pressed.connect(func(): relevo_requested.emit(id))
+			var variante: Dictionary = p.get("variante", {})
+			if not variante.is_empty():
+				rb.text = "Otro como %s: %s — %s" % [Defs.profile(id)["name"], p["name"], p["title"]]
+			rb.pressed.connect(func(): relevo_requested.emit(id, variante))
 			v.add_child(rb)
 	var b := Button.new()
 	b.text = "Otra vida (otro barrio, desde cero)" if not libres.is_empty() else "Otra vida"

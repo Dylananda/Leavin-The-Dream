@@ -118,6 +118,7 @@ func _initialize() -> void:
 	await _test_proposito()
 	await _test_sucesos()
 	await _test_fama()
+	await _test_partidas()
 	await _test_editor()
 	await _test_sustancias()
 	print("FALLOS: %d" % _failures if _failures > 0 else "OK")
@@ -807,6 +808,89 @@ func _test_misiones(gs, world) -> void:
 	gs.wanted_until = -1.0
 	gs.inventory.erase("papeles_albergue")
 	print("  misiones: OK")
+
+
+## Partidas: guardar dos, listarlas (también en el menú de inicio) y borrar una; el legado del
+## relevo (escondite, contacto y deuda); agotar los seis perfiles y seguir con otro «Paco».
+func _test_partidas() -> void:
+	var gs = root.get_node("GameState")
+	var Pa = load("res://scripts/partida.gd")
+	gs.new_game("parado")
+	change_scene_to_file("res://scenes/world.tscn")
+	await process_frame
+	await process_frame
+	var world = current_scene
+	world.censo.pausado = true
+	_steady(gs)
+	var p1 := "user://partidas/prueba_humo_1.json"
+	var p2 := "user://partidas/prueba_humo_2.json"
+	_check(Pa.guardar(world, p1) == OK, "partidas: no se guarda la primera")
+	gs.day = 3
+	_check(Pa.guardar(world, p2) == OK, "partidas: no se guarda la segunda")
+	var rutas: Array = Pa.lista().map(func(x): return x["ruta"])
+	_check(p1 in rutas and p2 in rutas and Pa.cabecera(p1).has("historia"), "partidas: no salen las dos en la lista")
+	Pa.borrar(p2)
+	_check(not p2 in Pa.lista().map(func(x): return x["ruta"]), "partidas: borrar no la quita de la lista")
+	change_scene_to_file("res://scenes/main_menu.tscn")
+	await process_frame
+	await process_frame
+	_check(current_scene._partidas.get_child_count() >= 2, "partidas: el menú de inicio no las lista")
+	Pa.borrar(p1)
+	gs.new_game("parado")
+	change_scene_to_file("res://scenes/world.tscn")
+	await process_frame
+	await process_frame
+	world = current_scene
+	world.censo.pausado = true
+	_steady(gs)
+	var me: Vector2i = world.player.cell
+	# legado: Paco acaba preso con dinero, un móvil, una deuda y un amigo
+	var dealer = _npc_of(world, "camello")
+	dealer.debt = 0
+	dealer.add_debt(40, 12.0)
+	gs.debt = 40
+	var amigo = _fresh(world, "vecino")
+	amigo.remember("ayudado")
+	amigo.remember("ayudado")
+	var r_dealer: Dictionary = dealer.reg
+	var r_amigo: Dictionary = amigo.reg
+	gs.money = 50
+	gs.add_item("movil")
+	gs.finish("Prueba del legado.", "", "preso")
+	world.relevo("jubilado")
+	_check(gs.legado.size() == 3, "legado: no se hereda escondite, contacto y deuda (%s)" % [gs.legado])
+	var esc: Array = world.city.pois.filter(func(x): return x["kind"] == "escondite" and x["name"] == "Paco")
+	_check(esc.size() == 1, "legado: no hay escondite")
+	if not esc.is_empty():
+		var money: int = gs.money
+		var sacar = world.interactions.for_poi(esc[0]).filter(func(a): return a["label"].begins_with("Sacar lo que escondía"))
+		_check(sacar.size() == 1, "legado: el escondite no se puede vaciar")
+		if not sacar.is_empty():
+			sacar[0]["do"].call()
+		_check(gs.money == money + 30 and gs.has_item("movil"), "legado: el escondite no tiene lo de Paco")
+	_check(r_dealer["estado"].get("debt", 0) == 20 and gs.debt == 20, "legado: el camello no te reclama la deuda de Paco")
+	var c = world.censo.despertar(r_amigo, me)
+	_check(world.interactions.for_npc(c).any(func(a): return a["label"] == "Decirle que vienes de parte de Paco"), "legado: el amigo de Paco no te echa una mano")
+	_check(world.errands.notebook_entries().any(func(x): return x["text"].contains("Lo que te dejó el de antes")), "legado: no sale en la libreta")
+	# agotar los seis perfiles y seguir con otro del mismo perfil
+	for p in Defs.PROFILES:
+		if not gs.historia.any(func(h): return h["perfil"] == p["id"]) and p["id"] != gs.profile["id"]:
+			gs.historia.append({"perfil": p["id"], "nombre": p["name"], "destino": "preso", "celda": me, "look": p["look"],
+				"desde": 1, "dia": 1, "caida": 0})
+	gs.finish("Prueba de repetir perfil.", "", "preso")
+	var libres: Array = world.perfiles_libres()
+	_check(libres.size() == Defs.PROFILES.size() and libres.all(func(x): return not x.get("variante", {}).is_empty()), "repetir perfil: sin perfiles libres no hay otros como ellos")
+	var v: Dictionary = libres.filter(func(x): return x["id"] == "parado")[0]
+	_check(v["name"] != "Paco", "repetir perfil: el otro Paco se llama Paco")
+	world.relevo("parado", v["variante"])
+	_check(gs.alive and gs.profile["name"] == v["name"] and world.player.display_name == v["name"], "repetir perfil: no sigue con el otro")
+	var pr := "user://partidas/prueba_humo_3.json"
+	Pa.guardar(world, pr)
+	Pa.cargar(pr)
+	_check(gs.profile["name"] == v["name"], "repetir perfil: al cargar vuelve a ser el de siempre")
+	Pa.pendiente = {}
+	Pa.borrar(pr)
+	print("  partidas, legado y repetir perfil: OK")
 
 
 ## Amistades y enemistades entre bots, y tu fama por zonas: dos bots que se pelean quedan

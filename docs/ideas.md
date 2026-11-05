@@ -208,9 +208,19 @@ sí y una memoria poco fiable**, que puede ir creciendo hacia misiones de rol en
   - Quien le conocía se acuerda de él (amigo, enemigo o conocido) y se le puede preguntar
     («Preguntarle por Paco»), pero a ti no te conoce: sin memoria, sin deudas, sin rencor.
   - La pantalla final lista a los de antes.
-  - [ ] Pendiente: visitas a la cárcel y al psiquiátrico; que se pueda repetir perfil cuando
-    se acaben (otro «Paco» distinto); legado (contactos, escondites, deudas que heredas);
-    que el de antes salga en las conversaciones con IA; jugarlo y ajustar.
+  - [x] **Repetir perfil**: cuando ya han salido los seis, el relevo ofrece otro de cada perfil
+    con otro nombre (`Defs.PERFIL_NOMBRES`) y otra ropa y pelo, siempre igual para el mismo
+    nombre (`GameState.variante`, que se guarda en la partida).
+  - [x] **Legado** (`World._legado` y `_heredar`, `Defs.LEGADO_*`), según cómo acabó y cómo le
+    fue: un **escondite** con parte de su dinero y sus cosas, si no se las pudo llevar (un sitio
+    más del mapa, «Sacar lo que escondía Paco»); un **contacto**, alguien a quien ayudó, que te
+    echa una mano («Decirle que vienes de parte de Paco»); y su **deuda**, que el camello te
+    viene a cobrar a ti (la mitad), salvo si se redimió o cumplió su propósito. Sale en la libreta.
+  - [x] **Partidas**: en el menú de inicio, la lista de las guardadas (quién va, qué día, la
+    caída, quiénes vinieron antes, si está terminada), con «Seguir» y «Borrar» (con confirmación).
+  - [ ] Pendiente: visitas a la cárcel y al psiquiátrico; que el de antes salga en las
+    conversaciones con IA; más legados (un enemigo que te toma por él, un perro que te sigue);
+    jugarlo y ajustar.
 - [x] **La ciudad se vuelve más yonki con el tiempo**: en cada relevo, unos cuantos de la gente
   corriente se han enganchado (pasan a ser yonkis con su aspecto de siempre, y lo cuentan),
   hay un 15 % más de yonkis por la calle y todos los bots tienen algo más de enganche.

@@ -528,6 +528,9 @@ func notebook_entries() -> Array:
 	var prop := Proposito.texto_libreta()
 	if prop != "":
 		entries.append({"text": "[color=#f0c060][b]%s[/b][/color]" % garble(prop, amount, mono_share, hash([hour_seed, "proposito"])), "poi": {}})
+	# lo que te dejó el de antes (legado: World._heredar)
+	for l in gs.legado:
+		entries.append({"text": "[color=#c0b0e0]Lo que te dejó el de antes: %s[/color]" % l["texto"], "poi": l.get("poi", {})})
 	# y lo que se dice de ti por aquí (Fama)
 	var fama := Fama.texto(world.player.cell)
 	if fama != "":
