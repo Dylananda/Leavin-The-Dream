@@ -958,6 +958,14 @@ const SUCESOS := {
 		"rumor": "Es la Fiesta Mayor: hay gente por todas partes, y la gente de fiesta da más.",
 		"fin": "Se acaba la Fiesta Mayor. Las barrenderas recogen los vasos y el barrio vuelve a lo suyo.",
 		"frases": ["¡Visca la Festa Major!", "¿Vas a los gigantes?", "Esta noche hay concierto en la Rambla del Raval."]},
+	# el vecindario organizado contra los narcopisos y por la vivienda (el Raval tiene una larga
+	# historia de movilizaciones vecinales; fuente concreta pendiente: ver docs/ideas.md)
+	"manifestacion": {"titulo": "Manifestación vecinal", "prob_dia": 0.04, "desde_dia": 3, "pausa": 7, "dias": [1, 1],
+		"gente": {"vecino": 1.8, "anciano": 1.4, "urbano": 2.0, "mosso": 1.5},
+		"anuncio": "Cacerolada en la Rambla del Raval: los vecinos se manifiestan contra los narcopisos y los desahucios. Pancartas en los balcones y la policía mirando.",
+		"rumor": "Hoy hay manifestación de vecinos: está todo lleno de gente y de policía.",
+		"fin": "Se recogen las pancartas. Los balcones siguen diciendo «Raval digne».",
+		"frases": ["¡Fuera narcopisos del Raval!", "¡El barrio no se vende!", "¿Vienes a la cacerolada?"]},
 	"obras": {"titulo": "Obras en la calle", "prob_dia": 0.1, "desde_dia": 2, "pausa": 3, "dias": [2, 4],
 		"anuncio": "Han vallado un tramo de %s por obras. Hay que dar la vuelta.",
 		"rumor": "%s está cortada por obras unos días.",

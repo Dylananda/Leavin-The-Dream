@@ -218,8 +218,9 @@ sí y una memoria poco fiable**, que puede ir creciendo hacia misiones de rol en
     viene a cobrar a ti (la mitad), salvo si se redimió o cumplió su propósito. Sale en la libreta.
   - [x] **Partidas**: en el menú de inicio, la lista de las guardadas (quién va, qué día, la
     caída, quiénes vinieron antes, si está terminada), con «Seguir» y «Borrar» (con confirmación).
-  - [ ] Pendiente: visitas a la cárcel y al psiquiátrico; que el de antes salga en las
-    conversaciones con IA; más legados (un enemigo que te toma por él, un perro que te sigue);
+  - [x] El de antes sale en las conversaciones con IA (quien le conoció o sabe de él de oídas), y
+    también lo que se dice de ti en la zona (tu fama).
+  - [ ] Pendiente: visitas a la cárcel y al psiquiátrico; más legados (un enemigo que te toma por él, un perro que te sigue);
     jugarlo y ajustar.
 - [x] **La ciudad se vuelve más yonki con el tiempo**: en cada relevo, unos cuantos de la gente
   corriente se han enganchado (pasan a ser yonkis con su aspecto de siempre, y lo cuentan),
@@ -300,7 +301,9 @@ sí y una memoria poco fiable**, que puede ir creciendo hacia misiones de rol en
     músicos, despedidas y roseros, y la gente de fiesta da más.
   - **Obras**: un tramo de una calle vallado unos días (casillas que no se pueden pisar,
     `CityMap.bloquear`, y vallas rojas y blancas).
-  - [ ] Pendiente: manifestaciones; que la Fiesta Mayor tenga gigantes, conciertos y mesas en la
+  - **Manifestación vecinal** (un día, al azar): cacerolada contra los narcopisos y los
+    desahucios, con más vecinos, abuelos y policía.
+  - [ ] Pendiente: buscar la fuente de las manifestaciones vecinales del Raval; que la Fiesta Mayor tenga gigantes, conciertos y mesas en la
     calle de verdad (ahora es más gente); que cada suceso cambie más cosas (precios por zona,
     sitios cerrados); comprobar la fecha real de la Fiesta Mayor del Raval y buscar fuentes
     sobre el fentanilo en Barcelona; capturas de las vallas en el PC; jugarlo y ajustar.

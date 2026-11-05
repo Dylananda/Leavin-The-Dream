@@ -975,6 +975,8 @@ func _test_fama() -> void:
 	gs.finish("Prueba de la fama.", "", "preso")
 	world.relevo("jubilado")
 	_check(r["estado"].get("metas", {}).get("recuerda_a", {}).get("trato", "") == "fama_mala", "fama: al relevo nadie se acuerda del de antes de oídas")
+	var oyente = world.censo.despertar(r, world.player.cell)
+	_check(world.conversation.system_prompt(oyente).contains("EL YONKI DE ANTES: antes que él hubo otro, Paco"), "fama: la IA no sabe nada del de antes")
 	_check(gs.fama.is_empty() and gs.historia[-1].has("fama"), "fama: el nuevo no empieza sin fama o el de antes no se la lleva")
 	print("  amistades entre bots y fama: OK")
 
@@ -1063,6 +1065,11 @@ func _test_sucesos() -> void:
 	_check(salvado and gs.alive, "sucesos: la naloxona no te salva de una sobredosis de fentanilo")
 	su.terminar("fentanilo")
 	_steady(gs)
+	# manifestación: más vecinos y más policía un día
+	var vecinos: int = world._npc_targets["vecino"]
+	su.empezar("manifestacion", 1)
+	_check(world._npc_targets["vecino"] > vecinos and Su.frase() != "", "sucesos: en la manifestación no hay más vecinos")
+	su.terminar("manifestacion")
 	# obras: se corta un tramo y se vuelve a abrir
 	su.empezar("obras", 2)
 	_check(Su.activo("obras"), "sucesos: no empiezan las obras")
